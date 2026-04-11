@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "age=0": { "model": "cybercultivator:block/fiber_reed_stage0" },
+    "age=1": { "model": "cybercultivator:block/fiber_reed_stage0" },
+    "age=2": { "model": "cybercultivator:block/fiber_reed_stage0" },
+    "age=3": { "model": "cybercultivator:block/fiber_reed_stage0" },
+    "age=4": { "model": "cybercultivator:block/fiber_reed_stage0" },
+    "age=5": { "model": "cybercultivator:block/fiber_reed_stage0" },
+    "age=6": { "model": "cybercultivator:block/fiber_reed_stage0" },
+    "age=7": { "model": "cybercultivator:block/fiber_reed_stage0" }
+  }
+}

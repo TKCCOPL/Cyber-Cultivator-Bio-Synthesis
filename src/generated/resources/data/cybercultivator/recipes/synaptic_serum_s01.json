@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "cybercultivator:synaptic_neural_berry"
+    },
+    {
+      "item": "cybercultivator:biochemical_solution"
+    },
+    {
+      "item": "cybercultivator:industrial_ethanol"
+    },
+    {
+      "item": "minecraft:glass_bottle"
+    }
+  ],
+  "result": {
+    "item": "cybercultivator:synaptic_serum_s01"
+  }
+}

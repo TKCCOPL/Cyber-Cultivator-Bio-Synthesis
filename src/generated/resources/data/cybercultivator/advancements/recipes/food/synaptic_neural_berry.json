@@ -1,0 +1,35 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_biochemical_solution": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "cybercultivator:biochemical_solution"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "cybercultivator:synaptic_neural_berry"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_biochemical_solution",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "cybercultivator:synaptic_neural_berry"
+    ]
+  },
+  "sends_telemetry_event": false
+}

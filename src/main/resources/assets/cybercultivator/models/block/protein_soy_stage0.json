@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/crop",
+  "textures": {
+    "crop": "cybercultivator:block/protein_soy_stage0"
+  }
+}
