@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": {
+      "item": "minecraft:water_bucket"
+    },
+    "G": {
+      "item": "minecraft:glass"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "R": {
+      "item": "cybercultivator:rare_earth_dust"
+    },
+    "S": {
+      "item": "cybercultivator:silicon_shard"
+    }
+  },
+  "pattern": [
+    "GSG",
+    "IBI",
+    "IRI"
+  ],
+  "result": {
+    "item": "cybercultivator:bio_incubator"
+  },
+  "show_notification": true
+}

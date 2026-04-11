@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "cybercultivator:biochemical_solution"
+    },
+    {
+      "item": "cybercultivator:plant_fiber"
+    },
+    {
+      "item": "cybercultivator:silicon_shard"
+    }
+  ],
+  "result": {
+    "item": "cybercultivator:synaptic_neural_berry"
+  }
+}

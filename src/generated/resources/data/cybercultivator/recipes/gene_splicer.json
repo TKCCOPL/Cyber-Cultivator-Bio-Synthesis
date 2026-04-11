@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "item": "cybercultivator:rare_earth_dust"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "S": {
+      "item": "cybercultivator:silicon_shard"
+    }
+  },
+  "pattern": [
+    "SRS",
+    "IRI",
+    "SCS"
+  ],
+  "result": {
+    "item": "cybercultivator:gene_splicer"
+  },
+  "show_notification": true
+}

@@ -1,0 +1,6 @@
+{
+  "type": "forge:add_features",
+  "biomes": "#minecraft:is_overworld",
+  "features": "cybercultivator:rare_earth_ore_placed",
+  "step": "underground_ores"
+}
