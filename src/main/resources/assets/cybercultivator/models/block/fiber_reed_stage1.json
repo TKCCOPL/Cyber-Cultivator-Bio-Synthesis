@@ -1,6 +1,0 @@
-{
-  "parent": "minecraft:block/crop",
-  "textures": {
-    "crop": "cybercultivator:block/fiber_reed_stage1"
-  }
-}

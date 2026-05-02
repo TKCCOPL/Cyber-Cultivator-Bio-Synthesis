@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "entries": [
+    "cybercultivator:spectrum_monocle_loot",
+    "cybercultivator:bio_pulse_belt_loot",
+    "cybercultivator:life_support_pack_loot",
+    "cybercultivator:fiber_reed_seeds_loot",
+    "cybercultivator:protein_soy_seeds_loot",
+    "cybercultivator:alcohol_bloom_seeds_loot"
+  ]
+}

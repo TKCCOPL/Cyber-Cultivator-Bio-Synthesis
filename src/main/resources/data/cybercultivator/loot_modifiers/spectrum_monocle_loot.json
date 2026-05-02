@@ -1,0 +1,12 @@
+{
+  "type": "cybercultivator:curios_loot",
+  "conditions": [],
+  "item": "cybercultivator:spectrum_monocle",
+  "count": 1,
+  "chance": 0.15,
+  "loot_tables": [
+    "minecraft:chests/end_city_treasure",
+    "minecraft:chests/woodland_mansion",
+    "minecraft:chests/desert_pyramid"
+  ]
+}

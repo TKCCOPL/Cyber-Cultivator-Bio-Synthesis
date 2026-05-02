@@ -1,76 +1,126 @@
 #!/usr/bin/env python3
-"""计算并模拟在给定参数下达到 Level 10 的概率分布，并绘制直方图与正态拟合曲线。
+"""计算在给定时间内，多台拼接机并行操作时达到目标基因值的概率分布。
 
-方法说明：
-- 每个 breeder 在时间 T 内会有 n = floor(T / Tb) 次独立晋级尝试，单次晋级概率为 mu。
-- 单个 breeder 在 T 内至少获得 L 次成功的概率 p_b = 1 - BinomialCDF(L-1; n, mu).
-- 在 Nb 个独立 breeder 下，达到 Level 10 的数量 ~ Binomial(Nb, p_b)。
+使用实际游戏基因拼接公式：
+    新值 = floor((父本 + 母本) / 2) + random(-2, -1, 0, +1, +2)
+    新值 = clamp(新值, 1, 10)
+
+使用方法：
+    python simulations/level10_probability_sim.py --trials 1000 --target 10
+
+可选依赖（用于绘图）：
+    pip install numpy matplotlib
 """
+import random
 import math
 import argparse
-import numpy as np
-import matplotlib.pyplot as plt
-from math import comb
 
-def per_breeder_success_prob(mu, L, Tb, T):
-    n = int(math.floor(T / Tb))
-    if n < L:
-        return 0.0
-    # cumulative probability of <= L-1 successes
-    cdf = 0.0
-    q = 1.0 - mu
-    for k in range(0, L):
-        cdf += comb(n, k) * (mu ** k) * (q ** (n - k))
-    return 1.0 - cdf
 
-def simulate_trials(trials, Nb, p_b):
-    # draw Binomial samples: number of breeders reaching Level L per trial
-    samples = np.random.binomial(Nb, p_b, size=trials)
-    return samples
+def splice_gene(parent_a: int, parent_b: int) -> int:
+    """模拟基因拼接公式"""
+    base = (parent_a + parent_b) // 2
+    delta = random.choice([-2, -1, 0, 1, 2])
+    return max(1, min(10, base + delta))
 
-def plot_histogram(samples, Nb, p_b, outpath):
-    mean = Nb * p_b
-    var = Nb * p_b * (1 - p_b)
-    std = math.sqrt(var)
 
-    plt.figure(figsize=(8,5))
-    # histogram
-    counts, bins, _ = plt.hist(samples, bins=range(int(samples.max())+2), density=True, alpha=0.6, color='C0', label='Empirical')
-    # normal pdf overlay
-    xs = np.linspace(0, max(samples.max(), mean + 4*std), 200)
-    from math import exp, pi
-    norm_pdf = [ (1.0/(std * math.sqrt(2*pi))) * math.exp(-0.5*((x-mean)/std)**2) if std>0 else 0.0 for x in xs]
-    plt.plot(xs, norm_pdf, 'r--', label='Normal fit')
-    plt.xlabel('Number of breeders reaching Level')
-    plt.ylabel('Density')
-    plt.title(f'Level 10 successes per trial (Nb={Nb}, p_b={p_b:.3e})')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.savefig(outpath)
-    plt.close()
+def simulate_single_machine(initial: int, target: int, attempts: int) -> bool:
+    """模拟单台拼接机在指定尝试次数内是否达到目标。"""
+    a, b = initial, initial
+    for _ in range(attempts):
+        child = splice_gene(a, b)
+        if child >= target:
+            return True
+        # 策略：用最高值的两个种子继续
+        a, b = max(a, b), child
+    return False
+
+
+def simulate_parallel(initial: int, target: int, attempts_per_machine: int, n_machines: int) -> int:
+    """模拟 N 台并行拼接机，返回达到目标的机器数量。"""
+    successes = 0
+    for _ in range(n_machines):
+        if simulate_single_machine(initial, target, attempts_per_machine):
+            successes += 1
+    return successes
+
+
+def run_trials(trials: int, initial: int, target: int, attempts: int, n_machines: int):
+    """运行多次仿真，统计结果。"""
+    results = []
+    for _ in range(trials):
+        s = simulate_parallel(initial, target, attempts, n_machines)
+        results.append(s)
+
+    results.sort()
+    total = len(results)
+    avg = sum(results) / total
+    median = results[total // 2]
+    any_success = sum(1 for r in results if r > 0)
+    all_success = sum(1 for r in results if r == n_machines)
+
+    return {
+        'trials': trials,
+        'n_machines': n_machines,
+        'attempts_per_machine': attempts,
+        'avg_successes': avg,
+        'median_successes': median,
+        'prob_at_least_one': any_success / total,
+        'prob_all_success': all_success / total,
+        'results': results,
+    }
+
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--trials', type=int, default=10000)
-    parser.add_argument('--mu', type=float, default=0.02)
-    parser.add_argument('--L', type=int, default=10)
-    parser.add_argument('--Tb', type=float, default=30.0)
-    parser.add_argument('--T', type=float, default=86400.0)
-    parser.add_argument('--Nb', type=int, default=1000)
-    parser.add_argument('--out', type=str, default='simulations/level10_hist.png')
+    parser = argparse.ArgumentParser(description='并行拼接机达到目标基因值概率仿真')
+    parser.add_argument('--trials', type=int, default=1000, help='仿真次数')
+    parser.add_argument('--initial', type=int, default=3, help='初始基因值 (1-10)')
+    parser.add_argument('--target', type=int, default=10, help='目标基因值 (1-10)')
+    parser.add_argument('--attempts', type=int, default=100, help='每台机器的尝试次数')
+    parser.add_argument('--machines', type=int, default=10, help='并行拼接机数量')
+    parser.add_argument('--out', type=str, default=None, help='直方图输出路径（需要 numpy+matplotlib）')
     args = parser.parse_args()
 
-    p_b = per_breeder_success_prob(args.mu, args.L, args.Tb, args.T)
-    print(f'Per-breeder success probability within T={args.T}s: p_b = {p_b:.6e}')
+    if not (1 <= args.initial <= 10 and 1 <= args.target <= 10):
+        print("错误：基因值必须在 1-10 范围内")
+        return
 
-    samples = simulate_trials(args.trials, args.Nb, p_b)
-    prob_at_least_one = np.mean(samples > 0)
-    print(f'Estimated probability at least one Level {args.L} in Nb={args.Nb}: {prob_at_least_one:.6f}')
-    print(f'Sample mean successes per trial: {samples.mean():.6f}, std: {samples.std(ddof=1):.6f}')
+    print(f"参数：初始值={args.initial}, 目标={args.target}")
+    print(f"      每台尝试次数={args.attempts}, 并行机器数={args.machines}, 仿真次数={args.trials}")
+    print(f"拼接公式：new = floor((A+B)/2) + random(-2,-1,0,+1,+2), clamp(1,10)")
+    print()
 
-    plot_histogram(samples, args.Nb, p_b, args.out)
-    print(f'Histogram saved to: {args.out}')
+    stats = run_trials(args.trials, args.initial, args.target, args.attempts, args.machines)
+
+    print(f"平均成功机器数：{stats['avg_successes']:.2f} / {args.machines}")
+    print(f"中位数：{stats['median_successes']}")
+    print(f"至少一台成功的概率：{stats['prob_at_least_one']:.4f}")
+    print(f"全部成功的概率：{stats['prob_all_success']:.4f}")
+
+    # 单台理论估算
+    theoretical_attempts = 4 * (args.target - args.initial)
+    print(f"\n单台理论估算（达到目标 ≈ {theoretical_attempts} 次）：")
+    print(f"  每台 {args.attempts} 次尝试时，单台成功率 ≈ {min(1.0, args.attempts / max(1, theoretical_attempts)):.2%}")
+
+    # 可选绘图
+    if args.out:
+        try:
+            import numpy as np
+            import matplotlib.pyplot as plt
+
+            samples = np.array(stats['results'])
+            plt.figure(figsize=(8, 5))
+            plt.hist(samples, bins=range(args.machines + 2), density=True, alpha=0.6, color='C0')
+            plt.xlabel('成功机器数')
+            plt.ylabel('密度')
+            plt.title(f'并行拼接机成功率分布 (target={args.target}, attempts={args.attempts})')
+            plt.grid(True, alpha=0.3)
+            plt.tight_layout()
+            plt.savefig(args.out)
+            plt.close()
+            print(f"\n直方图已保存：{args.out}")
+        except ImportError:
+            print("\n提示：安装 numpy+matplotlib 可生成直方图：pip install numpy matplotlib")
+
 
 if __name__ == '__main__':
     main()

@@ -1,92 +1,125 @@
 #!/usr/bin/env python3
-"""仿真：高级种子产率与首次到达时间蒙特卡洛验证
+"""基因种子拼接仿真：模拟实际基因拼接公式，评估达到目标基因值的期望次数。
 
-支持两种近似模式：
-- poisson: 使用组合速率（采集成功率 + 交配完成率）的指数分布近似，快速且适用于大规模参数扫描。
-- individual: 基于简单个体模型的离散事件模拟（较慢，较精确）。
+实际游戏公式：
+    新值 = floor((父本 + 母本) / 2) + random(-2, -1, 0, +1, +2)
+    新值 = clamp(新值, 1, 10)
 
-将结果打印为统计量（平均、分位数、估算产率）。
+使用方法：
+    python simulations/advanced_seed_sim.py --trials 10000 --target 8
 """
 import random
-import math
 import argparse
-from tqdm import trange
 
-def simulate_one_poisson(p0=0.0005, mu=0.02, L=5, Tb=30.0, hps=0.2, Nh=500, Nb=500, max_time=86400):
-    # 速率模型：采集成功率与交配完成率近似为泊松过程
-    harvest_rate = Nh * hps
-    breeding_attempts_per_sec = Nb / Tb
-    harvest_success_rate = harvest_rate * p0
-    breeding_success_rate = breeding_attempts_per_sec * (mu / L)
-    total_rate = harvest_success_rate + breeding_success_rate
-    if total_rate <= 0:
-        return float('inf')
-    t = random.expovariate(total_rate)
-    return t if t <= max_time else float('inf')
 
-def simulate_one_individual(p0=0.0005, mu=0.02, L=5, Tb=30.0, hps=0.2, Nh=500, Nb=500, max_time=86400):
-    # 个体级简化模型：每个 breeder 单独进行晋级尝试，采集按概率事件
-    # 为控制复杂度，按秒步进，统计是否在 max_time 内出现第一次高级种子
-    # 注意：此方法随 Nb, Nh 和 max_time 线性增长，可能较慢
-    levels = [0] * Nb  # breeders current level
-    time = 0.0
-    dt = 1.0
-    harvest_rate = Nh * hps
-    # 将每秒的采集次数视作 Poisson(harvest_rate) 次采集
-    while time < max_time:
-        # 采集事件
-        if harvest_rate > 0:
-            num_harvests = random.poissonvariate(harvest_rate) if hasattr(random, 'poissonvariate') else sum(1 for _ in range(int(math.ceil(harvest_rate))) if random.random() < (harvest_rate / max(1, int(math.ceil(harvest_rate)))))
-            for _ in range(num_harvests):
-                if random.random() < p0:
-                    return time
-        # breeding attempts: each breeder attempts with probability dt/Tb per second
-        p_attempt = dt / Tb
-        for i in range(Nb):
-            if random.random() < p_attempt:
-                if random.random() < mu:
-                    levels[i] += 1
-                    if levels[i] >= L:
-                        return time
-        time += dt
-    return float('inf')
+def splice_gene(parent_a: int, parent_b: int) -> int:
+    """模拟基因拼接公式"""
+    base = (parent_a + parent_b) // 2
+    delta = random.choice([-2, -1, 0, 1, 2])
+    return max(1, min(10, base + delta))
 
-def monte_carlo(trials=20000, mode='poisson', **kwargs):
-    times = []
-    for _ in trange(trials):
-        if mode == 'poisson':
-            t = simulate_one_poisson(**kwargs)
+
+def simulate_to_target(initial: int, target: int, max_attempts: int = 10000) -> int:
+    """模拟从初始基因值达到目标值所需的拼接次数。
+
+    策略：始终用当前最高值的两个种子拼接。
+    返回尝试次数，超过 max_attempts 则返回 -1。
+    """
+    # 种子库：开始有两个相同初始值的种子
+    seeds = [initial, initial]
+    attempts = 0
+
+    while attempts < max_attempts:
+        # 找到当前最高基因值
+        current_max = max(seeds)
+        if current_max >= target:
+            return attempts
+
+        # 取两个最高值的种子拼接
+        seeds.sort(reverse=True)
+        a, b = seeds[0], seeds[1]
+        child = splice_gene(a, b)
+
+        # 将子代加入种子库，保留合理数量
+        seeds.append(child)
+        if len(seeds) > 20:
+            seeds = sorted(seeds, reverse=True)[:10]
+
+        attempts += 1
+
+    return -1  # 未达到目标
+
+
+def monte_carlo(trials: int, initial: int, target: int) -> dict:
+    """蒙特卡洛仿真"""
+    results = []
+    failures = 0
+
+    for _ in range(trials):
+        n = simulate_to_target(initial, target)
+        if n < 0:
+            failures += 1
         else:
-            t = simulate_one_individual(**kwargs)
-        times.append(t)
-    finite = [t for t in times if t < float('inf')]
-    successes = len(finite)
-    if successes == 0:
-        return {'trials': trials, 'successes': 0}
-    avg_time = sum(finite) / successes
-    median_time = sorted(finite)[len(finite)//2]
-    # 简单估算长期产率： successes / (total simulated time across successes)
-    per_sec_rate = successes / (trials * avg_time)
+            results.append(n)
+
+    if not results:
+        return {
+            'trials': trials,
+            'successes': 0,
+            'failures': failures,
+            'success_rate': 0.0,
+        }
+
+    results.sort()
+    avg = sum(results) / len(results)
+    median = results[len(results) // 2]
+    p90 = results[int(len(results) * 0.9)]
+    p99 = results[int(len(results) * 0.99)]
+
     return {
         'trials': trials,
-        'successes': successes,
-        'avg_time_s': avg_time,
-        'median_time_s': median_time,
-        'per_sec_rate_est': per_sec_rate,
+        'successes': len(results),
+        'failures': failures,
+        'success_rate': len(results) / trials,
+        'avg_attempts': avg,
+        'median_attempts': median,
+        'p90_attempts': p90,
+        'p99_attempts': p99,
+        'min_attempts': results[0],
+        'max_attempts': results[-1],
     }
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--trials', type=int, default=20000)
-    parser.add_argument('--mode', choices=['poisson', 'individual'], default='poisson')
-    parser.add_argument('--p0', type=float, default=0.0005)
-    parser.add_argument('--mu', type=float, default=0.02)
-    parser.add_argument('--L', type=int, default=5)
-    parser.add_argument('--Tb', type=float, default=30.0)
-    parser.add_argument('--hps', type=float, default=0.2)
-    parser.add_argument('--Nh', type=int, default=500)
-    parser.add_argument('--Nb', type=int, default=500)
-    parser.add_argument('--max_time', type=float, default=86400.0)
+
+def main():
+    parser = argparse.ArgumentParser(description='基因种子拼接仿真')
+    parser.add_argument('--trials', type=int, default=10000, help='仿真次数')
+    parser.add_argument('--initial', type=int, default=3, help='初始基因值 (1-10)')
+    parser.add_argument('--target', type=int, default=8, help='目标基因值 (1-10)')
+    parser.add_argument('--max-attempts', type=int, default=10000, help='单次最大尝试次数')
     args = parser.parse_args()
-    res = monte_carlo(trials=args.trials, mode=args.mode, p0=args.p0, mu=args.mu, L=args.L, Tb=args.Tb, hps=args.hps, Nh=args.Nh, Nb=args.Nb, max_time=args.max_time)
-    print(res)
+
+    if not (1 <= args.initial <= 10 and 1 <= args.target <= 10):
+        print("错误：基因值必须在 1-10 范围内")
+        return
+
+    print(f"参数：初始值={args.initial}, 目标={args.target}, 仿真次数={args.trials}")
+    print(f"拼接公式：new = floor((A+B)/2) + random(-2,-1,0,+1,+2), clamp(1,10)")
+    print()
+
+    results = monte_carlo(args.trials, args.initial, args.target)
+
+    print(f"成功率：{results['success_rate']:.2%} ({results['successes']}/{results['trials']})")
+    if results['successes'] > 0:
+        print(f"平均尝试次数：{results['avg_attempts']:.1f}")
+        print(f"中位数：{results['median_attempts']}")
+        print(f"P90：{results['p90_attempts']}")
+        print(f"P99：{results['p99_attempts']}")
+        print(f"范围：{results['min_attempts']} - {results['max_attempts']}")
+
+    # 理论估算
+    theoretical = 4 * (args.target - args.initial)
+    print(f"\n理论估算（忽略边界）：≈ {theoretical} 次")
+
+
+if __name__ == '__main__':
+    main()

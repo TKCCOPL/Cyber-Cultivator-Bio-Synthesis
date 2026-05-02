@@ -11,8 +11,6 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.BaseEntityBlock;
-import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
@@ -21,7 +19,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
 
-public class GeneSplicerBlock extends BaseEntityBlock implements EntityBlock {
+public class GeneSplicerBlock extends MachineBlock {
     public GeneSplicerBlock(Properties properties) {
         super(properties);
     }
@@ -108,8 +106,7 @@ public class GeneSplicerBlock extends BaseEntityBlock implements EntityBlock {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> blockEntityType) {
-        return createTickerHelper(blockEntityType, ModBlockEntities.GENE_SPLICER.get(), (lvl, p, s, be) -> {
-        });
+        return null;
     }
 
     private static void giveToPlayer(Player player, ItemStack stack) {

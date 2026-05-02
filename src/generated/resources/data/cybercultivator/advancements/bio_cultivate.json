@@ -1,0 +1,38 @@
+{
+  "parent": "cybercultivator:root",
+  "criteria": {
+    "has_biochemical_solution": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "cybercultivator:biochemical_solution"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "display": {
+    "announce_to_chat": true,
+    "description": {
+      "translate": "advancement.cybercultivator.bio_cultivate.description"
+    },
+    "frame": "task",
+    "hidden": false,
+    "icon": {
+      "item": "cybercultivator:biochemical_solution"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancement.cybercultivator.bio_cultivate.title"
+    }
+  },
+  "requirements": [
+    [
+      "has_biochemical_solution"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

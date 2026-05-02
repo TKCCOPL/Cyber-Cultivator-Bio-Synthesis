@@ -1,0 +1,38 @@
+{
+  "parent": "cybercultivator:root",
+  "criteria": {
+    "has_serum_s01": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "cybercultivator:synaptic_serum_s01"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "display": {
+    "announce_to_chat": true,
+    "description": {
+      "translate": "advancement.cybercultivator.serum_path.description"
+    },
+    "frame": "goal",
+    "hidden": false,
+    "icon": {
+      "item": "cybercultivator:synaptic_serum_s01"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancement.cybercultivator.serum_path.title"
+    }
+  },
+  "requirements": [
+    [
+      "has_serum_s01"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

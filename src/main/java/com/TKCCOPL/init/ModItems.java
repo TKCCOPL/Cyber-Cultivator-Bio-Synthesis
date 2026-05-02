@@ -1,7 +1,10 @@
 package com.TKCCOPL.init;
 
 import com.TKCCOPL.cybercultivator;
+import com.TKCCOPL.curios.BioPulseBeltItem;
+import com.TKCCOPL.curios.CurioAccessoryItem;
 import com.TKCCOPL.curios.CuriosCompat;
+import com.TKCCOPL.curios.LifeSupportPackItem;
 import com.TKCCOPL.item.GeneticSeedItem;
 import com.TKCCOPL.item.SynapticSerumItem;
 import net.minecraft.network.chat.Component;
@@ -39,12 +42,16 @@ public final class ModItems {
     public static final RegistryObject<Item> ALCOHOL_BLOOM_SEEDS = ITEMS.register("alcohol_bloom_seeds",
             () -> new GeneticSeedItem(ModBlocks.ALCOHOL_BLOOM_CROP.get(), new Item.Properties(), 6, 3, 5));
 
+    public static final RegistryObject<Item> PURIFIED_WATER_BOTTLE = ITEMS.register("purified_water_bottle", () -> new Item(new Item.Properties().stacksTo(16)));
+
+    public static final RegistryObject<Item> SYNAPTIC_SERUM_S02 = ITEMS.register("synaptic_serum_s02", () -> new SynapticSerumItem(new Item.Properties().stacksTo(16).rarity(Rarity.RARE), ModEffects.VISUAL_ENHANCEMENT, 20 * 30, 0));
+    public static final RegistryObject<Item> SYNAPTIC_SERUM_S03 = ITEMS.register("synaptic_serum_s03", () -> new SynapticSerumItem(new Item.Properties().stacksTo(16).rarity(Rarity.RARE), ModEffects.METABOLIC_BOOST, 20 * 15, 0));
+
     public static final RegistryObject<Item> SPECTRUM_MONOCLE = ITEMS.register("spectrum_monocle",
-            () -> new Item(new Item.Properties().stacksTo(1).rarity(Rarity.RARE)) {
+            () -> new CurioAccessoryItem(new Item.Properties().rarity(Rarity.RARE), "head", "tooltip.cybercultivator.spectrum_monocle") {
                 @Override
                 public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
                     super.appendHoverText(stack, level, tooltip, flag);
-                    tooltip.add(Component.translatable("tooltip.cybercultivator.spectrum_monocle"));
                     if (CuriosCompat.isCuriosLoaded()) {
                         tooltip.add(Component.translatable("tooltip.cybercultivator.curios_loaded"));
                     } else {
@@ -57,6 +64,13 @@ public final class ModItems {
     public static final RegistryObject<Item> RARE_EARTH_ORE_ITEM = registerBlockItem("rare_earth_ore", ModBlocks.RARE_EARTH_ORE);
     public static final RegistryObject<Item> BIO_INCUBATOR_ITEM = registerBlockItem("bio_incubator", ModBlocks.BIO_INCUBATOR);
     public static final RegistryObject<Item> GENE_SPLICER_ITEM = registerBlockItem("gene_splicer", ModBlocks.GENE_SPLICER);
+    public static final RegistryObject<Item> ATMOSPHERIC_CONDENSER_ITEM = registerBlockItem("atmospheric_condenser", ModBlocks.ATMOSPHERIC_CONDENSER);
+    public static final RegistryObject<Item> SERUM_BOTTLER_ITEM = registerBlockItem("serum_bottler", ModBlocks.SERUM_BOTTLER);
+
+    public static final RegistryObject<Item> BIO_PULSE_BELT = ITEMS.register("bio_pulse_belt",
+            () -> new BioPulseBeltItem(new Item.Properties().stacksTo(1).rarity(Rarity.RARE)));
+    public static final RegistryObject<Item> LIFE_SUPPORT_PACK = ITEMS.register("life_support_pack",
+            () -> new LifeSupportPackItem(new Item.Properties().stacksTo(1).rarity(Rarity.RARE)));
 
     private ModItems() {
     }

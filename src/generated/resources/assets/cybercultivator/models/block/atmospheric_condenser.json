@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "down": "cybercultivator:block/machine_bottom",
+    "east": "cybercultivator:block/machine_side",
+    "north": "cybercultivator:block/atmospheric_condenser_front",
+    "particle": "cybercultivator:block/machine_side",
+    "south": "cybercultivator:block/machine_side",
+    "up": "cybercultivator:block/atmospheric_condenser_top",
+    "west": "cybercultivator:block/machine_side"
+  }
+}

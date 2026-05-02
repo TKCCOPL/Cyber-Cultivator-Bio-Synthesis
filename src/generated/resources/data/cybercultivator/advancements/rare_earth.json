@@ -1,0 +1,38 @@
+{
+  "parent": "cybercultivator:silicon_start",
+  "criteria": {
+    "has_rare_earth_dust": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "cybercultivator:rare_earth_dust"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "display": {
+    "announce_to_chat": true,
+    "description": {
+      "translate": "advancement.cybercultivator.rare_earth.description"
+    },
+    "frame": "task",
+    "hidden": false,
+    "icon": {
+      "item": "cybercultivator:rare_earth_dust"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancement.cybercultivator.rare_earth.title"
+    }
+  },
+  "requirements": [
+    [
+      "has_rare_earth_dust"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

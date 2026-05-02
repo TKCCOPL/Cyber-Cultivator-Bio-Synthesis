@@ -51,6 +51,7 @@ public class GeneticSeedItem extends ItemNameBlockItem {
     }
 
     public void ensureGeneData(ItemStack stack) {
+        if (stack.hasTag() && stack.getTag().contains(GENE_SPEED)) return;
         CompoundTag tag = stack.getOrCreateTag();
         if (!tag.contains(GENE_SPEED)) {
             tag.putInt(GENE_SPEED, defaultSpeed);

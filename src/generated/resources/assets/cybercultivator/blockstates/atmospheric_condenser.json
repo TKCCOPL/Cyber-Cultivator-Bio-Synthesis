@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "cybercultivator:block/atmospheric_condenser",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "cybercultivator:block/atmospheric_condenser"
+    },
+    "facing=south": {
+      "model": "cybercultivator:block/atmospheric_condenser",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "cybercultivator:block/atmospheric_condenser",
+      "y": 270
+    }
+  }
+}

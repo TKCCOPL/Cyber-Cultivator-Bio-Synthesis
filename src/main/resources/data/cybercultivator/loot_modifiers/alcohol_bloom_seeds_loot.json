@@ -1,0 +1,13 @@
+{
+  "type": "cybercultivator:curios_loot",
+  "conditions": [],
+  "item": "cybercultivator:alcohol_bloom_seeds",
+  "count": 1,
+  "chance": 0.20,
+  "loot_tables": [
+    "minecraft:chests/simple_dungeon",
+    "minecraft:chests/abandoned_mineshaft",
+    "minecraft:chests/village/village_taiga_house",
+    "minecraft:chests/village/village_desert_house"
+  ]
+}

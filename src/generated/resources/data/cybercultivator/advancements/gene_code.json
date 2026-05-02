@@ -1,0 +1,40 @@
+{
+  "parent": "cybercultivator:bio_cultivate",
+  "criteria": {
+    "has_any_seed": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "cybercultivator:fiber_reed_seeds",
+              "cybercultivator:protein_soy_seeds",
+              "cybercultivator:alcohol_bloom_seeds"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "display": {
+    "announce_to_chat": true,
+    "description": {
+      "translate": "advancement.cybercultivator.gene_code.description"
+    },
+    "frame": "task",
+    "hidden": false,
+    "icon": {
+      "item": "cybercultivator:fiber_reed_seeds"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancement.cybercultivator.gene_code.title"
+    }
+  },
+  "requirements": [
+    [
+      "has_any_seed"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

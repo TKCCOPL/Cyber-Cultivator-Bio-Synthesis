@@ -1,0 +1,38 @@
+{
+  "parent": "cybercultivator:serum_path",
+  "criteria": {
+    "has_serum_s03": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "cybercultivator:synaptic_serum_s03"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "display": {
+    "announce_to_chat": true,
+    "description": {
+      "translate": "advancement.cybercultivator.metabolic_boost.description"
+    },
+    "frame": "challenge",
+    "hidden": false,
+    "icon": {
+      "item": "cybercultivator:synaptic_serum_s03"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancement.cybercultivator.metabolic_boost.title"
+    }
+  },
+  "requirements": [
+    [
+      "has_serum_s03"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

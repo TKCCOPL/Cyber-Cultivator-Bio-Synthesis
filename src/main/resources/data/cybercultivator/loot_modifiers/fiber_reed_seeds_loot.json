@@ -1,0 +1,12 @@
+{
+  "type": "cybercultivator:curios_loot",
+  "conditions": [],
+  "item": "cybercultivator:fiber_reed_seeds",
+  "count": 1,
+  "chance": 0.12,
+  "loot_tables": [
+    "minecraft:blocks/short_grass",
+    "minecraft:blocks/tall_grass",
+    "minecraft:blocks/grass"
+  ]
+}

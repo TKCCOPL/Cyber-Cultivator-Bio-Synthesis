@@ -1,8 +1,10 @@
 package com.TKCCOPL.init;
 
+import com.TKCCOPL.block.AtmosphericCondenserBlock;
 import com.TKCCOPL.block.BasicCropBlock;
 import com.TKCCOPL.block.BioIncubatorBlock;
 import com.TKCCOPL.block.GeneSplicerBlock;
+import com.TKCCOPL.block.SerumBottlerBlock;
 import com.TKCCOPL.cybercultivator;
 import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.Block;
@@ -53,6 +55,20 @@ public final class ModBlocks {
 
     public static final RegistryObject<CropBlock> ALCOHOL_BLOOM_CROP = BLOCKS.register("alcohol_bloom_crop",
             () -> new BasicCropBlock(BlockBehaviour.Properties.copy(net.minecraft.world.level.block.Blocks.WHEAT), ModItems.ALCOHOL_BLOOM_SEEDS));
+
+    public static final RegistryObject<Block> ATMOSPHERIC_CONDENSER = BLOCKS.register("atmospheric_condenser",
+            () -> new AtmosphericCondenserBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(4.0F, 6.0F)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)));
+
+    public static final RegistryObject<Block> SERUM_BOTTLER = BLOCKS.register("serum_bottler",
+            () -> new SerumBottlerBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(4.0F, 6.0F)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)));
 
     private ModBlocks() {
     }

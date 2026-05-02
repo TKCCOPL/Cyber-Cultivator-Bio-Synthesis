@@ -1,0 +1,68 @@
+{
+  "parent": "cybercultivator:root",
+  "criteria": {
+    "has_belt": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "cybercultivator:bio_pulse_belt"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_monocle": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "cybercultivator:spectrum_monocle"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_pack": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "cybercultivator:life_support_pack"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "display": {
+    "announce_to_chat": true,
+    "description": {
+      "translate": "advancement.cybercultivator.cyber_equip.description"
+    },
+    "frame": "task",
+    "hidden": false,
+    "icon": {
+      "item": "cybercultivator:spectrum_monocle"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancement.cybercultivator.cyber_equip.title"
+    }
+  },
+  "requirements": [
+    [
+      "has_monocle"
+    ],
+    [
+      "has_belt"
+    ],
+    [
+      "has_pack"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

@@ -1,0 +1,38 @@
+{
+  "criteria": {
+    "has_silicon_shard": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "cybercultivator:silicon_shard"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "background": "cybercultivator:textures/block/silicon_ore.png",
+    "description": {
+      "translate": "advancement.cybercultivator.root.description"
+    },
+    "frame": "task",
+    "hidden": false,
+    "icon": {
+      "item": "cybercultivator:silicon_shard"
+    },
+    "show_toast": false,
+    "title": {
+      "translate": "advancement.cybercultivator.root.title"
+    }
+  },
+  "requirements": [
+    [
+      "has_silicon_shard"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

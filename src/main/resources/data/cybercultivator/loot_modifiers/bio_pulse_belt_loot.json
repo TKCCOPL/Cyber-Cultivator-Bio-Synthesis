@@ -1,0 +1,14 @@
+{
+  "type": "cybercultivator:curios_loot",
+  "conditions": [],
+  "item": "cybercultivator:bio_pulse_belt",
+  "count": 1,
+  "chance": 0.20,
+  "loot_tables": [
+    "minecraft:chests/abandoned_mineshaft",
+    "minecraft:chests/stronghold_corridor",
+    "minecraft:chests/stronghold_crossing",
+    "minecraft:chests/stronghold_library",
+    "minecraft:chests/underwater_ruin_big"
+  ]
+}

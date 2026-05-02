@@ -1,51 +1,70 @@
 package com.TKCCOPL;
 
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Item;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
-import net.minecraftforge.registries.ForgeRegistries;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-// An example config class. This is not required, but it's a good idea to have one to keep your config organized.
-// Demonstrates how to use Forge's config APIs
 @Mod.EventBusSubscriber(modid = cybercultivator.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class Config {
     private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
 
-    private static final ForgeConfigSpec.BooleanValue LOG_DIRT_BLOCK = BUILDER.comment("Whether to log the dirt block on common setup").define("logDirtBlock", true);
+    // Bio-Pulse Belt
+    private static final ForgeConfigSpec.IntValue BELT_SCAN_RANGE = BUILDER
+            .comment("Scan range (blocks) for Bio-Pulse Belt to find incubators")
+            .defineInRange("beltScanRange", 3, 1, 8);
 
-    private static final ForgeConfigSpec.IntValue MAGIC_NUMBER = BUILDER.comment("A magic number").defineInRange("magicNumber", 42, 0, Integer.MAX_VALUE);
+    private static final ForgeConfigSpec.IntValue BELT_NUTRITION_THRESHOLD = BUILDER
+            .comment("Below this value, belt will auto-inject nutrients into incubator")
+            .defineInRange("beltNutritionThreshold", 50, 0, 100);
 
-    public static final ForgeConfigSpec.ConfigValue<String> MAGIC_NUMBER_INTRODUCTION = BUILDER.comment("What you want the introduction message to be for the magic number").define("magicNumberIntroduction", "The magic number is... ");
+    private static final ForgeConfigSpec.IntValue BELT_PURITY_THRESHOLD = BUILDER
+            .comment("Below this value, belt will auto-inject purified water into incubator")
+            .defineInRange("beltPurityThreshold", 50, 0, 100);
 
-    // a list of strings that are treated as resource locations for items
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> ITEM_STRINGS = BUILDER.comment("A list of items to log on common setup.").defineListAllowEmpty("items", List.of("minecraft:iron_ingot"), Config::validateItemName);
+    private static final ForgeConfigSpec.IntValue BELT_DATA_SIGNAL_THRESHOLD = BUILDER
+            .comment("Below this value, belt will auto-inject data signal into incubator")
+            .defineInRange("beltDataSignalThreshold", 25, 0, 100);
+
+    // Life Support Pack
+    private static final ForgeConfigSpec.IntValue PACK_EFFECT_REDUCTION_RATE = BUILDER
+            .comment("NeuralOverload duration reduced per tick when wearing Life Support Pack")
+            .defineInRange("packEffectReductionRate", 2, 1, 10);
+
+    private static final ForgeConfigSpec.DoubleValue PACK_HEAL_THRESHOLD = BUILDER
+            .comment("Health threshold to trigger emergency heal from Life Support Pack")
+            .defineInRange("packHealThreshold", 6.0, 1.0, 20.0);
+
+    private static final ForgeConfigSpec.IntValue PACK_HEAL_COOLDOWN = BUILDER
+            .comment("Cooldown ticks between emergency heals (default 1200 = 60s)")
+            .defineInRange("packHealCooldown", 1200, 200, 6000);
+
+    // Spectrum Monocle
+    private static final ForgeConfigSpec.IntValue MONOCLE_HUD_RANGE = BUILDER
+            .comment("Max distance to show incubator HUD overlay when wearing Spectrum Monocle")
+            .defineInRange("monocleHudRange", 8, 3, 16);
 
     static final ForgeConfigSpec SPEC = BUILDER.build();
 
-    public static boolean logDirtBlock;
-    public static int magicNumber;
-    public static String magicNumberIntroduction;
-    public static Set<Item> items;
-
-    private static boolean validateItemName(final Object obj) {
-        return obj instanceof final String itemName && ForgeRegistries.ITEMS.containsKey(new ResourceLocation(itemName));
-    }
+    // Runtime values
+    public static int beltScanRange;
+    public static int beltNutritionThreshold;
+    public static int beltPurityThreshold;
+    public static int beltDataSignalThreshold;
+    public static int packEffectReductionRate;
+    public static float packHealThreshold;
+    public static int packHealCooldown;
+    public static int monocleHudRange;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
-        logDirtBlock = LOG_DIRT_BLOCK.get();
-        magicNumber = MAGIC_NUMBER.get();
-        magicNumberIntroduction = MAGIC_NUMBER_INTRODUCTION.get();
-
-        // convert the list of strings into a set of items
-        items = ITEM_STRINGS.get().stream().map(itemName -> ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemName))).collect(Collectors.toSet());
+        beltScanRange = BELT_SCAN_RANGE.get();
+        beltNutritionThreshold = BELT_NUTRITION_THRESHOLD.get();
+        beltPurityThreshold = BELT_PURITY_THRESHOLD.get();
+        beltDataSignalThreshold = BELT_DATA_SIGNAL_THRESHOLD.get();
+        packEffectReductionRate = PACK_EFFECT_REDUCTION_RATE.get();
+        packHealThreshold = PACK_HEAL_THRESHOLD.get().floatValue();
+        packHealCooldown = PACK_HEAL_COOLDOWN.get();
+        monocleHudRange = MONOCLE_HUD_RANGE.get();
     }
 }

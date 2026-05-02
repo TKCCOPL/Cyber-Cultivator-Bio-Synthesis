@@ -1,0 +1,12 @@
+{
+  "type": "cybercultivator:curios_loot",
+  "conditions": [],
+  "item": "cybercultivator:life_support_pack",
+  "count": 1,
+  "chance": 0.20,
+  "loot_tables": [
+    "minecraft:chests/abandoned_mineshaft",
+    "minecraft:chests/simple_dungeon",
+    "minecraft:chests/pillager_outpost"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": {
+      "item": "minecraft:glass_bottle"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "S": {
+      "item": "cybercultivator:silicon_shard"
+    }
+  },
+  "pattern": [
+    "IRI",
+    "SRS",
+    "IBI"
+  ],
+  "result": {
+    "item": "cybercultivator:serum_bottler"
+  },
+  "show_notification": true
+}

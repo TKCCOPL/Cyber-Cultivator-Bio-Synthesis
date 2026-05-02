@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "cybercultivator:block/gene_splicer",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "cybercultivator:block/gene_splicer"
+    },
+    "facing=south": {
+      "model": "cybercultivator:block/gene_splicer",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "cybercultivator:block/gene_splicer",
+      "y": 270
+    }
+  }
+}

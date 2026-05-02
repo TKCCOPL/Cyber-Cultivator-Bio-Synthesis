@@ -4,10 +4,14 @@ import com.TKCCOPL.init.ModBlockEntities;
 import com.TKCCOPL.item.GeneticSeedItem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.Nullable;
 
 public class GeneSplicerBlockEntity extends BlockEntity {
     private static final String TAG_SEED_A = "SeedA";
@@ -32,13 +36,13 @@ public class GeneSplicerBlockEntity extends BlockEntity {
 
         if (seedA.isEmpty()) {
             seedA = stack;
-            setChanged();
+            syncToClient();
             return true;
         }
         if (seedB.isEmpty()) {
             seedB = stack;
             craftOutput(random);
-            setChanged();
+            syncToClient();
             return true;
         }
         return false;
@@ -50,7 +54,7 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         }
         ItemStack out = output;
         output = ItemStack.EMPTY;
-        setChanged();
+        syncToClient();
         return out;
     }
 
@@ -58,13 +62,13 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         if (!seedB.isEmpty()) {
             ItemStack out = seedB;
             seedB = ItemStack.EMPTY;
-            setChanged();
+            syncToClient();
             return out;
         }
         if (!seedA.isEmpty()) {
             ItemStack out = seedA;
             seedA = ItemStack.EMPTY;
-            setChanged();
+            syncToClient();
             return out;
         }
         return ItemStack.EMPTY;
@@ -105,7 +109,7 @@ public class GeneSplicerBlockEntity extends BlockEntity {
     private static int breedGene(ItemStack a, ItemStack b, String key, RandomSource random) {
         int parentA = GeneticSeedItem.getGene(a, key);
         int parentB = GeneticSeedItem.getGene(b, key);
-        int mutation = random.nextInt(4) - 1; // -1..+2
+        int mutation = random.nextInt(5) - 2; // -2..+2, 期望值=0
         int value = ((parentA + parentB) / 2) + mutation;
         return GeneticSeedItem.clampGene(value);
     }
@@ -130,5 +134,23 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         if (!output.isEmpty()) {
             tag.put(TAG_OUTPUT, output.save(new CompoundTag()));
         }
+    }
+
+    private void syncToClient() {
+        setChanged();
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
+    }
+
+    @Nullable
+    @Override
+    public Packet<ClientGamePacketListener> getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    public CompoundTag getUpdateTag() {
+        return saveWithoutMetadata();
     }
 }

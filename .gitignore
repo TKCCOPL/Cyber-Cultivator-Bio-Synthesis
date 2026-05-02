@@ -16,6 +16,10 @@ out/
 
 # VS Code workspace settings
 .vscode/
+.claude/
+
+docs
+simulation
 
 # Eclipse
 .classpath

@@ -3,10 +3,14 @@ package com.TKCCOPL.block.entity;
 import com.TKCCOPL.init.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.Nullable;
 
 public class BioIncubatorBlockEntity extends BlockEntity {
     private static final String TAG_NUTRITION = "Nutrition";
@@ -62,6 +66,7 @@ public class BioIncubatorBlockEntity extends BlockEntity {
 
         if (changed) {
             blockEntity.setChanged();
+            level.sendBlockUpdated(pos, state, state, 3);
         }
     }
 
@@ -74,7 +79,7 @@ public class BioIncubatorBlockEntity extends BlockEntity {
             return false;
         }
         seed = stack;
-        setChanged();
+        syncToClient();
         return true;
     }
 
@@ -85,23 +90,30 @@ public class BioIncubatorBlockEntity extends BlockEntity {
         ItemStack out = seed;
         seed = ItemStack.EMPTY;
         growthProgress = 0;
-        setChanged();
+        syncToClient();
         return out;
     }
 
     public void addNutrition(int value) {
         nutrition = clampStat(nutrition + value);
-        setChanged();
+        syncToClient();
     }
 
     public void addPurity(int value) {
         purity = clampStat(purity + value);
-        setChanged();
+        syncToClient();
     }
 
     public void addDataSignal(int value) {
         dataSignal = clampStat(dataSignal + value);
+        syncToClient();
+    }
+
+    private void syncToClient() {
         setChanged();
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
     }
 
     public int getNutrition() {
@@ -140,5 +152,16 @@ public class BioIncubatorBlockEntity extends BlockEntity {
 
     private static int clampStat(int value) {
         return Math.max(0, Math.min(100, value));
+    }
+
+    @Nullable
+    @Override
+    public Packet<ClientGamePacketListener> getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    public CompoundTag getUpdateTag() {
+        return saveWithoutMetadata();
     }
 }

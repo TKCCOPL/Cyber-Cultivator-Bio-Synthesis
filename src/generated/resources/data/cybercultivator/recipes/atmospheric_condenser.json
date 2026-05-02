@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "G": {
+      "item": "minecraft:glass"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "R": {
+      "item": "cybercultivator:rare_earth_dust"
+    },
+    "S": {
+      "item": "cybercultivator:silicon_shard"
+    }
+  },
+  "pattern": [
+    "IGI",
+    "GSG",
+    "IRI"
+  ],
+  "result": {
+    "item": "cybercultivator:atmospheric_condenser"
+  },
+  "show_notification": true
+}
