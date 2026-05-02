@@ -1,6 +1,0 @@
-// 1.20.1	2026-04-11T18:20:28.293361898	Tags for minecraft:block mod id cybercultivator
-1df49d3792a4104ab5def54265ed44c836eee15d data/minecraft/tags/blocks/bee_growables.json
-1df49d3792a4104ab5def54265ed44c836eee15d data/minecraft/tags/blocks/crops.json
-1df49d3792a4104ab5def54265ed44c836eee15d data/minecraft/tags/blocks/maintains_farmland.json
-6846cfff0f9a7c62cf12d5a8dca773bf5c3b695e data/minecraft/tags/blocks/mineable/pickaxe.json
-a05b12ce15e1bfc013b11c1f2d3e43ab20c1d5f4 data/minecraft/tags/blocks/needs_stone_tool.json

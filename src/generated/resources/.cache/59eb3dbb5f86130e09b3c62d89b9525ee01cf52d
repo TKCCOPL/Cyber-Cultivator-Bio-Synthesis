@@ -1,8 +1,0 @@
-// 1.20.1	2026-04-11T18:20:28.293163226	Loot Tables
-cc5587225768890b5db0eed591b38f22940ccc7b data/cybercultivator/loot_tables/blocks/alcohol_bloom_crop.json
-6938e2dcb1ebd2f291de9bd232103cb07ff015e4 data/cybercultivator/loot_tables/blocks/bio_incubator.json
-9e61e4d85f46d0045bd36aa3121a9651e2ca0702 data/cybercultivator/loot_tables/blocks/fiber_reed_crop.json
-a040b3e09bf8f0ff59454afda24df7ee5dbb0c86 data/cybercultivator/loot_tables/blocks/gene_splicer.json
-f4103c278066f8015d010d790099f175cf3a76a6 data/cybercultivator/loot_tables/blocks/protein_soy_crop.json
-9fc47b32446f69ff0d5ccda093c0a21440fa394b data/cybercultivator/loot_tables/blocks/rare_earth_ore.json
-ae862e18892ced62c2868229f19a69c9be72508d data/cybercultivator/loot_tables/blocks/silicon_ore.json
