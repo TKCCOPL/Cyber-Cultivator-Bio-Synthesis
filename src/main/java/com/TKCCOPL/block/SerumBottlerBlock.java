@@ -80,6 +80,7 @@ public class SerumBottlerBlock extends MachineBlock {
 
         ItemStack input = blockEntity.extractLastInput();
         if (!input.isEmpty()) {
+            blockEntity.cancelProcessing();
             giveToPlayer(player, input);
             sendStatus(player, blockEntity, "已取回材料");
             return InteractionResult.CONSUME;

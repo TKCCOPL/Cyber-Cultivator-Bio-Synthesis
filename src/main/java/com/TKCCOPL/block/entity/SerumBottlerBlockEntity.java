@@ -248,6 +248,24 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         return ItemStack.EMPTY;
     }
 
+    /**
+     * Cancel any in-progress recipe and reset processing state.
+     * Called when the player extracts input materials mid-processing.
+     */
+    public void cancelProcessing() {
+        activeRecipe = -1;
+        progress = 0;
+        maxProgress = 0;
+        syncToClient();
+    }
+
+    private void syncToClient() {
+        setChanged();
+        if (level != null) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
+    }
+
     // WorldlyContainer implementation
     @Override
     public int getContainerSize() {
