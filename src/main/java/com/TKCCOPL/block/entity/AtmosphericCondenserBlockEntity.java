@@ -36,6 +36,10 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
         // Try to produce purified water bottle
         if (blockEntity.output.getCount() < MAX_STACK) {
             blockEntity.progress++;
+            // 每 20 tick 同步一次进度，用于客户端 HUD 进度条动画
+            if (blockEntity.progress % 20 == 0) {
+                changed = true;
+            }
             if (blockEntity.progress >= PRODUCTION_TIME) {
                 blockEntity.progress = 0;
                 if (blockEntity.output.isEmpty()) {
@@ -91,10 +95,13 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
 
     public ItemStack extractOutput() {
         if (output.isEmpty()) return ItemStack.EMPTY;
-        ItemStack out = output;
-        output = ItemStack.EMPTY;
+        ItemStack out = output.split(output.getCount());
+        if (output.isEmpty()) output = ItemStack.EMPTY;
         progress = 0;
         setChanged();
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
         return out;
     }
 
