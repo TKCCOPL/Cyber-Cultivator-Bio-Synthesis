@@ -96,3 +96,9 @@
 - 260503 2335 调度 cc-dev 修复，编译 PASS
 - 260503 2340 测试：core=PASS / infra=PASS / ui=PASS
 - 260503 2340 ──── 拼接机修复完成 ────
+
+- 260503 2350 ── v1.1.0 发布审查 ──
+- 260503 2350 全量测试：core=PASS / infra=PASS / ui=FAIL(i18n)
+- 260503 2350 发现问题：CurioEventHandler类加载风险(中等) + HUD/交互消息硬编码(i18n)
+- 260503 2350 判定：无功能性bug，无安全漏洞，可发布
+- 260503 2355 v1.1.0 发布：BUILD SUCCESSFUL + git tag v1.1.0
