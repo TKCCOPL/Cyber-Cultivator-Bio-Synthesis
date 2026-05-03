@@ -1,13 +1,18 @@
 package com.TKCCOPL.client;
 
 import com.TKCCOPL.Config;
+import com.TKCCOPL.block.entity.AtmosphericCondenserBlockEntity;
 import com.TKCCOPL.block.entity.BioIncubatorBlockEntity;
+import com.TKCCOPL.block.entity.GeneSplicerBlockEntity;
+import com.TKCCOPL.block.entity.SerumBottlerBlockEntity;
 import com.TKCCOPL.curios.CuriosCompat;
+import com.TKCCOPL.item.GeneticSeedItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -29,7 +34,7 @@ public final class IncubatorHudOverlay {
 
         if (!CuriosCompat.isCuriosLoaded() || !CuriosCompat.hasSpectrumMonocle(player)) return;
 
-        // Check if player is looking at an incubator within range
+        // Check if player is looking at a block entity within range
         HitResult hit = mc.hitResult;
         if (!(hit instanceof BlockHitResult blockHit)) return;
         BlockPos targetPos = blockHit.getBlockPos();
@@ -37,10 +42,20 @@ public final class IncubatorHudOverlay {
                 > Config.monocleHudRange * Config.monocleHudRange) return;
 
         BlockEntity be = player.level().getBlockEntity(targetPos);
-        if (!(be instanceof BioIncubatorBlockEntity incubator)) return;
-
         GuiGraphics gui = event.getGuiGraphics();
 
+        if (be instanceof BioIncubatorBlockEntity incubator) {
+            drawIncubatorHud(gui, mc, incubator);
+        } else if (be instanceof SerumBottlerBlockEntity bottler) {
+            drawBottlerHud(gui, mc, bottler);
+        } else if (be instanceof AtmosphericCondenserBlockEntity condenser) {
+            drawCondenserHud(gui, mc, condenser);
+        } else if (be instanceof GeneSplicerBlockEntity splicer) {
+            drawSplicerHud(gui, mc, splicer);
+        }
+    }
+
+    private static void drawIncubatorHud(GuiGraphics gui, Minecraft mc, BioIncubatorBlockEntity incubator) {
         int x = 10;
         int y = 10;
 
@@ -72,6 +87,128 @@ public final class IncubatorHudOverlay {
             String etaText = eta >= 0 ? "ETA: 约" + eta + "s" : "ETA: 资源不足";
             gui.drawString(mc.font, Component.literal(etaText), x + 4, y + 74, 0xCCCCCC);
         }
+    }
+
+    private static void drawBottlerHud(GuiGraphics gui, Minecraft mc, SerumBottlerBlockEntity bottler) {
+        int x = 10;
+        int y = 10;
+        int activeRecipe = bottler.getActiveRecipe();
+        boolean processing = bottler.getMaxProgress() > 0;
+
+        int hudHeight = processing ? 74 : 50;
+        gui.fill(x, y, x + 130, y + hudHeight, 0xAA000000);
+
+        // Title
+        gui.drawString(mc.font, Component.literal("[Serum-Bottler]"), x + 4, y + 2, 0x44F7FF);
+
+        // Recipe status
+        String recipeName = getRecipeName(activeRecipe);
+        int recipeColor;
+        if (activeRecipe >= 0 && processing) {
+            recipeColor = 0x44FF44; // green — active
+        } else {
+            recipeColor = 0x999999; // gray — idle
+        }
+        gui.drawString(mc.font, Component.literal("Recipe: " + recipeName), x + 4, y + 14, recipeColor);
+
+        // Progress bar (only when processing)
+        if (processing) {
+            int progressPercent = (int) (bottler.getProgress() * 100.0 / bottler.getMaxProgress());
+            drawBar(gui, mc, x + 4, y + 26, "P", progressPercent, 0xFF8844);
+        }
+
+        // Output slot Activity
+        net.minecraft.world.item.ItemStack output = bottler.getOutput();
+        if (!output.isEmpty()) {
+            int activity = SerumBottlerBlockEntity.getActivity(output);
+            gui.drawString(mc.font, Component.literal("Activity: " + activity), x + 4, y + (processing ? 40 : 26),
+                    0xFFFF44);
+        }
+
+        // Output item name (when idle and has output)
+        if (!processing && !output.isEmpty()) {
+            gui.drawString(mc.font, Component.literal("Output: " + output.getHoverName().getString()),
+                    x + 4, y + 38, 0xCCCCCC);
+        }
+    }
+
+    private static void drawCondenserHud(GuiGraphics gui, Minecraft mc, AtmosphericCondenserBlockEntity condenser) {
+        int x = 10;
+        int y = 10;
+        int hudHeight = 50;
+        gui.fill(x, y, x + 130, y + hudHeight, 0xAA000000);
+
+        // Title
+        gui.drawString(mc.font, Component.literal("[Atmo-Condenser]"), x + 4, y + 2, 0x44F7FF);
+
+        // Progress bar
+        int progressPercent = (int) (condenser.getProgress() * 100.0 / condenser.getMaxProgress());
+        drawBar(gui, mc, x + 4, y + 14, "P", progressPercent, 0x4488FF);
+
+        // Stock
+        String stockText = "Stock: " + condenser.getStock() + "/" + condenser.getMaxStock();
+        gui.drawString(mc.font, Component.literal(stockText), x + 4, y + 26, 0xCCCCCC);
+
+        // Status
+        String statusText;
+        int statusColor;
+        if (condenser.getStock() >= condenser.getMaxStock()) {
+            statusText = "Status: Full";
+            statusColor = 0xFFFF44; // yellow
+        } else if (condenser.getProgress() > 0) {
+            statusText = "Status: Producing";
+            statusColor = 0x44FF44; // green
+        } else {
+            statusText = "Status: Idle";
+            statusColor = 0x999999; // gray
+        }
+        gui.drawString(mc.font, Component.literal(statusText), x + 4, y + 38, statusColor);
+    }
+
+    private static void drawSplicerHud(GuiGraphics gui, Minecraft mc, GeneSplicerBlockEntity splicer) {
+        int x = 10;
+        int y = 10;
+        int hudHeight = 50;
+        gui.fill(x, y, x + 160, y + hudHeight, 0xAA000000);
+
+        // Title
+        gui.drawString(mc.font, Component.literal("[Gene-Splicer]"), x + 4, y + 2, 0x44F7FF);
+
+        // Seed A
+        drawSeedInfo(gui, mc, x + 4, y + 14, "A", splicer.getSeedA());
+
+        // Seed B
+        drawSeedInfo(gui, mc, x + 4, y + 26, "B", splicer.getSeedB());
+
+        // Output
+        ItemStack output = splicer.getOutput();
+        if (output.isEmpty()) {
+            gui.drawString(mc.font, Component.literal("Out: Empty"), x + 4, y + 38, 0x999999);
+        } else {
+            gui.drawString(mc.font, Component.literal("Out: Ready"), x + 4, y + 38, 0xFFAA00);
+        }
+    }
+
+    private static void drawSeedInfo(GuiGraphics gui, Minecraft mc, int x, int y, String label, ItemStack seed) {
+        if (seed.isEmpty()) {
+            gui.drawString(mc.font, Component.literal(label + ": Empty"), x, y, 0x999999);
+        } else {
+            int speed = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_SPEED);
+            int yield = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_YIELD);
+            int potency = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_POTENCY);
+            String text = label + ": [Speed:" + speed + " Yield:" + yield + " Potency:" + potency + "]";
+            gui.drawString(mc.font, Component.literal(text), x, y, 0x44FF44);
+        }
+    }
+
+    private static String getRecipeName(int recipe) {
+        return switch (recipe) {
+            case 0 -> "Berry";
+            case 1 -> "S-01";
+            case 2 -> "S-02";
+            case 3 -> "S-03";
+            default -> "Idle";
+        };
     }
 
     private static void drawBar(GuiGraphics gui, Minecraft mc, int x, int y, String label, int value, int color) {

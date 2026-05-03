@@ -74,6 +74,18 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         return ItemStack.EMPTY;
     }
 
+    public ItemStack getSeedA() {
+        return seedA;
+    }
+
+    public ItemStack getSeedB() {
+        return seedB;
+    }
+
+    public ItemStack getOutput() {
+        return output;
+    }
+
     public boolean hasOutput() {
         return !output.isEmpty();
     }

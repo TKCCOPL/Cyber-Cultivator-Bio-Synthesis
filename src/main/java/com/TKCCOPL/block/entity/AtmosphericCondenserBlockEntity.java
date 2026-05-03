@@ -73,6 +73,18 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
         return progress;
     }
 
+    public int getMaxProgress() {
+        return PRODUCTION_TIME;
+    }
+
+    public int getStock() {
+        return output.getCount();
+    }
+
+    public int getMaxStock() {
+        return MAX_STACK;
+    }
+
     public boolean hasOutput() {
         return !output.isEmpty();
     }
