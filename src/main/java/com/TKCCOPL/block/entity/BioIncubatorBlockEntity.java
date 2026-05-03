@@ -105,18 +105,24 @@ public class BioIncubatorBlockEntity extends BlockEntity {
     private static ItemStack getCropOutput(ItemStack seed) {
         Item seedItem = seed.getItem();
         int geneYield = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_YIELD);
+        int genePotency = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_POTENCY);
         int count = 2 + geneYield / 3; // yield 1-10 → count 2-5
 
+        ItemStack output;
         if (seedItem == ModItems.FIBER_REED_SEEDS.get()) {
-            return new ItemStack(ModItems.PLANT_FIBER.get(), count);
+            output = new ItemStack(ModItems.PLANT_FIBER.get(), count);
+            output.getOrCreateTag().putInt("Potency", genePotency);
         } else if (seedItem == ModItems.PROTEIN_SOY_SEEDS.get()) {
-            return new ItemStack(ModItems.BIOCHEMICAL_SOLUTION.get(), count);
+            output = new ItemStack(ModItems.BIOCHEMICAL_SOLUTION.get(), count);
+            output.getOrCreateTag().putInt("Concentration", genePotency);
         } else if (seedItem == ModItems.ALCOHOL_BLOOM_SEEDS.get()) {
-            return new ItemStack(ModItems.INDUSTRIAL_ETHANOL.get(), count);
+            output = new ItemStack(ModItems.INDUSTRIAL_ETHANOL.get(), count);
+            output.getOrCreateTag().putInt("Purity", genePotency);
+        } else {
+            output = seed.copy();
         }
 
-        // 保底：返回种子本身（防止未知种子类型导致无产出）
-        return seed.copy();
+        return output;
     }
 
     public boolean hasSeed() {
