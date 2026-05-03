@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.0.1 — Bug 修复与体验优化
+
+### Bug 修复
+- `BioIncubatorBlockEntity`：修复培养槽放入一个种子可无限产出的 bug，成熟后清除种子
+- `BioIncubatorBlockEntity`：修复 `getCropOutput()` 中蛋白质豆种子错误产出突触神经莓，改为正确产出生化原液
+- `BioIncubatorBlockEntity`：`tryInsertSeed()` 调用 `ensureGeneData()` 确保种子携带基因 NBT
+- `SerumBottlerBlock`：修复血清灌装机放入配方材料后无法取出的 bug，空手右键可取回输入槽材料
+
+### 体验优化
+- `IncubatorHudOverlay`：单片镜 HUD 新增作物生长进度条(G) + 预计成熟时间(ETA)
+- `IncubatorHudOverlay`：修复 HUD 面板文本重叠问题，ETA 文本移至独立行
+- `AtmosphericCondenserBlockEntity`：生产周期从 200 tick 调整为 600 tick（30 秒），库存上限从 16 调整为 32
+- `BioIncubatorBlockEntity`：新增 `getGrowthPercent()`、`getCurrentGrowthRate()`、`getEstimatedSecondsRemaining()` 方法
+- `BioIncubatorBlockEntity`：`getCropOutput()` 受 Yield 基因影响（yield 1-10 → 产出 2-5），未知种子返回种子副本作为保底
+
+---
+
 ## Phase 6 — 平衡与发布准备
 
 ### 数值平衡

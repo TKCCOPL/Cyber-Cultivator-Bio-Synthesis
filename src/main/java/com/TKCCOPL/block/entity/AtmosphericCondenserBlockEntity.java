@@ -18,8 +18,8 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
     private static final String TAG_PROGRESS = "Progress";
     private static final String TAG_OUTPUT = "Output";
 
-    private static final int PRODUCTION_TIME = 200; // 10 seconds
-    private static final int MAX_STACK = 16;
+    private static final int PRODUCTION_TIME = 600; // 30 seconds
+    private static final int MAX_STACK = 32; // was 16
 
     private int progress;
     private ItemStack output = ItemStack.EMPTY;

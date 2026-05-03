@@ -6,7 +6,7 @@ description: |
   - "测试任务：{任务名} 的 UI 和本地化审查"
   - 需要验证语言文件或界面渲染时
 tools: Read, Bash, Glob, Grep
-model: inherit
+model: sonnet
 memory: project
 ---
 

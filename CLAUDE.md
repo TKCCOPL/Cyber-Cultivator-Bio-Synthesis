@@ -77,10 +77,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `CurioEventHandler` 通过 `PlayerTickEvent` + `CuriosApi.getCuriosInventory()` 检测装备状态并驱动逻辑
 - 腰带：扫描范围内培养槽，自动消耗背包材料注入三项数值
 - 支持箱：加速 NeuralOverload 消退 + 低血量应急治疗（冷却 60s）
-- 单片镜 HUD：`IncubatorHudOverlay` 监听 `RenderGuiOverlayEvent`，准星对准培养槽时显示 N/P/D 进度条
+- 单片镜 HUD：`IncubatorHudOverlay` 监听 `RenderGuiOverlayEvent`，准星对准培养槽时显示 N/P/D 进度条 + 生长进度(G) + 预计成熟时间(ETA)
 
 **大气冷凝器 (AtmosphericCondenserBlockEntity):**
-- 每 200 tick 生产 1 纯净水瓶，库存上限 16
+- 每 600 tick 生产 1 纯净水瓶，库存上限 32
 - 相邻传输：下方为培养槽时自动注入 Purity +20（消耗 1 瓶）
 - 实现 `WorldlyContainer`，漏斗可从侧面抽取
 

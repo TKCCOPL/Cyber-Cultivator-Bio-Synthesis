@@ -6,7 +6,7 @@
 <h3 align="center">Cyber-Cultivator: Bio-Synthesis</h3>
 
 <p align="center">
-  <b>v1.0.0</b> | Minecraft Forge 1.20.1 | Curios API 5.3.5<br>
+  <b>v1.0.1</b> | Minecraft Forge 1.20.1 | Curios API 5.3.5<br>
   遗传育种算法 + 生物强化血清系统
 </p>
 

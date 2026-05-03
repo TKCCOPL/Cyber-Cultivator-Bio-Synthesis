@@ -156,6 +156,22 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         return out;
     }
 
+    /**
+     * Extract the last non-empty input slot (backwards scan).
+     * Used by the block's right-click handler to return materials to the player.
+     */
+    public ItemStack extractLastInput() {
+        for (int i = INPUT_SLOTS - 1; i >= 0; i--) {
+            if (!inputs[i].isEmpty()) {
+                ItemStack out = inputs[i];
+                inputs[i] = ItemStack.EMPTY;
+                setChanged();
+                return out;
+            }
+        }
+        return ItemStack.EMPTY;
+    }
+
     // WorldlyContainer implementation
     @Override
     public int getContainerSize() {

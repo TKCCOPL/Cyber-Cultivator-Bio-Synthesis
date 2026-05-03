@@ -45,7 +45,7 @@ public final class IncubatorHudOverlay {
         int y = 10;
 
         // Background
-        gui.fill(x, y, x + 130, y + 60, 0xAA000000);
+        gui.fill(x, y, x + 130, y + 86, 0xAA000000);
 
         // Title
         gui.drawString(mc.font, Component.literal("[Bio-Incubator]"), x + 4, y + 2, 0x44F7FF);
@@ -63,6 +63,15 @@ public final class IncubatorHudOverlay {
         String seedText = incubator.hasSeed() ? "Seed: In" : "Seed: Empty";
         gui.drawString(mc.font, Component.literal(seedText), x + 4, y + 50,
                 incubator.hasSeed() ? 0x44FF44 : 0xFF4444);
+
+        // Growth progress (only when seed is present)
+        if (incubator.hasSeed()) {
+            int growthPercent = incubator.getGrowthPercent();
+            drawBar(gui, mc, x + 4, y + 62, "G", growthPercent, 0xFF8844);
+            int eta = incubator.getEstimatedSecondsRemaining();
+            String etaText = eta >= 0 ? "ETA: 约" + eta + "s" : "ETA: 资源不足";
+            gui.drawString(mc.font, Component.literal(etaText), x + 4, y + 74, 0xCCCCCC);
+        }
     }
 
     private static void drawBar(GuiGraphics gui, Minecraft mc, int x, int y, String label, int value, int color) {

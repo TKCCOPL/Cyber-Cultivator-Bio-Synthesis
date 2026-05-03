@@ -144,7 +144,20 @@ public class BioIncubatorBlock extends MachineBlock {
     }
 
     private static void sendMachineStatus(Player player, BioIncubatorBlockEntity blockEntity, String action) {
-        String msg = String.format("[Bio-Incubator] %s | N:%d P:%d D:%d", action, blockEntity.getNutrition(), blockEntity.getPurity(), blockEntity.getDataSignal());
-        player.displayClientMessage(Component.literal(msg).withStyle(ChatFormatting.GRAY), true);
+        StringBuilder msg = new StringBuilder();
+        msg.append(String.format("[Bio-Incubator] %s | N:%d P:%d D:%d", action, blockEntity.getNutrition(), blockEntity.getPurity(), blockEntity.getDataSignal()));
+
+        if (blockEntity.hasSeed()) {
+            int percent = blockEntity.getGrowthPercent();
+            int eta = blockEntity.getEstimatedSecondsRemaining();
+            msg.append(String.format(" | 生长: %d%%", percent));
+            if (eta >= 0) {
+                msg.append(String.format(" (约%ds)", eta));
+            } else {
+                msg.append(" (资源不足)");
+            }
+        }
+
+        player.displayClientMessage(Component.literal(msg.toString()).withStyle(ChatFormatting.GRAY), true);
     }
 }

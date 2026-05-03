@@ -6,7 +6,7 @@ description: |
   - "测试任务：{任务名} 的基础设施审查"
   - 需要验证双端兼容或性能影响时
 tools: Read, Bash, Glob, Grep
-model: inherit
+model: sonnet
 memory: project
 ---
 

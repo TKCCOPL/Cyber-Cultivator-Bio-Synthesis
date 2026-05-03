@@ -6,7 +6,7 @@ description: |
   - "测试任务：{任务名} 的功能验收"
   - 开发完成后需要验证功能正确性
 tools: Read, Bash, Glob, Grep
-model: inherit
+model: sonnet
 memory: project
 ---
 

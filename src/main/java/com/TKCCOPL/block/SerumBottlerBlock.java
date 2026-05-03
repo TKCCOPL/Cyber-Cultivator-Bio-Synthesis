@@ -70,11 +70,18 @@ public class SerumBottlerBlock extends MachineBlock {
             return InteractionResult.CONSUME;
         }
 
-        // Empty hand: extract output
+        // Empty hand: extract output first, then input materials
         ItemStack out = blockEntity.extractOutput();
         if (!out.isEmpty()) {
             giveToPlayer(player, out);
             sendStatus(player, blockEntity, "已取出血清");
+            return InteractionResult.CONSUME;
+        }
+
+        ItemStack input = blockEntity.extractLastInput();
+        if (!input.isEmpty()) {
+            giveToPlayer(player, input);
+            sendStatus(player, blockEntity, "已取回材料");
             return InteractionResult.CONSUME;
         }
 
