@@ -56,3 +56,8 @@
 - 260503 2135 测试启动：core/infra/ui 并行
 - 260503 2140 测试结果：core=PASS / infra=PASS / ui=PASS
 - 260503 2140 全 PASS，无中等问题，无需修正循环
+
+- 260503 2200 ── 崩溃修复：ConcurrentModificationException ──
+- 260503 2200 崩溃原因：喝牛奶 curePotionEffects 遍历 activeEffects 时，removeAttributeModifiers 同步 addEffect 触发 CME
+- 260503 2205 调度 cc-dev 修复：TickTask 延迟施加 NeuralOverload，编译 PASS
+- 260503 2205 提交：18a6573
