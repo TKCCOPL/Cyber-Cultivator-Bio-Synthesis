@@ -79,3 +79,20 @@
 - 260503 2245 ui FAIL 原因：en_us.json 缺少 6 个翻译键（严重）
 - 260503 2250 调度 cc-dev 补充 en_us.json，编译 PASS
 - 260503 2250 ──── 修正循环完成 ────
+
+- 260503 2255 ── Task: T13 冷凝器+拼接机 HUD ──
+- 260503 2255 调度 cc-dev，编译 PASS
+- 260503 2300 测试启动：core/infra/ui 并行
+- 260503 2305 测试结果：core=PASS / infra=FAIL / ui=PASS
+- 260503 2305 infra FAIL：冷凝器进度不同步 + extractOutput 缺少 sendBlockUpdated
+- 260503 2310 调度 cc-dev 修正，编译 PASS
+- 260503 2315 infra 重测：PASS
+- 260503 2315 ──── T13 完成，1 轮修正 ────
+
+- 260503 2330 ── Bug 修复：基因拼接机 ──
+- 260503 2330 Bug 1: Forge 1.20.1 单次右键触发两次 Block.use() → 同tick防抖
+- 260503 2330 Bug 2: craftOutput 立即清除种子 → HUD 跳过 seedB 显示 → 改为保留种子直到提取
+- 260503 2330 Bug 3: HUD 不显示父本基因 → 有 output 时同时显示 A/B 种子 + 结果基因
+- 260503 2335 调度 cc-dev 修复，编译 PASS
+- 260503 2340 测试：core=PASS / infra=PASS / ui=PASS
+- 260503 2340 ──── 拼接机修复完成 ────
