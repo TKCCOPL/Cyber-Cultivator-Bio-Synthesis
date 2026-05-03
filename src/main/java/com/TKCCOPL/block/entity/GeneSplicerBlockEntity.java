@@ -22,6 +22,9 @@ public class GeneSplicerBlockEntity extends BlockEntity {
     private ItemStack seedB = ItemStack.EMPTY;
     private ItemStack output = ItemStack.EMPTY;
 
+    /** 防止同 tick 双次 use() 导致放入两颗种子 */
+    private long lastInsertTick = -1;
+
     public GeneSplicerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.GENE_SPLICER.get(), pos, state);
     }
@@ -34,13 +37,21 @@ public class GeneSplicerBlockEntity extends BlockEntity {
             return false;
         }
 
+        // Forge 1.20.1 单次右键可能触发两次 use()，防抖：同一 tick 只允许插入一次
+        long currentTick = level != null ? level.getGameTime() : -1;
+        if (currentTick == lastInsertTick) {
+            return false;
+        }
+
         if (seedA.isEmpty()) {
             seedA = stack;
+            lastInsertTick = currentTick;
             syncToClient();
             return true;
         }
         if (seedB.isEmpty()) {
             seedB = stack;
+            lastInsertTick = currentTick;
             craftOutput(random);
             syncToClient();
             return true;
@@ -54,6 +65,9 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         }
         ItemStack out = output;
         output = ItemStack.EMPTY;
+        // 取出 output 后清除父本种子
+        seedA = ItemStack.EMPTY;
+        seedB = ItemStack.EMPTY;
         syncToClient();
         return out;
     }
@@ -114,8 +128,7 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         GeneticSeedItem.setGenes(result, speed, yield, potency);
         output = result;
 
-        seedA = ItemStack.EMPTY;
-        seedB = ItemStack.EMPTY;
+        // 保留种子显示，直到玩家取出 output 后由 extractOutput() 清除
     }
 
     private static int breedGene(ItemStack a, ItemStack b, String key, RandomSource random) {

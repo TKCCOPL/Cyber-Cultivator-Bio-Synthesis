@@ -168,24 +168,34 @@ public final class IncubatorHudOverlay {
     private static void drawSplicerHud(GuiGraphics gui, Minecraft mc, GeneSplicerBlockEntity splicer) {
         int x = 10;
         int y = 10;
-        int hudHeight = 50;
-        gui.fill(x, y, x + 160, y + hudHeight, 0xAA000000);
+        ItemStack output = splicer.getOutput();
+        boolean hasOutput = !output.isEmpty();
+
+        // 有 output 时显示 4 行（父本 A + 父本 B + 空行 + 结果），否则 3 行
+        int hudHeight = hasOutput ? 62 : 50;
+        gui.fill(x, y, x + 200, y + hudHeight, 0xAA000000);
 
         // Title
         gui.drawString(mc.font, Component.literal("[Gene-Splicer]"), x + 4, y + 2, 0x44F7FF);
 
-        // Seed A
+        // Seed A (always show)
         drawSeedInfo(gui, mc, x + 4, y + 14, "A", splicer.getSeedA());
 
-        // Seed B
+        // Seed B (always show)
         drawSeedInfo(gui, mc, x + 4, y + 26, "B", splicer.getSeedB());
 
         // Output
-        ItemStack output = splicer.getOutput();
-        if (output.isEmpty()) {
-            gui.drawString(mc.font, Component.literal("Out: Empty"), x + 4, y + 38, 0x999999);
+        if (hasOutput) {
+            // 分隔线
+            gui.fill(x + 4, y + 37, x + 196, y + 38, 0xFF333333);
+            int speed = GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_SPEED);
+            int yield = GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_YIELD);
+            int potency = GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_POTENCY);
+            gui.drawString(mc.font, Component.literal(String.format("Out: [S:%d Y:%d P:%d]", speed, yield, potency)),
+                    x + 4, y + 40, 0xFFAA00);
+            gui.drawString(mc.font, Component.literal("Ready - Shift+Click to extract"), x + 4, y + 52, 0xCCCCCC);
         } else {
-            gui.drawString(mc.font, Component.literal("Out: Ready"), x + 4, y + 38, 0xFFAA00);
+            gui.drawString(mc.font, Component.literal("Out: Empty"), x + 4, y + 38, 0x999999);
         }
     }
 
