@@ -37,3 +37,17 @@
 - 260503 1925 修正内容：统一公式 + activeRecipe 缓存
 - 260503 1930 Phase Gate：compileJava PASS / build PASS
 - 260503 1930 修正循环完成，1 轮修正
+
+- 260503 2000 ── 新需求：Bug 修复 + 创造栏 + 灌装机 HUD ──
+- 260503 2000 任务拆分完成：T7(灌装机取物bug) / T8(创造栏品质物品) / T9(灌装机HUD)
+- 260503 2010 Task T7: 调度 cc-dev，编译 PASS
+- 260503 2015 Task T8: 调度 cc-dev，编译 PASS
+- 260503 2025 Task T9: 调度 cc-dev，编译 PASS
+- 260503 2030 Phase Gate：compileJava PASS / build PASS
+- 260503 2030 ──── T7-T9 全部完成 ────
+
+- 260503 2100 ── Bug 修复：HUD进度条 + Activity继承 + 创造栏 ──
+- 260503 2100 任务拆分：T10(HUD动画) / T11(Activity继承) / T12(创造栏)
+- 260503 2110 调度 cc-dev 修复 T10+T11，编译 PASS
+- 260503 2120 T12 创造栏精简：编排者直接修正（cc-dev 未执行），扩展到 1-10 全等级
+- 260503 2130 ──── T10-T12 全部完成 ────
