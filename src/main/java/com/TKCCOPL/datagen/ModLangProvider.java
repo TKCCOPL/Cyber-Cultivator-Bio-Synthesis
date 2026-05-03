@@ -78,5 +78,13 @@ public class ModLangProvider extends LanguageProvider {
         add("advancement.cybercultivator.metabolic_boost.description", "获得 S-03 代谢加速血清");
         add("advancement.cybercultivator.cyber_equip.title", "赛博装备");
         add("advancement.cybercultivator.cyber_equip.description", "佩戴一件 Curios 饰品");
+
+        // Serum quality chain tooltips
+        add("tooltip.cybercultivator.serum_activity", "突触活性: %s/10");
+        add("tooltip.cybercultivator.serum_base_level", "基础等级: %s");
+        add("tooltip.cybercultivator.serum_duration_mult", "时长倍率: ×%s");
+        add("tooltip.cybercultivator.quality_potency", "品质: %s/10");
+        add("tooltip.cybercultivator.quality_purity", "纯度: %s/10");
+        add("tooltip.cybercultivator.quality_concentration", "浓度: %s/10");
     }
 }

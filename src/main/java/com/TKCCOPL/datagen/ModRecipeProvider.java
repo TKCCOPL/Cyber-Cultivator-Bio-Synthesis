@@ -6,7 +6,6 @@ import net.minecraft.data.recipes.FinishedRecipe;
 import net.minecraft.data.recipes.RecipeCategory;
 import net.minecraft.data.recipes.RecipeProvider;
 import net.minecraft.data.recipes.ShapedRecipeBuilder;
-import net.minecraft.data.recipes.ShapelessRecipeBuilder;
 import net.minecraft.world.item.Items;
 
 import javax.annotation.Nonnull;
@@ -41,21 +40,6 @@ public class ModRecipeProvider extends RecipeProvider {
                 .define('I', Items.IRON_INGOT)
                 .define('C', ModItems.RARE_EARTH_DUST.get())
                 .unlockedBy(getHasName(ModItems.RARE_EARTH_DUST.get()), has(ModItems.RARE_EARTH_DUST.get()))
-                .save(writer);
-
-        ShapelessRecipeBuilder.shapeless(RecipeCategory.FOOD, ModItems.SYNAPTIC_NEURAL_BERRY.get())
-                .requires(ModItems.BIOCHEMICAL_SOLUTION.get())
-                .requires(ModItems.PLANT_FIBER.get())
-                .requires(ModItems.SILICON_SHARD.get())
-                .unlockedBy(getHasName(ModItems.BIOCHEMICAL_SOLUTION.get()), has(ModItems.BIOCHEMICAL_SOLUTION.get()))
-                .save(writer);
-
-        ShapelessRecipeBuilder.shapeless(RecipeCategory.BREWING, ModItems.SYNAPTIC_SERUM_S01.get())
-                .requires(ModItems.SYNAPTIC_NEURAL_BERRY.get())
-                .requires(ModItems.BIOCHEMICAL_SOLUTION.get())
-                .requires(ModItems.INDUSTRIAL_ETHANOL.get())
-                .requires(Items.GLASS_BOTTLE)
-                .unlockedBy(getHasName(ModItems.SYNAPTIC_NEURAL_BERRY.get()), has(ModItems.SYNAPTIC_NEURAL_BERRY.get()))
                 .save(writer);
 
         ShapedRecipeBuilder.shaped(RecipeCategory.DECORATIONS, ModItems.ATMOSPHERIC_CONDENSER_ITEM.get())

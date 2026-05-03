@@ -7,6 +7,8 @@ import com.TKCCOPL.curios.CuriosCompat;
 import com.TKCCOPL.curios.LifeSupportPackItem;
 import com.TKCCOPL.item.GeneticSeedItem;
 import com.TKCCOPL.item.SynapticSerumItem;
+import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -29,10 +31,46 @@ public final class ModItems {
 
     public static final RegistryObject<Item> SILICON_SHARD = ITEMS.register("silicon_shard", () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> RARE_EARTH_DUST = ITEMS.register("rare_earth_dust", () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> PLANT_FIBER = ITEMS.register("plant_fiber", () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> BIOCHEMICAL_SOLUTION = ITEMS.register("biochemical_solution", () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> INDUSTRIAL_ETHANOL = ITEMS.register("industrial_ethanol", () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> SYNAPTIC_NEURAL_BERRY = ITEMS.register("synaptic_neural_berry", () -> new Item(new Item.Properties().food(new net.minecraft.world.food.FoodProperties.Builder().nutrition(2).saturationMod(0.3F).build())));
+    public static final RegistryObject<Item> PLANT_FIBER = ITEMS.register("plant_fiber", () -> new Item(new Item.Properties()) {
+        @Override
+        public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+            CompoundTag tag = stack.getTag();
+            if (tag != null && tag.contains("Potency")) {
+                tooltip.add(Component.translatable("tooltip.cybercultivator.quality_potency", tag.getInt("Potency"))
+                        .withStyle(ChatFormatting.GREEN));
+            }
+        }
+    });
+    public static final RegistryObject<Item> BIOCHEMICAL_SOLUTION = ITEMS.register("biochemical_solution", () -> new Item(new Item.Properties()) {
+        @Override
+        public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+            CompoundTag tag = stack.getTag();
+            if (tag != null && tag.contains("Concentration")) {
+                tooltip.add(Component.translatable("tooltip.cybercultivator.quality_concentration", tag.getInt("Concentration"))
+                        .withStyle(ChatFormatting.GREEN));
+            }
+        }
+    });
+    public static final RegistryObject<Item> INDUSTRIAL_ETHANOL = ITEMS.register("industrial_ethanol", () -> new Item(new Item.Properties()) {
+        @Override
+        public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+            CompoundTag tag = stack.getTag();
+            if (tag != null && tag.contains("Purity")) {
+                tooltip.add(Component.translatable("tooltip.cybercultivator.quality_purity", tag.getInt("Purity"))
+                        .withStyle(ChatFormatting.GREEN));
+            }
+        }
+    });
+    public static final RegistryObject<Item> SYNAPTIC_NEURAL_BERRY = ITEMS.register("synaptic_neural_berry", () -> new Item(new Item.Properties().food(new net.minecraft.world.food.FoodProperties.Builder().nutrition(2).saturationMod(0.3F).build())) {
+        @Override
+        public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+            CompoundTag tag = stack.getTag();
+            if (tag != null && tag.contains("SynapticActivity")) {
+                tooltip.add(Component.translatable("tooltip.cybercultivator.serum_activity", tag.getInt("SynapticActivity"))
+                        .withStyle(ChatFormatting.GOLD));
+            }
+        }
+    });
     public static final RegistryObject<Item> SYNAPTIC_SERUM_S01 = ITEMS.register("synaptic_serum_s01", () -> new SynapticSerumItem(new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON)));
 
     public static final RegistryObject<Item> FIBER_REED_SEEDS = ITEMS.register("fiber_reed_seeds",
