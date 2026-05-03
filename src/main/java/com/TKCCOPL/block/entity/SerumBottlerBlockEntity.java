@@ -24,6 +24,30 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     private static final int PROCESSING_TIME = 300; // 15 seconds
     private static final int INPUT_SLOTS = 3;
     private static final int OUTPUT_SLOT = 3;
+    private static final String TAG_ACTIVITY = "SynapticActivity";
+
+    /**
+     * 计算突触活性：加权平均 (Potency×0.25 + Purity×0.375 + Concentration×0.375)
+     */
+    public static int calculateActivity(ItemStack fiber, ItemStack ethanol, ItemStack solution) {
+        int potency = fiber.getOrCreateTag().getInt("Potency");
+        int purity = ethanol.getOrCreateTag().getInt("Purity");
+        int concentration = solution.getOrCreateTag().getInt("Concentration");
+        if (potency == 0) potency = 5;
+        if (purity == 0) purity = 5;
+        if (concentration == 0) concentration = 5;
+        double raw = potency * 0.25 + purity * 0.375 + concentration * 0.375;
+        return Math.max(1, Math.min(10, (int) Math.round(raw)));
+    }
+
+    /**
+     * 从 ItemStack 读取 SynapticActivity，无 NBT 时返回 5（平衡点）
+     */
+    public static int getActivity(ItemStack stack) {
+        CompoundTag tag = stack.getTag();
+        if (tag == null || !tag.contains(TAG_ACTIVITY)) return 5;
+        return Math.max(1, Math.min(10, tag.getInt(TAG_ACTIVITY)));
+    }
 
     private final ItemStack[] inputs = new ItemStack[INPUT_SLOTS];
     private ItemStack output = ItemStack.EMPTY;
@@ -80,18 +104,28 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     }
 
     /**
-     * @return recipe index (0=S-02, 1=S-03), or -1 if no match
+     * @return recipe index (0=berry, 1=S-01, 2=S-02, 3=S-03), or -1 if no match
      */
     private int matchRecipe() {
+        // Berry: plant_fiber + industrial_ethanol + biochemical_solution
+        if (hasIngredients(ModItems.PLANT_FIBER.get(), ModItems.INDUSTRIAL_ETHANOL.get(), ModItems.BIOCHEMICAL_SOLUTION.get())
+                && canOutput(ModItems.SYNAPTIC_NEURAL_BERRY.get())) {
+            return 0;
+        }
+        // S-01: synaptic_neural_berry + biochemical_solution + glass_bottle
+        if (hasIngredients(ModItems.SYNAPTIC_NEURAL_BERRY.get(), ModItems.BIOCHEMICAL_SOLUTION.get(), Items.GLASS_BOTTLE)
+                && canOutput(ModItems.SYNAPTIC_SERUM_S01.get())) {
+            return 1;
+        }
         // S-02: synaptic_neural_berry + rare_earth_dust + glass_bottle
         if (hasIngredients(ModItems.SYNAPTIC_NEURAL_BERRY.get(), ModItems.RARE_EARTH_DUST.get(), Items.GLASS_BOTTLE)
                 && canOutput(ModItems.SYNAPTIC_SERUM_S02.get())) {
-            return 0;
+            return 2;
         }
         // S-03: synaptic_neural_berry + industrial_ethanol + glass_bottle
         if (hasIngredients(ModItems.SYNAPTIC_NEURAL_BERRY.get(), ModItems.INDUSTRIAL_ETHANOL.get(), Items.GLASS_BOTTLE)
                 && canOutput(ModItems.SYNAPTIC_SERUM_S03.get())) {
-            return 1;
+            return 3;
         }
         return -1;
     }
@@ -124,9 +158,13 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     }
 
     private void consumeInputs(int recipe) {
-        net.minecraft.world.item.Item[] required = recipe == 0
-                ? new net.minecraft.world.item.Item[]{ModItems.SYNAPTIC_NEURAL_BERRY.get(), ModItems.RARE_EARTH_DUST.get(), Items.GLASS_BOTTLE}
-                : new net.minecraft.world.item.Item[]{ModItems.SYNAPTIC_NEURAL_BERRY.get(), ModItems.INDUSTRIAL_ETHANOL.get(), Items.GLASS_BOTTLE};
+        net.minecraft.world.item.Item[] required = switch (recipe) {
+            case 0 -> new net.minecraft.world.item.Item[]{ModItems.PLANT_FIBER.get(), ModItems.INDUSTRIAL_ETHANOL.get(), ModItems.BIOCHEMICAL_SOLUTION.get()};
+            case 1 -> new net.minecraft.world.item.Item[]{ModItems.SYNAPTIC_NEURAL_BERRY.get(), ModItems.BIOCHEMICAL_SOLUTION.get(), Items.GLASS_BOTTLE};
+            case 2 -> new net.minecraft.world.item.Item[]{ModItems.SYNAPTIC_NEURAL_BERRY.get(), ModItems.RARE_EARTH_DUST.get(), Items.GLASS_BOTTLE};
+            case 3 -> new net.minecraft.world.item.Item[]{ModItems.SYNAPTIC_NEURAL_BERRY.get(), ModItems.INDUSTRIAL_ETHANOL.get(), Items.GLASS_BOTTLE};
+            default -> new net.minecraft.world.item.Item[0];
+        };
 
         for (net.minecraft.world.item.Item item : required) {
             for (int i = 0; i < INPUT_SLOTS; i++) {
@@ -139,9 +177,43 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     }
 
     private ItemStack getRecipeOutput(int recipe) {
-        return recipe == 0
-                ? new ItemStack(ModItems.SYNAPTIC_SERUM_S02.get())
-                : new ItemStack(ModItems.SYNAPTIC_SERUM_S03.get());
+        return switch (recipe) {
+            case 0 -> {
+                int activity = calculateActivity(inputs[0], inputs[1], inputs[2]);
+                ItemStack berry = new ItemStack(ModItems.SYNAPTIC_NEURAL_BERRY.get());
+                berry.getOrCreateTag().putInt(TAG_ACTIVITY, activity);
+                yield berry;
+            }
+            case 1 -> {
+                ItemStack berry = findInput(ModItems.SYNAPTIC_NEURAL_BERRY.get());
+                int activity = getActivity(berry);
+                ItemStack serum = new ItemStack(ModItems.SYNAPTIC_SERUM_S01.get());
+                serum.getOrCreateTag().putInt(TAG_ACTIVITY, activity);
+                yield serum;
+            }
+            case 2 -> {
+                ItemStack berry = findInput(ModItems.SYNAPTIC_NEURAL_BERRY.get());
+                int activity = getActivity(berry);
+                ItemStack serum = new ItemStack(ModItems.SYNAPTIC_SERUM_S02.get());
+                serum.getOrCreateTag().putInt(TAG_ACTIVITY, activity);
+                yield serum;
+            }
+            case 3 -> {
+                ItemStack berry = findInput(ModItems.SYNAPTIC_NEURAL_BERRY.get());
+                int activity = getActivity(berry);
+                ItemStack serum = new ItemStack(ModItems.SYNAPTIC_SERUM_S03.get());
+                serum.getOrCreateTag().putInt(TAG_ACTIVITY, activity);
+                yield serum;
+            }
+            default -> ItemStack.EMPTY;
+        };
+    }
+
+    private ItemStack findInput(net.minecraft.world.item.Item item) {
+        for (int i = 0; i < INPUT_SLOTS; i++) {
+            if (inputs[i].is(item)) return inputs[i];
+        }
+        return ItemStack.EMPTY;
     }
 
     public int getProgress() { return progress; }
