@@ -76,6 +76,8 @@ public class SynapticSerumItem extends Item {
             MobEffectInstance existing = entity.getEffect(effect.get());
             if (existing != null) {
                 amp = Math.min(existing.getAmplifier() + 1, MAX_AMPLIFIER);
+                // 累加剩余持续时间，上限 5 分钟
+                scaledDuration = Math.min(scaledDuration + existing.getDuration(), 20 * 300);
             } else {
                 amp = getBaseAmplifier(activity);
             }
