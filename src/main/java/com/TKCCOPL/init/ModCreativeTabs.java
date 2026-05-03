@@ -73,6 +73,50 @@ public final class ModCreativeTabs {
                             output.accept(withPurityAndActivity(ModItems.SYNAPTIC_SERUM_S02.get(), purity, cap));
                             output.accept(withPurityAndActivity(ModItems.SYNAPTIC_SERUM_S03.get(), purity, cap));
                         }
+
+                        // --- Gene_Generation / Gene_Purity 样本种子，供测试突变系统 ---
+
+                        // 3 代种子（纤维蔗）
+                        ItemStack gen3Seed = new ItemStack(ModItems.FIBER_REED_SEEDS.get());
+                        gen3Seed.getOrCreateTag().putInt("Gene_Speed", 7);
+                        gen3Seed.getOrCreateTag().putInt("Gene_Yield", 5);
+                        gen3Seed.getOrCreateTag().putInt("Gene_Potency", 8);
+                        gen3Seed.getOrCreateTag().putInt("Gene_Generation", 3);
+                        output.accept(gen3Seed);
+
+                        // 5 代种子（纤维蔗）
+                        ItemStack gen5Seed = new ItemStack(ModItems.FIBER_REED_SEEDS.get());
+                        gen5Seed.getOrCreateTag().putInt("Gene_Speed", 9);
+                        gen5Seed.getOrCreateTag().putInt("Gene_Yield", 7);
+                        gen5Seed.getOrCreateTag().putInt("Gene_Potency", 10);
+                        gen5Seed.getOrCreateTag().putInt("Gene_Generation", 5);
+                        output.accept(gen5Seed);
+
+                        // Gene_Purity 样本种子（突变获得，纤维蔗）
+                        ItemStack puritySeed = new ItemStack(ModItems.FIBER_REED_SEEDS.get());
+                        puritySeed.getOrCreateTag().putInt("Gene_Speed", 8);
+                        puritySeed.getOrCreateTag().putInt("Gene_Yield", 6);
+                        puritySeed.getOrCreateTag().putInt("Gene_Potency", 9);
+                        puritySeed.getOrCreateTag().putInt("Gene_Generation", 5);
+                        puritySeed.getOrCreateTag().putInt("Gene_Purity", 6);
+                        puritySeed.getOrCreateTag().putBoolean("Mutation", true);
+                        output.accept(puritySeed);
+
+                        // 5 代种子（蛋白质豆）
+                        ItemStack gen5Soy = new ItemStack(ModItems.PROTEIN_SOY_SEEDS.get());
+                        gen5Soy.getOrCreateTag().putInt("Gene_Speed", 8);
+                        gen5Soy.getOrCreateTag().putInt("Gene_Yield", 9);
+                        gen5Soy.getOrCreateTag().putInt("Gene_Potency", 7);
+                        gen5Soy.getOrCreateTag().putInt("Gene_Generation", 5);
+                        output.accept(gen5Soy);
+
+                        // 5 代种子（酒精花）
+                        ItemStack gen5Bloom = new ItemStack(ModItems.ALCOHOL_BLOOM_SEEDS.get());
+                        gen5Bloom.getOrCreateTag().putInt("Gene_Speed", 6);
+                        gen5Bloom.getOrCreateTag().putInt("Gene_Yield", 8);
+                        gen5Bloom.getOrCreateTag().putInt("Gene_Potency", 10);
+                        gen5Bloom.getOrCreateTag().putInt("Gene_Generation", 5);
+                        output.accept(gen5Bloom);
                     })
                     .build());
 

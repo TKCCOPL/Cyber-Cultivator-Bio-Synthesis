@@ -65,6 +65,7 @@
   "tooltip.cybercultivator.quality_purity": "纯度: %s/10",
   "tooltip.cybercultivator.seed_genes_hidden": "需要佩戴光谱单片镜以解析基因",
   "tooltip.cybercultivator.serum_activity": "突触活性: %s",
+  "tooltip.cybercultivator.serum_activity_bonus": "★ 活性突破: %s — 效果等级增强",
   "tooltip.cybercultivator.serum_base_level": "基础等级: %s",
   "tooltip.cybercultivator.serum_bottler": "将突触神经莓加工为高级血清；支持漏斗自动化",
   "tooltip.cybercultivator.serum_duration_mult": "时长倍率: ×%s",

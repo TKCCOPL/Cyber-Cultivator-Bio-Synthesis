@@ -89,5 +89,6 @@ public class ModLangProvider extends LanguageProvider {
         add("tooltip.cybercultivator.quality_potency", "品质: %s/10");
         add("tooltip.cybercultivator.quality_purity", "纯度: %s/10");
         add("tooltip.cybercultivator.quality_concentration", "浓度: %s/10");
+        add("tooltip.cybercultivator.serum_activity_bonus", "★ 活性突破: %s — 效果等级增强");
     }
 }
