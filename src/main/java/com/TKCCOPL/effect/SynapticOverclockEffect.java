@@ -35,11 +35,13 @@ public class SynapticOverclockEffect extends MobEffect {
     public void removeAttributeModifiers(LivingEntity entity, net.minecraft.world.entity.ai.attributes.AttributeMap attributeMap, int amplifier) {
         super.removeAttributeModifiers(entity, attributeMap, amplifier);
         if (!entity.level().isClientSide) {
-            // 延迟到当前 tick 结束后施加 NeuralOverload，避免 curePotionEffects 遍历时 ConcurrentModificationException
-            entity.level().getServer().tell(new net.minecraft.server.TickTask(
-                entity.level().getServer().getTickCount() + 1,
-                () -> entity.addEffect(new MobEffectInstance(ModEffects.NEURAL_OVERLOAD.get(), 20 * (12 + amplifier * 4), amplifier))
-            ));
+            // 只在效果自然过期时施加副作用，叠加替换时跳过
+            if (entity.getEffect(this) == null) {
+                entity.level().getServer().tell(new net.minecraft.server.TickTask(
+                    entity.level().getServer().getTickCount() + 1,
+                    () -> entity.addEffect(new MobEffectInstance(ModEffects.NEURAL_OVERLOAD.get(), 20 * (12 + amplifier * 4), amplifier))
+                ));
+            }
         }
     }
 }

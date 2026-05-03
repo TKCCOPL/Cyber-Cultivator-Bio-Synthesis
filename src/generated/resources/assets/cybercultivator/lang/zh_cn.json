@@ -57,7 +57,13 @@
   "tooltip.cybercultivator.gene_splicer": "放入两颗基因种子后自动拼接；潜行可取回输入或输出",
   "tooltip.cybercultivator.gene_yield": "Gene_Yield: %s",
   "tooltip.cybercultivator.life_support_pack": "缓解血清副作用；低血量时自动注射治疗",
+  "tooltip.cybercultivator.quality_concentration": "浓度: %s/10",
+  "tooltip.cybercultivator.quality_potency": "品质: %s/10",
+  "tooltip.cybercultivator.quality_purity": "纯度: %s/10",
   "tooltip.cybercultivator.seed_genes_hidden": "需要佩戴光谱单片镜以解析基因",
+  "tooltip.cybercultivator.serum_activity": "突触活性: %s/10",
+  "tooltip.cybercultivator.serum_base_level": "基础等级: %s",
   "tooltip.cybercultivator.serum_bottler": "将突触神经莓加工为高级血清；支持漏斗自动化",
+  "tooltip.cybercultivator.serum_duration_mult": "时长倍率: ×%s",
   "tooltip.cybercultivator.spectrum_monocle": "佩戴后可解析培养槽与种子基因信息"
 }
