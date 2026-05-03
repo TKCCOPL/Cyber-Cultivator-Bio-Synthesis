@@ -61,3 +61,8 @@
 - 260503 2200 崩溃原因：喝牛奶 curePotionEffects 遍历 activeEffects 时，removeAttributeModifiers 同步 addEffect 触发 CME
 - 260503 2205 调度 cc-dev 修复：TickTask 延迟施加 NeuralOverload，编译 PASS
 - 260503 2205 提交：18a6573
+
+- 260503 2215 ── Bug 修复：血清叠加时副作用时机 ──
+- 260503 2215 问题：叠加时 addEffect 替换旧实例 → removeAttributeModifiers 触发 → NeuralOverload 提前施加
+- 260503 2215 修复：removeAttributeModifiers 中检查 entity.getEffect(this)==null，仅自然过期时施加副作用
+- 260503 2215 调度 cc-dev，编译 PASS
