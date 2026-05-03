@@ -4,6 +4,8 @@ import com.TKCCOPL.cybercultivator;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
@@ -39,6 +41,23 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.FIBER_REED_SEEDS.get());
                         output.accept(ModItems.PROTEIN_SOY_SEEDS.get());
                         output.accept(ModItems.ALCOHOL_BLOOM_SEEDS.get());
+
+                        // --- 预置品质物品变体（1-10），方便测试 ---
+
+                        // 植物纤维：Potency 1-10
+                        for (int i = 1; i <= 10; i++) output.accept(withTag(ModItems.PLANT_FIBER.get(), "Potency", i));
+                        // 工业乙醇：Purity 1-10
+                        for (int i = 1; i <= 10; i++) output.accept(withTag(ModItems.INDUSTRIAL_ETHANOL.get(), "Purity", i));
+                        // 生化原液：Concentration 1-10
+                        for (int i = 1; i <= 10; i++) output.accept(withTag(ModItems.BIOCHEMICAL_SOLUTION.get(), "Concentration", i));
+                        // 突触神经莓：SynapticActivity 1-10
+                        for (int i = 1; i <= 10; i++) output.accept(withTag(ModItems.SYNAPTIC_NEURAL_BERRY.get(), "SynapticActivity", i));
+                        // S-01 血清：SynapticActivity 1-10
+                        for (int i = 1; i <= 10; i++) output.accept(withTag(ModItems.SYNAPTIC_SERUM_S01.get(), "SynapticActivity", i));
+                        // S-02 血清：SynapticActivity 1-10
+                        for (int i = 1; i <= 10; i++) output.accept(withTag(ModItems.SYNAPTIC_SERUM_S02.get(), "SynapticActivity", i));
+                        // S-03 血清：SynapticActivity 1-10
+                        for (int i = 1; i <= 10; i++) output.accept(withTag(ModItems.SYNAPTIC_SERUM_S03.get(), "SynapticActivity", i));
                     })
                     .build());
 
@@ -47,5 +66,11 @@ public final class ModCreativeTabs {
 
     public static void register(IEventBus eventBus) {
         CREATIVE_MODE_TABS.register(eventBus);
+    }
+
+    private static ItemStack withTag(Item item, String key, int value) {
+        ItemStack stack = new ItemStack(item);
+        stack.getOrCreateTag().putInt(key, value);
+        return stack;
     }
 }
