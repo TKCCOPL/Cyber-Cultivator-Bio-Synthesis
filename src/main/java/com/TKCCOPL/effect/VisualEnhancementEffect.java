@@ -28,8 +28,8 @@ public class VisualEnhancementEffect extends MobEffect {
         // 夜视
         entity.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 100, 0, true, false, true));
 
-        // 抗火（上限 III = amplifier 2）
-        int fireResAmp = Math.min(amplifier, 2);
+        // 抗火（上限 IV = amplifier 3）
+        int fireResAmp = Math.min(amplifier, 3);
         entity.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 100, fireResAmp, true, false, true));
 
         // 发光范围随 amplifier 增长：16 + amp * 8

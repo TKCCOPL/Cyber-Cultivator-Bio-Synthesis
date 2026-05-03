@@ -45,9 +45,9 @@ public class ModLangProvider extends LanguageProvider {
         add("tooltip.cybercultivator.curios_loaded", "Curios: 已连接");
         add("tooltip.cybercultivator.curios_missing", "Curios: 未加载");
         add("tooltip.cybercultivator.seed_genes_hidden", "需要佩戴光谱单片镜以解析基因");
-        add("tooltip.cybercultivator.gene_speed", "Gene_Speed: %s");
-        add("tooltip.cybercultivator.gene_yield", "Gene_Yield: %s");
-        add("tooltip.cybercultivator.gene_potency", "Gene_Potency: %s");
+        add("tooltip.cybercultivator.gene_speed", "速度基因: %s");
+        add("tooltip.cybercultivator.gene_yield", "产量基因: %s");
+        add("tooltip.cybercultivator.gene_potency", "效价基因: %s");
         add("tooltip.cybercultivator.gene_generation", "代数: %s");
         add("tooltip.cybercultivator.gene_purity", "纯度基因: %s");
         add("tooltip.cybercultivator.mutation", "★ 突变体");

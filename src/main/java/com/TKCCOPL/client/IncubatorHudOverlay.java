@@ -59,8 +59,9 @@ public final class IncubatorHudOverlay {
         int x = 10;
         int y = 10;
 
-        // Background
-        gui.fill(x, y, x + 130, y + 86, 0xAA000000);
+        // Background — seed present: 97px (includes mutation line), no seed: 63px
+        int bgHeight = incubator.hasSeed() ? 97 : 63;
+        gui.fill(x, y, x + 130, y + bgHeight, 0xAA000000);
 
         // Title
         gui.drawString(mc.font, Component.literal("[Bio-Incubator]"), x + 4, y + 2, 0x44F7FF);
@@ -81,11 +82,20 @@ public final class IncubatorHudOverlay {
 
         // Growth progress (only when seed is present)
         if (incubator.hasSeed()) {
+            // Mutation marker on seed
+            ItemStack seedStack = incubator.getSeed();
+            net.minecraft.nbt.CompoundTag seedTag = seedStack.getTag();
+            if (seedTag != null && seedTag.getBoolean("Mutation")) {
+                gui.drawString(mc.font, Component.literal("★ MUTATION!")
+                        .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE),
+                        x + 4, y + 62, 0xFF55FF);
+            }
+
             int growthPercent = incubator.getGrowthPercent();
-            drawBar(gui, mc, x + 4, y + 62, "G", growthPercent, 0xFF8844);
+            drawBar(gui, mc, x + 4, y + 73, "G", growthPercent, 0xFF8844);
             int eta = incubator.getEstimatedSecondsRemaining();
             String etaText = eta >= 0 ? "ETA: 约" + eta + "s" : "ETA: 资源不足";
-            gui.drawString(mc.font, Component.literal(etaText), x + 4, y + 74, 0xCCCCCC);
+            gui.drawString(mc.font, Component.literal(etaText), x + 4, y + 85, 0xCCCCCC);
         }
     }
 

@@ -132,11 +132,21 @@ public class BioIncubatorBlockEntity extends BlockEntity {
             output.getOrCreateTag().putInt(GeneticSeedItem.GENE_PURITY, genePurity);
         }
 
+        // 如果种子携带 Mutation 标签，传递到产出物
+        CompoundTag seedTag = seed.getTag();
+        if (seedTag != null && seedTag.getBoolean("Mutation")) {
+            output.getOrCreateTag().putBoolean("Mutation", true);
+        }
+
         return output;
     }
 
     public boolean hasSeed() {
         return !seed.isEmpty();
+    }
+
+    public ItemStack getSeed() {
+        return seed;
     }
 
     public boolean tryInsertSeed(ItemStack stack) {

@@ -18,7 +18,7 @@ import java.util.function.Supplier;
 
 public class SynapticSerumItem extends Item {
     private static final String TAG_ACTIVITY = "SynapticActivity";
-    private static final int MAX_AMPLIFIER = 4;
+    private static final int MAX_AMPLIFIER = 7;
 
     private final Supplier<MobEffect> effect;
     private final int durationTicks;

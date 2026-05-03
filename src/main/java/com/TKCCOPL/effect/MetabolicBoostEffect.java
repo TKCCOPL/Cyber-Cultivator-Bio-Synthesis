@@ -29,11 +29,11 @@ public class MetabolicBoostEffect extends MobEffect {
 
     @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
-        // Heal: 1.0 + amp * 0.5, every 0.5s
-        entity.heal(1.0F + amplifier * 0.5F);
+        // Heal: 0.5 + amp * 0.5, every 0.5s
+        entity.heal(0.5F + amplifier * 0.5F);
 
-        // Move speed transient modifier: 0.10 + amp * 0.05 (MULTIPLY_TOTAL)
-        double moveSpeed = 0.10 + amplifier * 0.05;
+        // Move speed transient modifier: 0.05 + amp * 0.05 (MULTIPLY_TOTAL)
+        double moveSpeed = 0.05 + amplifier * 0.05;
         AttributeInstance moveAttr = entity.getAttribute(Attributes.MOVEMENT_SPEED);
         if (moveAttr != null) {
             moveAttr.removeModifier(MOVE_SPEED_UUID);
@@ -42,8 +42,8 @@ public class MetabolicBoostEffect extends MobEffect {
                     AttributeModifier.Operation.MULTIPLY_TOTAL));
         }
 
-        // Jump boost (cap at amplifier 2 = level III)
-        int jumpAmp = Math.min(amplifier, 2);
+        // Jump boost (cap at amplifier 3 = level IV)
+        int jumpAmp = Math.min(amplifier, 3);
         entity.addEffect(new MobEffectInstance(MobEffects.JUMP, 30, jumpAmp, true, false, true));
     }
 

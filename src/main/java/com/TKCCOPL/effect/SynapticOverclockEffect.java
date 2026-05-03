@@ -29,8 +29,8 @@ public class SynapticOverclockEffect extends MobEffect {
 
     @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
-        // 动态攻速：0.15 + amp * 0.05 (MULTIPLY_TOTAL)
-        double attackSpeed = 0.15 + amplifier * 0.05;
+        // 动态攻速：0.10 + amp * 0.05 (MULTIPLY_TOTAL)
+        double attackSpeed = 0.10 + amplifier * 0.05;
         var attackAttr = entity.getAttribute(Attributes.ATTACK_SPEED);
         if (attackAttr != null) {
             attackAttr.removeModifier(ATTACK_SPEED_UUID);
@@ -43,8 +43,8 @@ public class SynapticOverclockEffect extends MobEffect {
         entity.addEffect(new MobEffectInstance(
                 MobEffects.DAMAGE_BOOST, 30, amplifier, true, false, true));
 
-        // 抗性效果（上限 III = amplifier 2）
-        int resistanceAmp = Math.min(amplifier, 2);
+        // 抗性效果（上限 IV = amplifier 3）
+        int resistanceAmp = Math.min(amplifier, 3);
         entity.addEffect(new MobEffectInstance(
                 MobEffects.DAMAGE_RESISTANCE, 30, resistanceAmp, true, false, true));
     }
