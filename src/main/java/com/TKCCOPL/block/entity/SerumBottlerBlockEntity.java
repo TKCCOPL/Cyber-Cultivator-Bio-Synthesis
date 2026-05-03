@@ -30,7 +30,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     /**
      * 计算突触活性值。加权平均 (Potency×0.25 + Purity×0.375 + Concentration×0.375)，
      * 按物品种类查找输入，不依赖槽位顺序。
-     * Activity 上限 = 10 + floor(Gene_Purity / 2)。
+     * Gene_Purity 直接加成 Activity，突破 10 上限。
      * Gene_Purity 从输入物品的 NBT 中读取（通过种子突变获得，经培养槽传递到原料，再传递到莓）。
      */
     public static int calculateActivity(ItemStack[] inputs) {
@@ -61,9 +61,9 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         double raw = potency * 0.25 + purity * 0.375 + concentration * 0.375;
         int activity = (int) Math.round(raw);
 
-        // Activity 上限 = 10 + floor(Gene_Purity / 2)
-        int cap = 10 + genePurity / 2;
-        return Math.max(1, Math.min(cap, activity));
+        // Gene_Purity 直接加成 Activity（突破 10 上限）
+        int bonus = genePurity / 2;
+        return Math.max(1, activity + bonus);
     }
 
     /**
