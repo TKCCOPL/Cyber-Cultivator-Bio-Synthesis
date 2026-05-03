@@ -66,3 +66,10 @@
 - 260503 2215 问题：叠加时 addEffect 替换旧实例 → removeAttributeModifiers 触发 → NeuralOverload 提前施加
 - 260503 2215 修复：removeAttributeModifiers 中检查 entity.getEffect(this)==null，仅自然过期时施加副作用
 - 260503 2215 调度 cc-dev，编译 PASS
+
+- 260503 2230 ── Bug 修复：Activity 公式 + 持续时间叠加 ──
+- 260503 2230 Bug 1: Activity 公式按槽位索引读取，不同放置顺序结果不同
+- 260503 2230 修复: calculateActivity 改为按物品种类查找输入，不再依赖槽位顺序
+- 260503 2230 Bug 2: 血清叠加时持续时间不累加
+- 260503 2230 修复: finishUsingItem 中累加 existing.getDuration()，上限 10 分钟
+- 260503 2230 调度 cc-dev，编译 PASS
