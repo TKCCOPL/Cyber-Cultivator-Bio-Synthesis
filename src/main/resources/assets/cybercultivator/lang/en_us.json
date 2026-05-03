@@ -91,5 +91,8 @@
   "hud.cybercultivator.recipe_s01": "S-01",
   "hud.cybercultivator.recipe_s02": "S-02",
   "hud.cybercultivator.recipe_s03": "S-03",
-  "hud.cybercultivator.recipe_idle": "Idle"
+  "hud.cybercultivator.recipe_idle": "Idle",
+  "hud.cybercultivator.eta": "ETA: ~%ss",
+  "hud.cybercultivator.eta_insufficient": "ETA: Insufficient",
+  "hud.cybercultivator.seed_empty_slot": "%s: Empty"
 }

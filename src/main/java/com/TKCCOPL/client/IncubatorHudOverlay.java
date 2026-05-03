@@ -96,8 +96,10 @@ public final class IncubatorHudOverlay {
             int growthPercent = incubator.getGrowthPercent();
             drawBar(gui, mc, x + 4, y + 73, "G", growthPercent, 0xFF8844);
             int eta = incubator.getEstimatedSecondsRemaining();
-            String etaText = eta >= 0 ? "ETA: 约" + eta + "s" : "ETA: 资源不足";
-            gui.drawString(mc.font, Component.literal(etaText), x + 4, y + 85, 0xCCCCCC);
+            Component etaText = eta >= 0
+                    ? Component.translatable("hud.cybercultivator.eta", eta)
+                    : Component.translatable("hud.cybercultivator.eta_insufficient");
+            gui.drawString(mc.font, etaText, x + 4, y + 85, 0xCCCCCC);
         }
     }
 
@@ -251,7 +253,7 @@ public final class IncubatorHudOverlay {
 
     private static void drawSeedInfo(GuiGraphics gui, Minecraft mc, int x, int y, String label, ItemStack seed) {
         if (seed.isEmpty()) {
-            gui.drawString(mc.font, Component.literal(label + ": Empty"), x, y, 0x999999);
+            gui.drawString(mc.font, Component.translatable("hud.cybercultivator.seed_empty_slot", label), x, y, 0x999999);
         } else {
             int speed = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_SPEED);
             int yield = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_YIELD);

@@ -114,5 +114,8 @@ public class ModLangProvider extends LanguageProvider {
         add("hud.cybercultivator.recipe_s02", "S-02");
         add("hud.cybercultivator.recipe_s03", "S-03");
         add("hud.cybercultivator.recipe_idle", "空闲");
+        add("hud.cybercultivator.eta", "ETA: 约%ss");
+        add("hud.cybercultivator.eta_insufficient", "ETA: 资源不足");
+        add("hud.cybercultivator.seed_empty_slot", "%s: 空");
     }
 }
