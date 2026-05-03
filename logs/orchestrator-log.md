@@ -157,3 +157,80 @@
 - 260504 0323 ──── T20-T24 全部完成 ────
 - 260504 0323 基因突变事件系统：代数追踪 + 突变概率 + Purity影响 + 视觉反馈 + Phase Gate
 - 260504 0323 总进度：23/23（100%）
+
+- 260504 0400 ── T22 遗留修复 ──
+- 260504 0400 问题3：创造栏缺少高Activity变体 → 新增Gene_Purity 4/8/10变体
+- 260504 0400 问题4：calculateActivity Javadoc更新
+- 260504 0400 提交：d455f76
+
+- 260504 0410 ── T23 遗留修复：HUD文本溢出 ──
+- 260504 0410 问题1：拼接机突变标记溢出200px → 换行显示
+- 260504 0410 问题2：灌装机物品名英文溢出130px → plainSubstrByWidth截断
+- 260504 0410 提交：e289b54
+
+- 260504 0430 ── 创造栏样本 + 血清Activity突破 ──
+- 260504 0430 创造栏：5个基因种子样本（Gen3/Gen5/Purity突变/蛋白质豆/酒精花）
+- 260504 0430 血清：Activity>10时额外amplifier加成（每2点+1amp，上限VIII）
+- 260504 0430 提交：ffc98e1
+
+- 260504 0450 ── 血清VIII + 突变标签 + HUD + i18n + 创造栏全变体 ──
+- 260504 0450 MAX_AMPLIFIER: 4→7 (VIII级)
+- 260504 0450 S-01: 攻速基数0.10, 抗性上限IV / S-02: 抗火上限IV / S-03: 回血0.5, 移速0.05, 跳跃上限IV
+- 260504 0450 getCropOutput: 传递Mutation标签到产出物
+- 260504 0450 培养槽HUD: 显示★ MUTATION!标记
+- 260504 0450 中文翻译: 速度基因/产量基因/效价基因
+- 260504 0450 创造栏: 每种种子×4世代 + 突变变体
+- 260504 0450 测试：core=PASS / infra=PASS / ui=PASS
+- 260504 0450 提交：10e5820
+
+- 260504 0500 ── NeuralOverload clamp + en_us翻译 ──
+- 260504 0500 HUNGER: min(amp,3) / SLOWDOWN: 1+min(amp,3)
+- 260504 0500 en_us.json: 补充serum_activity_bonus翻译键
+- 260504 0500 测试：core=PASS / infra=PASS / ui=PASS
+- 260504 0500 提交：f00a65a
+
+- 260504 0510 ── 原料/莓Gene_Purity Tooltip + HUD中文化 ──
+- 260504 0510 ClientTooltipEvents: 原料和莓显示Gene_Purity（无需单片镜）
+- 260504 0510 IncubatorHudOverlay: 22个HUD字符串改为Component.translatable
+- 260504 0510 测试：core=PASS / infra=PASS / ui=PASS
+- 260504 0510 提交：93b3366
+
+- 260504 0520 ── ETA + Empty 国际化 ──
+- 260504 0520 ETA行: "约"/"资源不足"改为translatable
+- 260504 0520 Empty: 种子空状态改为translatable
+- 260504 0520 测试：core=PASS / ui=PASS
+- 260504 0520 提交：2027bf2
+
+- 260504 0520 ──── 本会话全部完成 ────
+- 260504 0520 共 6 轮提交（d455f76 → 2027bf2）
+- 260504 0520 迭代统计：6次通过 / 0次修正
+- 260504 0512 编排器 agent 权限测试：PASS
+- 260504 0530 编排器全权限验证：Write+Edit+Bash+Agent PASS
+
+- 260504 0535 ── 编排器后台验证 ──
+- 260504 0535 后台编排器权限测试：Write/Edit/Bash
+- 260504 0535 清理临时测试报告文件
+
+- 260504 0600 ── Gene_Purity Activity 加成修复 ──
+- 260504 0600 问题：cap 机制形同虚设（raw 最大 10，cap 永远不生效）
+- 260504 0600 修复：改为 activity + genePurity/2 直接加成
+- 260504 0600 测试：core=PASS / infra=PASS / ui=PASS
+- 260504 0600 提交：ebb59e6
+
+- 260504 0610 ── 灌装机 HUD 同步修复 ──
+- 260504 0610 问题：extractOutput/extractLastInput 只调 setChanged，HUD 不更新
+- 260504 0610 修复：改为 syncToClient() + 漏斗抽取路径同步 + isClientSide 守卫
+- 260504 0610 测试：core=PASS(1中等) / infra=PASS / ui=PASS
+- 260504 0610 修正：removeItem OUTPUT_SLOT 分支添加 syncToClient
+- 260504 0610 提交：96389fc
+
+- 260504 0603 ── v1.1.1 版本发布 ──
+- 260504 0603 Phase 0 确认范围：自 v1.1.0 以来 6 轮提交（d455f76 → 96389fc）
+- 260504 0603 Phase 1 文档检查：发现 5 处不一致
+- 260504 0603   CLAUDE.md: 水桶→纯净水瓶、上限4→VIII、缺少Gene_Generation/Purity/突变
+- 260504 0603   README.md: 水桶→纯净水瓶、上限V→VIII、缺少突变系统
+- 260504 0603   CHANGELOG.md: v1.1.1条目缺少多项变更和Bug修复
+- 260504 0603   USER_GUIDE.md: 水桶→纯净水瓶、上限V→VIII、缺少Gene_Purity/突变
+- 260504 0603 Phase 2 构建验证：compileJava PASS / build PASS
+- 260504 0603 Phase 3 版本号：gradle.properties 当前 1.1.0，需更新到 1.1.1
+- 260504 0603 权限问题：Edit/Write/Bash 工具被拒绝，无法完成文档更新

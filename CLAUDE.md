@@ -65,7 +65,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **培养槽 (BioIncubatorBlockEntity):**
 - 三项动态数值：Nutrition / Purity / Data Signal (0-100，随时间衰减)
-- 交互：放入种子、水桶注入纯净水、生化原液注入营养液、硅碎片注入信号、潜行取回
+- 交互：放入种子、纯净水瓶注入纯净度、生化原液注入营养液、硅碎片注入信号、潜行取回
 - Tick 采用静态方法签名 `tick(Level, BlockPos, BlockState, BioIncubatorBlockEntity)`，通过 `BlockEntityTicker` 注册
 - 客户端同步：所有状态变更通过 `syncToClient()` → `setChanged()` + `level.sendBlockUpdated()` 推送到客户端
 
@@ -107,7 +107,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 莓合成：灌装机中三种原料合成，Activity = 加权平均
 - 血清继承：灌装机合成血清时继承莓的 Activity
 - 效果缩放：`duration = base × (0.5 + Activity × 0.1)`，`baseAmplifier = Activity >= 8 ? 1 : 0`
-- 叠加升级：再次饮用 amplifier +1（上限 4），持续时间累加（上限 5 分钟）
+- 叠加升级：再次饮用 amplifier +1（上限 7，VIII 级），持续时间累加（上限 5 分钟）
 - 副作用：`removeAttributeModifiers` 中检查 `entity.getEffect(this) == null`，仅自然过期时施加 NeuralOverload；用 TickTask 延迟避免 CME
 
 ### 数据生成
