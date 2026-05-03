@@ -46,6 +46,7 @@
   "tooltip.cybercultivator.serum_bottler": "Processes Synaptic Neural Berry into advanced serums; hopper compatible",
   "tooltip.cybercultivator.spectrum_monocle": "Wear to analyze incubator status and seed gene data",
   "tooltip.cybercultivator.serum_activity": "Synaptic Activity: %s",
+  "tooltip.cybercultivator.serum_activity_bonus": "★ Activity Breakthrough: %s",
   "tooltip.cybercultivator.serum_base_level": "Base Level: %s",
   "tooltip.cybercultivator.serum_duration_mult": "Duration Mult: x%s",
   "tooltip.cybercultivator.quality_potency": "Potency: %s/10",

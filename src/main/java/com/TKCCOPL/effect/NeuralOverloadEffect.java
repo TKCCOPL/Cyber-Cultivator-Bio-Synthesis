@@ -61,22 +61,22 @@ public class NeuralOverloadEffect extends MobEffect {
             case 1 -> {
                 // S-01: 凋零 + 饥饿
                 entity.addEffect(new MobEffectInstance(MobEffects.WITHER, 40, 1 + Math.min(amplifier, 2), true, false, false));
-                entity.addEffect(new MobEffectInstance(MobEffects.HUNGER, 40, amplifier, true, false, false));
+                entity.addEffect(new MobEffectInstance(MobEffects.HUNGER, 40, Math.min(amplifier, 3), true, false, false));
             }
             case 2 -> {
                 // S-02: 失明 + 饥饿
                 entity.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 40, 1 + Math.min(amplifier, 2), true, false, false));
-                entity.addEffect(new MobEffectInstance(MobEffects.HUNGER, 40, amplifier, true, false, false));
+                entity.addEffect(new MobEffectInstance(MobEffects.HUNGER, 40, Math.min(amplifier, 3), true, false, false));
             }
             case 3 -> {
                 // S-03: 缓慢 + 中毒
-                entity.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 1 + amplifier, true, false, false));
+                entity.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 1 + Math.min(amplifier, 3), true, false, false));
                 entity.addEffect(new MobEffectInstance(MobEffects.POISON, 40, Math.min(amplifier, 2), true, false, false));
             }
             default -> {
                 // 默认：缓慢 + 饥饿（兼容旧数据 / 未知来源）
-                entity.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 1 + amplifier, true, false, false));
-                entity.addEffect(new MobEffectInstance(MobEffects.HUNGER, 40, amplifier, true, false, false));
+                entity.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 1 + Math.min(amplifier, 3), true, false, false));
+                entity.addEffect(new MobEffectInstance(MobEffects.HUNGER, 40, Math.min(amplifier, 3), true, false, false));
             }
         }
     }
