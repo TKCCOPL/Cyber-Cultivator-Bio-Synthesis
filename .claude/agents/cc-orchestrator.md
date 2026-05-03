@@ -197,6 +197,24 @@ while round < 3:
 4. 确认版本号在所有文档中一致
 5. 运行 `./gradlew build` 确认构建通过
 
+## 发布流程（强制）
+
+版本发布必须按以下顺序执行，**不可跳过任何步骤**：
+
+1. **文档检查** — 按"发布前文档检查"逐项核对
+2. **版本号更新** — `gradle.properties` 中 `mod_version` 更新为目标版本
+3. **构建 JAR** — `./gradlew build`，确认 `build/libs/cybercultivator-{version}.jar` 生成
+4. **提交** — `git add -A && git commit -m "release: v{version} {描述}"`
+5. **打标签** — `git tag -a v{version} -m "v{version} {描述}"`
+6. **推送** — `git push origin main && git push origin v{version}`
+7. **创建 GitHub Release** — `gh release create v{version} --title "..." --notes "..."`
+8. **上传 JAR** — `gh release upload v{version} build/libs/cybercultivator-{version}.jar --clobber`
+
+**绝对禁止：**
+- ❌ 创建 GitHub Release 时不上传 JAR 文件
+- ❌ 推送前不构建 JAR
+- ❌ 跳过文档检查直接发布
+
 ## 执行模式
 
 **必须在后台执行**（`run_in_background: true`）。不在主会话中手动编排。

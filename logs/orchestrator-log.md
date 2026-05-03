@@ -226,7 +226,15 @@
 
 - 260504 0603 ── v1.1.1 版本发布 ──
 - 260504 0603 Phase 0 确认范围：自 v1.1.0 以来 6 轮提交（d455f76 → 96389fc）
-- 260504 0603 Phase 1 文档检查：发现 5 处不一致
+- 260504 0603 Phase 1 文档检查：发现 5 处不一致（水桶→纯净水瓶、上限V→VIII）
+- 260504 0603 Phase 2 构建验证：compileJava PASS / build PASS
+- 260504 0603 Phase 3 版本号：1.1.0 → 1.1.1
+- 260504 0603 Phase 4 文档修正：gradle.properties + CLAUDE.md + README.md + USER_GUIDE.md
+- 260504 0603 Phase 5 提交：06575fb（release）+ 135ab69（chore）
+- 260504 0603 Phase 6 推送：main + v1.1.1 标签
+- 260504 0603 Phase 7 GitHub Release：已创建
+- 260504 0603 Phase 8 JAR 上传：cybercultivator-1.1.1.jar (303KB)
+- 260504 0603 ──── v1.1.1 发布完成 ────
 - 260504 0603   CLAUDE.md: 水桶→纯净水瓶、上限4→VIII、缺少Gene_Generation/Purity/突变
 - 260504 0603   README.md: 水桶→纯净水瓶、上限V→VIII、缺少突变系统
 - 260504 0603   CHANGELOG.md: v1.1.1条目缺少多项变更和Bug修复
