@@ -58,6 +58,21 @@ public final class ModCreativeTabs {
                         for (int i = 1; i <= 10; i++) output.accept(withTag(ModItems.SYNAPTIC_SERUM_S02.get(), "SynapticActivity", i));
                         // S-03 血清：SynapticActivity 1-10
                         for (int i = 1; i <= 10; i++) output.accept(withTag(ModItems.SYNAPTIC_SERUM_S03.get(), "SynapticActivity", i));
+
+                        // --- Gene_Purity 高 Activity 变体（突破 10 上限），方便测试 ---
+                        // Gene_Purity=4 → cap=12, Gene_Purity=8 → cap=14, Gene_Purity=10 → cap=15
+                        int[] purityValues = {4, 8, 10};
+                        int[] activityCaps = {12, 14, 15};
+                        for (int idx = 0; idx < purityValues.length; idx++) {
+                            int purity = purityValues[idx];
+                            int cap = activityCaps[idx];
+                            // 莓
+                            output.accept(withPurityAndActivity(ModItems.SYNAPTIC_NEURAL_BERRY.get(), purity, cap));
+                            // S-01 / S-02 / S-03 血清
+                            output.accept(withPurityAndActivity(ModItems.SYNAPTIC_SERUM_S01.get(), purity, cap));
+                            output.accept(withPurityAndActivity(ModItems.SYNAPTIC_SERUM_S02.get(), purity, cap));
+                            output.accept(withPurityAndActivity(ModItems.SYNAPTIC_SERUM_S03.get(), purity, cap));
+                        }
                     })
                     .build());
 
@@ -71,6 +86,13 @@ public final class ModCreativeTabs {
     private static ItemStack withTag(Item item, String key, int value) {
         ItemStack stack = new ItemStack(item);
         stack.getOrCreateTag().putInt(key, value);
+        return stack;
+    }
+
+    private static ItemStack withPurityAndActivity(Item item, int genePurity, int activity) {
+        ItemStack stack = new ItemStack(item);
+        stack.getOrCreateTag().putInt("Gene_Purity", genePurity);
+        stack.getOrCreateTag().putInt("SynapticActivity", activity);
         return stack;
     }
 }

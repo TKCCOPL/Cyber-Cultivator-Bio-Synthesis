@@ -28,9 +28,10 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     private static final String TAG_ACTIVE_RECIPE = "ActiveRecipe";
 
     /**
-     * 计算突触活性：加权平均 (Potency×0.25 + Purity×0.375 + Concentration×0.375)
+     * 计算突触活性值。加权平均 (Potency×0.25 + Purity×0.375 + Concentration×0.375)，
      * 按物品种类查找输入，不依赖槽位顺序。
-     * Gene_Purity 可突破 Activity 10 的上限：cap = 10 + floor(Gene_Purity / 2)
+     * Activity 上限 = 10 + floor(Gene_Purity / 2)。
+     * Gene_Purity 从输入物品的 NBT 中读取（通过种子突变获得，经培养槽传递到原料，再传递到莓）。
      */
     public static int calculateActivity(ItemStack[] inputs) {
         int potency = 5, purity = 5, concentration = 5;
