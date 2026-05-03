@@ -27,5 +27,9 @@
 
 - [260504] Forge 1.20.1 中 `MobEffectInstance` 没有 `getTag()` / `getOrCreateTag()` 方法（这些是 `ItemStack` 的 API），无法在效果实例上附加自定义 NBT 数据 → 如需在效果间传递元数据（如来源标识），不能用 amplifier 编码（会导致效果面板显示异常等级如 201/202/203）。正确做法：使用静态 `ConcurrentHashMap<UUID, Integer>` 存储元数据，施加前调用 `setSource()`，效果 tick 中读取 `getSource()`，效果结束时在 `removeAttributeModifiers` 中调用 `clearSource()` 清理。已应用于：NeuralOverloadEffect 来源感知（S-01/S-02/S-03）
 
+## NBT 数据链传递
+
+- [260504] 向多阶段数据管道（种子→培养槽→莓→血清）添加新 NBT 字段时，必须逐阶段检查所有中间产出点是否已传递该字段 → T22 中 Gene_Purity 在 getCropOutput() 中遗漏，导致下游 calculateActivity() 始终读到 0。通用规则：新增 NBT 字段后，用 grep 追踪该字段名在所有 ItemStack 创建点的出现情况，确保从源头到终点的完整传递链
+
 ## 其他
 

@@ -205,3 +205,4 @@ while round < 3:
 - ❌ 后台通知只回复"已确认"，不复述内容
 - ❌ **在未成功调度子 agent 的情况下，禁止直接执行开发/测试任务。** 如果 Agent 工具调用失败，必须向用户报告错误并等待指示，不得绕过子 agent 流程自行编辑代码或运行命令。编排者只做调度和状态管理，不做具体实现。
 - ❌ **每个开发任务完成后，必须调度 3 个测试 agent（core/infra/ui）并行审查。未完成测试前，禁止提交 git commit。** 测试流程是强制环节，不可跳过、不可延后、不可与开发混在同一轮次。
+- ❌ **在用户明确要求版本更新/发布之前，禁止修改文档类 md 文件。** 包括但不限于 README.md、CHANGELOG.md、CLAUDE.md、docs/USER_GUIDE.md。开发过程中的代码变更不触发文档更新，只有用户说"更新版本"/"发布"/"同步文档"时才允许修改文档。docs/dev-plan.md、logs/orchestrator-log.md、docs/lessons-learned.md 等内部管理文件除外。

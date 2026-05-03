@@ -54,7 +54,7 @@ public class SynapticSerumItem extends Item {
     public static int getActivity(ItemStack stack) {
         net.minecraft.nbt.CompoundTag tag = stack.getTag();
         if (tag == null || !tag.contains(TAG_ACTIVITY)) return 5;
-        return Math.max(1, Math.min(10, tag.getInt(TAG_ACTIVITY)));
+        return Math.max(1, tag.getInt(TAG_ACTIVITY));
     }
 
     public static int getScaledDuration(int baseDuration, int activity) {

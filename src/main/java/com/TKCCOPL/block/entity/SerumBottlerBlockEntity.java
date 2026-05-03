@@ -30,6 +30,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     /**
      * 计算突触活性：加权平均 (Potency×0.25 + Purity×0.375 + Concentration×0.375)
      * 按物品种类查找输入，不依赖槽位顺序。
+     * Gene_Purity 可突破 Activity 10 的上限：cap = 10 + floor(Gene_Purity / 2)
      */
     public static int calculateActivity(ItemStack[] inputs) {
         int potency = 5, purity = 5, concentration = 5;
@@ -45,17 +46,33 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
                 concentration = tag.getInt("Concentration");
             }
         }
+
+        // 读取 Gene_Purity（从莓的 NBT 中，莓是合成血清的中间产物）
+        int genePurity = 0;
+        for (ItemStack input : inputs) {
+            if (input.isEmpty()) continue;
+            CompoundTag tag = input.getTag();
+            if (tag != null && tag.contains("Gene_Purity")) {
+                genePurity = Math.max(genePurity, tag.getInt("Gene_Purity"));
+            }
+        }
+
         double raw = potency * 0.25 + purity * 0.375 + concentration * 0.375;
-        return Math.max(1, Math.min(10, (int) Math.round(raw)));
+        int activity = (int) Math.round(raw);
+
+        // Activity 上限 = 10 + floor(Gene_Purity / 2)
+        int cap = 10 + genePurity / 2;
+        return Math.max(1, Math.min(cap, activity));
     }
 
     /**
      * 从 ItemStack 读取 SynapticActivity，无 NBT 时返回 5（平衡点）
+     * Gene_Purity 可突破上限，此处不额外 clamp（上限由 calculateActivity 计算）
      */
     public static int getActivity(ItemStack stack) {
         CompoundTag tag = stack.getTag();
         if (tag == null || !tag.contains(TAG_ACTIVITY)) return 5;
-        return Math.max(1, Math.min(10, tag.getInt(TAG_ACTIVITY)));
+        return Math.max(1, tag.getInt(TAG_ACTIVITY));
     }
 
     private final ItemStack[] inputs = new ItemStack[INPUT_SLOTS];
@@ -199,6 +216,18 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
                 int activity = calculateActivity(inputs);
                 ItemStack berry = new ItemStack(ModItems.SYNAPTIC_NEURAL_BERRY.get());
                 berry.getOrCreateTag().putInt(TAG_ACTIVITY, activity);
+                // 莓合成时继承原料的 Gene_Purity（用于后续突破 Activity 上限）
+                int maxPurity = 0;
+                for (ItemStack input : inputs) {
+                    if (input.isEmpty()) continue;
+                    CompoundTag tag = input.getTag();
+                    if (tag != null && tag.contains("Gene_Purity")) {
+                        maxPurity = Math.max(maxPurity, tag.getInt("Gene_Purity"));
+                    }
+                }
+                if (maxPurity > 0) {
+                    berry.getOrCreateTag().putInt("Gene_Purity", maxPurity);
+                }
                 yield berry;
             }
             case 1 -> {

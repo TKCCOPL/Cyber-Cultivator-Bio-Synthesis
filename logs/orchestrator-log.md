@@ -136,3 +136,24 @@
 - 260504 0012 ──── 全部完成 ────
 - 260504 0012 版本：v1.1.1（血清效果重平衡 + S-01 力量）
 - 260504 0012 提交：638adb8（14 files, +631/-41）
+
+- 260504 0100 ── T19: 培养槽纯净水瓶注入 ──
+- 260504 0100 调度 cc-dev：水桶→纯净水瓶，消耗返还空玻璃瓶
+- 260504 0101 开发完成，编译 PASS
+- 260504 0101 清理 agent 意外创建的 13 个 ember_soil 文件
+- 260504 0101 测试：core=PASS / infra=PASS / ui=PASS
+- 260504 0101 ui 待更新项：USER_GUIDE.md 第87/95行 + README.md 第55行（水桶→纯净水瓶）
+- 260504 0102 提交：0f69153
+
+- 260504 0400 ── 基因突变事件系统 ──
+- 260504 0400 设计规范：docs/superpowers/specs/2026-05-04-gene-mutation-design.md
+- 260504 0400 任务拆分：T20-T24 共 5 个任务
+- 260504 0400 T20 开发启动：Gene_Generation 代数追踪
+- 260504 0323 T20-T23 由 cc-dev 子 agent 完成开发
+- 260504 0323 T24 Phase Gate 验证启动：compileJava + runData + build
+- 260504 0323 compileJava: PASS（BUILD SUCCESSFUL）
+- 260504 0323 runData: PASS（8 provider 全部完成，82 文件）
+- 260504 0323 build: PASS（BUILD SUCCESSFUL，reobfJar 完成）
+- 260504 0323 ──── T20-T24 全部完成 ────
+- 260504 0323 基因突变事件系统：代数追踪 + 突变概率 + Purity影响 + 视觉反馈 + Phase Gate
+- 260504 0323 总进度：23/23（100%）

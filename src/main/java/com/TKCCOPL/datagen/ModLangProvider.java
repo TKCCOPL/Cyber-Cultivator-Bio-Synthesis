@@ -48,6 +48,9 @@ public class ModLangProvider extends LanguageProvider {
         add("tooltip.cybercultivator.gene_speed", "Gene_Speed: %s");
         add("tooltip.cybercultivator.gene_yield", "Gene_Yield: %s");
         add("tooltip.cybercultivator.gene_potency", "Gene_Potency: %s");
+        add("tooltip.cybercultivator.gene_generation", "代数: %s");
+        add("tooltip.cybercultivator.gene_purity", "纯度基因: %s");
+        add("tooltip.cybercultivator.mutation", "★ 突变体");
         add("tooltip.cybercultivator.bio_incubator", "放入种子后，可注入纯净水/营养液/数据信号进行培养");
         add("tooltip.cybercultivator.gene_splicer", "放入两颗基因种子后自动拼接；潜行可取回输入或输出");
         add("tooltip.cybercultivator.atmospheric_condenser", "自动凝结纯净水；下方放置培养槽可自动注入纯净度");
@@ -80,7 +83,7 @@ public class ModLangProvider extends LanguageProvider {
         add("advancement.cybercultivator.cyber_equip.description", "佩戴一件 Curios 饰品");
 
         // Serum quality chain tooltips
-        add("tooltip.cybercultivator.serum_activity", "突触活性: %s/10");
+        add("tooltip.cybercultivator.serum_activity", "突触活性: %s");
         add("tooltip.cybercultivator.serum_base_level", "基础等级: %s");
         add("tooltip.cybercultivator.serum_duration_mult", "时长倍率: ×%s");
         add("tooltip.cybercultivator.quality_potency", "品质: %s/10");

@@ -171,8 +171,13 @@ public final class IncubatorHudOverlay {
         ItemStack output = splicer.getOutput();
         boolean hasOutput = !output.isEmpty();
 
-        // 有 output 时显示 4 行（父本 A + 父本 B + 空行 + 结果），否则 3 行
-        int hudHeight = hasOutput ? 62 : 50;
+        // 有 output 时显示 4-5 行（父本 A + 父本 B + 空行 + 结果 [+ 突变标记]），否则 3 行
+        boolean hasMutation = false;
+        if (hasOutput) {
+            net.minecraft.nbt.CompoundTag outTag = output.getTag();
+            hasMutation = outTag != null && outTag.getBoolean("Mutation");
+        }
+        int hudHeight = hasOutput ? (hasMutation ? 74 : 62) : 50;
         gui.fill(x, y, x + 200, y + hudHeight, 0xAA000000);
 
         // Title
@@ -191,9 +196,23 @@ public final class IncubatorHudOverlay {
             int speed = GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_SPEED);
             int yield = GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_YIELD);
             int potency = GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_POTENCY);
-            gui.drawString(mc.font, Component.literal(String.format("Out: [S:%d Y:%d P:%d]", speed, yield, potency)),
+            int purity = GeneticSeedItem.getPurity(output);
+            String outLine = String.format("Out: [S:%d Y:%d P:%d]", speed, yield, potency);
+            if (purity > 0) {
+                outLine += String.format(" Pur:%d", purity);
+            }
+            gui.drawString(mc.font, Component.literal(outLine),
                     x + 4, y + 40, 0xFFAA00);
-            gui.drawString(mc.font, Component.literal("Ready - Shift+Click to extract"), x + 4, y + 52, 0xCCCCCC);
+            // Mutation marker on output
+            net.minecraft.nbt.CompoundTag outputTag = output.getTag();
+            if (outputTag != null && outputTag.getBoolean("Mutation")) {
+                gui.drawString(mc.font, Component.literal("★ MUTATION!")
+                        .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE),
+                        x + 4, y + 52, 0xFF55FF);
+                gui.drawString(mc.font, Component.literal("Ready - Shift+Click to extract"), x + 4, y + 62, 0xCCCCCC);
+            } else {
+                gui.drawString(mc.font, Component.literal("Ready - Shift+Click to extract"), x + 4, y + 52, 0xCCCCCC);
+            }
         } else {
             gui.drawString(mc.font, Component.literal("Out: Empty"), x + 4, y + 38, 0x999999);
         }
@@ -206,8 +225,19 @@ public final class IncubatorHudOverlay {
             int speed = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_SPEED);
             int yield = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_YIELD);
             int potency = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_POTENCY);
-            String text = label + ": [Speed:" + speed + " Yield:" + yield + " Potency:" + potency + "]";
+            int gen = GeneticSeedItem.getGeneration(seed);
+            String text = label + ": [S:" + speed + " Y:" + yield + " P:" + potency + "]";
+            if (gen > 0) {
+                text += " Gen:" + gen;
+            }
             gui.drawString(mc.font, Component.literal(text), x, y, 0x44FF44);
+            // Mutation marker
+            net.minecraft.nbt.CompoundTag tag = seed.getTag();
+            if (tag != null && tag.getBoolean("Mutation")) {
+                gui.drawString(mc.font, Component.literal("  ★ MUTATION!")
+                        .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE),
+                        x + mc.font.width(text), y, 0xFF55FF);
+            }
         }
     }
 

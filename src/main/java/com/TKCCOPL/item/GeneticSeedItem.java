@@ -13,6 +13,8 @@ public class GeneticSeedItem extends ItemNameBlockItem {
     public static final String GENE_SPEED = "Gene_Speed";
     public static final String GENE_YIELD = "Gene_Yield";
     public static final String GENE_POTENCY = "Gene_Potency";
+    public static final String GENE_GENERATION = "Gene_Generation";
+    public static final String GENE_PURITY = "Gene_Purity";
 
     private final int defaultSpeed;
     private final int defaultYield;
@@ -51,7 +53,8 @@ public class GeneticSeedItem extends ItemNameBlockItem {
     }
 
     public void ensureGeneData(ItemStack stack) {
-        if (stack.hasTag() && stack.getTag().contains(GENE_SPEED)) return;
+        CompoundTag existing = stack.getTag();
+        if (existing != null && existing.contains(GENE_SPEED) && existing.contains(GENE_GENERATION)) return;
         CompoundTag tag = stack.getOrCreateTag();
         if (!tag.contains(GENE_SPEED)) {
             tag.putInt(GENE_SPEED, defaultSpeed);
@@ -61,6 +64,9 @@ public class GeneticSeedItem extends ItemNameBlockItem {
         }
         if (!tag.contains(GENE_POTENCY)) {
             tag.putInt(GENE_POTENCY, defaultPotency);
+        }
+        if (!tag.contains(GENE_GENERATION)) {
+            tag.putInt(GENE_GENERATION, 0);
         }
     }
 
@@ -84,5 +90,17 @@ public class GeneticSeedItem extends ItemNameBlockItem {
 
     public static int clampGene(int value) {
         return Math.max(1, Math.min(10, value));
+    }
+
+    public static int getGeneration(ItemStack stack) {
+        CompoundTag tag = stack.getTag();
+        if (tag == null || !tag.contains(GENE_GENERATION)) return 0;
+        return tag.getInt(GENE_GENERATION);
+    }
+
+    public static int getPurity(ItemStack stack) {
+        CompoundTag tag = stack.getTag();
+        if (tag == null || !tag.contains(GENE_PURITY)) return 0;
+        return Math.max(0, Math.min(10, tag.getInt(GENE_PURITY)));
     }
 }

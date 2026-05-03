@@ -32,7 +32,13 @@ Cyber-Cultivator Bio-Synthesis — Minecraft Forge 1.20.1 中型模组
 | T17 | NeuralOverload 来源感知 | ✅ 完成 | - | - | - | - | Source NBT标签 + 按血清类型分支副作用 |
 | T18 | 编译验证 + 语言文件 + 文档同步 | ✅ 完成 | - | - | - | - | Phase Gate + zh_cn/en_us 更新 + README/USER_GUIDE |
 
+| T20 | Gene_Generation 代数追踪 | ✅ 完成 | - | - | - | - | 种子NBT新增Generation，拼接继承+1 |
+| T21 | 突变概率计算 + 突变结果 | ✅ 完成 | - | - | - | - | 5%+代数2%+差异1%，80%数值突破/20%Purity |
+| T22 | Gene_Purity 对 Activity 影响 | ✅ 完成 | - | - | - | - | Activity上限=10+floor(Purity/2) |
+| T23 | 视觉反馈 + Tooltip + HUD | ✅ 完成 | - | - | - | - | 种子Tooltip+拼接机突变标记+单片镜HUD |
+| T24 | 语言文件 + 编译验证 | ✅ 完成 | - | - | - | - | Phase Gate: compileJava+runData+build 全部 PASS |
+
 ## 当前进度
 
-- 已完成：18/18
-- 最后更新：260504 0300
+- 已完成：23/23
+- 最后更新：260504 0323

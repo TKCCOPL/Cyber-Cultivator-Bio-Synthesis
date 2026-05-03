@@ -106,20 +106,30 @@ public class BioIncubatorBlockEntity extends BlockEntity {
         Item seedItem = seed.getItem();
         int geneYield = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_YIELD);
         int genePotency = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_POTENCY);
+        int generation = GeneticSeedItem.getGeneration(seed);
+        int genePurity = GeneticSeedItem.getPurity(seed);
         int count = 2 + geneYield / 3; // yield 1-10 → count 2-5
 
         ItemStack output;
         if (seedItem == ModItems.FIBER_REED_SEEDS.get()) {
             output = new ItemStack(ModItems.PLANT_FIBER.get(), count);
             output.getOrCreateTag().putInt("Potency", genePotency);
+            output.getOrCreateTag().putInt("Generation", generation);
         } else if (seedItem == ModItems.PROTEIN_SOY_SEEDS.get()) {
             output = new ItemStack(ModItems.BIOCHEMICAL_SOLUTION.get(), count);
             output.getOrCreateTag().putInt("Concentration", genePotency);
+            output.getOrCreateTag().putInt("Generation", generation);
         } else if (seedItem == ModItems.ALCOHOL_BLOOM_SEEDS.get()) {
             output = new ItemStack(ModItems.INDUSTRIAL_ETHANOL.get(), count);
             output.getOrCreateTag().putInt("Purity", genePotency);
+            output.getOrCreateTag().putInt("Generation", generation);
         } else {
             output = seed.copy();
+        }
+
+        // 将种子的 Gene_Purity 传递到产出物，确保后续莓合成和血清合成能读取到该值
+        if (genePurity > 0) {
+            output.getOrCreateTag().putInt(GeneticSeedItem.GENE_PURITY, genePurity);
         }
 
         return output;

@@ -33,5 +33,29 @@ public final class ClientTooltipEvents {
         event.getToolTip().add(Component.translatable("tooltip.cybercultivator.gene_speed", GeneticSeedItem.getGene(stack, GeneticSeedItem.GENE_SPEED)).withStyle(ChatFormatting.AQUA));
         event.getToolTip().add(Component.translatable("tooltip.cybercultivator.gene_yield", GeneticSeedItem.getGene(stack, GeneticSeedItem.GENE_YIELD)).withStyle(ChatFormatting.GREEN));
         event.getToolTip().add(Component.translatable("tooltip.cybercultivator.gene_potency", GeneticSeedItem.getGene(stack, GeneticSeedItem.GENE_POTENCY)).withStyle(ChatFormatting.GOLD));
+
+        // Generation
+        int generation = GeneticSeedItem.getGeneration(stack);
+        if (generation > 0) {
+            event.getToolTip().add(Component.translatable(
+                    "tooltip.cybercultivator.gene_generation", generation)
+                    .withStyle(ChatFormatting.AQUA));
+        }
+
+        // Purity
+        int purity = GeneticSeedItem.getPurity(stack);
+        if (purity > 0) {
+            event.getToolTip().add(Component.translatable(
+                    "tooltip.cybercultivator.gene_purity", purity)
+                    .withStyle(ChatFormatting.LIGHT_PURPLE));
+        }
+
+        // Mutation marker
+        net.minecraft.nbt.CompoundTag tag = stack.getTag();
+        if (tag != null && tag.getBoolean("Mutation")) {
+            event.getToolTip().add(Component.translatable(
+                    "tooltip.cybercultivator.mutation")
+                    .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD));
+        }
     }
 }

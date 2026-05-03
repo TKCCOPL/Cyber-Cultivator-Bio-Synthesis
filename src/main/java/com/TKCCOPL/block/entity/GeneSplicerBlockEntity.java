@@ -120,23 +120,74 @@ public class GeneSplicerBlockEntity extends BlockEntity {
             return;
         }
 
-        int speed = breedGene(seedA, seedB, GeneticSeedItem.GENE_SPEED, random);
-        int yield = breedGene(seedA, seedB, GeneticSeedItem.GENE_YIELD, random);
-        int potency = breedGene(seedA, seedB, GeneticSeedItem.GENE_POTENCY, random);
+        // 1. 读取亲本基因
+        int speedA = GeneticSeedItem.getGene(seedA, GeneticSeedItem.GENE_SPEED);
+        int speedB = GeneticSeedItem.getGene(seedB, GeneticSeedItem.GENE_SPEED);
+        int yieldA = GeneticSeedItem.getGene(seedA, GeneticSeedItem.GENE_YIELD);
+        int yieldB = GeneticSeedItem.getGene(seedB, GeneticSeedItem.GENE_YIELD);
+        int potencyA = GeneticSeedItem.getGene(seedA, GeneticSeedItem.GENE_POTENCY);
+        int potencyB = GeneticSeedItem.getGene(seedB, GeneticSeedItem.GENE_POTENCY);
 
+        // 2. 计算突变概率: base 5% + 代数 2%/代 + 基因差异 1%/点
+        int genA = GeneticSeedItem.getGeneration(seedA);
+        int genB = GeneticSeedItem.getGeneration(seedB);
+        int maxGen = Math.max(genA, genB);
+        int maxDiff = Math.max(
+                Math.abs(speedA - speedB),
+                Math.max(Math.abs(yieldA - yieldB), Math.abs(potencyA - potencyB))
+        );
+        double mutationChance = 0.05 + maxGen * 0.02 + maxDiff * 0.01;
+        boolean isMutation = random.nextDouble() < mutationChance;
+
+        // 3. 计算子代基因（标准公式 ±2）
+        int newSpeed = GeneticSeedItem.clampGene((speedA + speedB) / 2 + random.nextInt(5) - 2);
+        int newYield = GeneticSeedItem.clampGene((yieldA + yieldB) / 2 + random.nextInt(5) - 2);
+        int newPotency = GeneticSeedItem.clampGene((potencyA + potencyB) / 2 + random.nextInt(5) - 2);
+
+        // 4. 如果突变触发，应用突变结果
+        double roll = 0;
+        if (isMutation) {
+            roll = random.nextDouble();
+            if (roll < 0.80) {
+                // 数值突破（80%）：随机一个基因变异 ±4（覆盖标准公式结果）
+                int target = random.nextInt(3); // 0=Speed, 1=Yield, 2=Potency
+                int bonus = random.nextInt(9) - 4; // -4 to +4
+
+                if (target == 0) {
+                    newSpeed = GeneticSeedItem.clampGene((speedA + speedB) / 2 + bonus);
+                } else if (target == 1) {
+                    newYield = GeneticSeedItem.clampGene((yieldA + yieldB) / 2 + bonus);
+                } else {
+                    newPotency = GeneticSeedItem.clampGene((potencyA + potencyB) / 2 + bonus);
+                }
+            }
+            // Gene_Purity 获得（20%）在步骤 6 处理
+        }
+
+        // 5. 设置基因到输出种子
         ItemStack result = new ItemStack(seedA.getItem());
-        GeneticSeedItem.setGenes(result, speed, yield, potency);
+        GeneticSeedItem.setGenes(result, newSpeed, newYield, newPotency);
+
+        // 6. 如果是 Purity 突变，写入 Gene_Purity（累加，上限 10）
+        if (isMutation && roll >= 0.80) {
+            int currentPurity = GeneticSeedItem.getPurity(result);
+            int purityGain = 1 + random.nextInt(3); // 1-3
+            int newPurity = Math.min(10, currentPurity + purityGain);
+            result.getOrCreateTag().putInt(GeneticSeedItem.GENE_PURITY, newPurity);
+        }
+
+        // 7. 标记突变
+        if (isMutation) {
+            result.getOrCreateTag().putBoolean("Mutation", true);
+        }
+
+        // 8. 设置 Generation
+        int childGen = maxGen + 1;
+        result.getOrCreateTag().putInt(GeneticSeedItem.GENE_GENERATION, childGen);
+
         output = result;
 
         // 保留种子显示，直到玩家取出 output 后由 extractOutput() 清除
-    }
-
-    private static int breedGene(ItemStack a, ItemStack b, String key, RandomSource random) {
-        int parentA = GeneticSeedItem.getGene(a, key);
-        int parentB = GeneticSeedItem.getGene(b, key);
-        int mutation = random.nextInt(5) - 2; // -2..+2, 期望值=0
-        int value = ((parentA + parentB) / 2) + mutation;
-        return GeneticSeedItem.clampGene(value);
     }
 
     @Override
