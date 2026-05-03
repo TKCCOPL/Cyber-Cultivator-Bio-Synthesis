@@ -82,12 +82,17 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         // Process current recipe
         if (blockEntity.maxProgress > 0) {
             blockEntity.progress++;
+            // 每秒同步一次进度到客户端，驱动 HUD 进度条动画
+            if (blockEntity.progress % 20 == 0) {
+                changed = true;
+            }
             if (blockEntity.progress >= blockEntity.maxProgress) {
                 // Complete recipe — use cached activeRecipe to avoid TOCTOU
                 int recipe = blockEntity.activeRecipe;
                 if (recipe >= 0) {
-                    blockEntity.consumeInputs(recipe);
+                    // 先获取产出（需要读取输入的 NBT），再消耗输入
                     ItemStack result = blockEntity.getRecipeOutput(recipe);
+                    blockEntity.consumeInputs(recipe);
                     if (blockEntity.output.isEmpty()) {
                         blockEntity.output = result;
                     } else {
@@ -222,6 +227,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
 
     public int getProgress() { return progress; }
     public int getMaxProgress() { return maxProgress; }
+    public int getActiveRecipe() { return activeRecipe; }
     public ItemStack getOutput() { return output; }
 
     public ItemStack extractOutput() {
