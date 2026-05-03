@@ -9,6 +9,8 @@
 
 - [260503] BlockEntity tick 中的进度值必须定期同步到客户端，否则 HUD 进度条无法动画 → `progress++` 后需添加 `if (progress % 20 == 0) { changed = true; }` 触发 `sendBlockUpdated()`。通用规则：任何需要在客户端实时显示的 BlockEntity 状态（进度条、库存数量等），tick 中必须周期性调用 `setChanged()` + `sendBlockUpdated()`，不能只在状态变更完成时同步。已应用于：BioIncubatorBlockEntity、SerumBottlerBlockEntity、AtmosphericCondenserBlockEntity
 
+- [260504] `syncToClient()` 必须包含 `!level.isClientSide` 守卫 → 在客户端调用 `sendBlockUpdated()` 会导致冗余网络包甚至异常。统一模板：`if (level != null && !level.isClientSide) { level.sendBlockUpdated(...) }`。同时，WorldlyContainer 的 `removeItem()` 漏斗抽取路径也需要调用 `syncToClient()` 而非仅 `setChanged()`，否则 HUD 不会实时更新库存变化
+
 ## 注册表相关
 
 ## Curios 兼容

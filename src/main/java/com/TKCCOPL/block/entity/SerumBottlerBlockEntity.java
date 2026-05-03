@@ -272,7 +272,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         if (output.isEmpty()) return ItemStack.EMPTY;
         ItemStack out = output;
         output = ItemStack.EMPTY;
-        setChanged();
+        syncToClient();
         return out;
     }
 
@@ -285,7 +285,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
             if (!inputs[i].isEmpty()) {
                 ItemStack out = inputs[i];
                 inputs[i] = ItemStack.EMPTY;
-                setChanged();
+                syncToClient();
                 return out;
             }
         }
@@ -305,7 +305,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
 
     private void syncToClient() {
         setChanged();
-        if (level != null) {
+        if (level != null && !level.isClientSide) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
         }
     }
@@ -337,7 +337,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
             int taken = Math.min(amount, output.getCount());
             ItemStack result = output.split(taken);
             if (output.isEmpty()) output = ItemStack.EMPTY;
-            setChanged();
+            syncToClient(); // 漏斗抽取输出后立即同步到客户端
             return result;
         }
         if (slot < INPUT_SLOTS && !inputs[slot].isEmpty()) {
