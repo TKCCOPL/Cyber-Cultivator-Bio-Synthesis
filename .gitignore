@@ -16,9 +16,17 @@ out/
 
 # VS Code workspace settings
 .vscode/
-.claude/
+.claude/*
+!.claude/agents/
 
-docs
+docs/*
+!docs/superpowers/
+!docs/dev-plan.md
+!docs/lessons-learned.md
+!docs/test-reports/
+!docs/USER_GUIDE.md
+!docs/texture_generation_spec.md
+
 simulation
 
 # Eclipse
@@ -31,7 +39,8 @@ hs_err_pid*
 replay_pid*
 
 # Java/Forge logs and crash dumps
-logs/
+logs/*
+!logs/orchestrator-log.md
 crash-reports/
 debug.log
 debug-*.log
