@@ -73,3 +73,9 @@
 - 260503 2230 Bug 2: 血清叠加时持续时间不累加
 - 260503 2230 修复: finishUsingItem 中累加 existing.getDuration()，上限 10 分钟
 - 260503 2230 调度 cc-dev，编译 PASS
+
+- 260503 2245 ── 测试：Activity+持续时间修复 ──
+- 260503 2245 测试结果：core=PASS / infra=PASS / ui=FAIL
+- 260503 2245 ui FAIL 原因：en_us.json 缺少 6 个翻译键（严重）
+- 260503 2250 调度 cc-dev 补充 en_us.json，编译 PASS
+- 260503 2250 ──── 修正循环完成 ────
