@@ -59,10 +59,14 @@ public class BioIncubatorBlock extends MachineBlock {
             return InteractionResult.SUCCESS;
         }
 
-        if (held.is(Items.WATER_BUCKET)) {
+        if (held.is(ModItems.PURIFIED_WATER_BOTTLE.get())) {
             blockEntity.addPurity(20);
             if (!player.getAbilities().instabuild) {
-                player.setItemInHand(hand, new ItemStack(Items.BUCKET));
+                held.shrink(1);
+                ItemStack bottle = new ItemStack(Items.GLASS_BOTTLE);
+                if (!player.addItem(bottle)) {
+                    player.drop(bottle, false);
+                }
             }
             sendMachineStatus(player, blockEntity, "注入纯净水 +20");
             return InteractionResult.CONSUME;
