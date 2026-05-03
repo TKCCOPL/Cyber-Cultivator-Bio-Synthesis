@@ -90,5 +90,29 @@ public class ModLangProvider extends LanguageProvider {
         add("tooltip.cybercultivator.quality_purity", "纯度: %s/10");
         add("tooltip.cybercultivator.quality_concentration", "浓度: %s/10");
         add("tooltip.cybercultivator.serum_activity_bonus", "★ 活性突破: %s — 效果等级增强");
+
+        // HUD translations (Spectrum Monocle overlay)
+        add("hud.cybercultivator.incubator", "生物培养槽");
+        add("hud.cybercultivator.seed_in", "种子: 已放入");
+        add("hud.cybercultivator.seed_empty", "种子: 空");
+        add("hud.cybercultivator.mutation", "★ 突变体");
+        add("hud.cybercultivator.bottler", "血清灌装机");
+        add("hud.cybercultivator.recipe", "配方: ");
+        add("hud.cybercultivator.progress", "进度:");
+        add("hud.cybercultivator.activity", "活性: %s");
+        add("hud.cybercultivator.output_item", "输出: %s");
+        add("hud.cybercultivator.condenser", "大气冷凝器");
+        add("hud.cybercultivator.stock", "库存: %s/%s");
+        add("hud.cybercultivator.producing", "状态: 生产中");
+        add("hud.cybercultivator.full", "状态: 已满");
+        add("hud.cybercultivator.idle", "状态: 空闲");
+        add("hud.cybercultivator.splicer", "基因拼接机");
+        add("hud.cybercultivator.ready_extract", "就绪 - 潜行右键取出");
+        add("hud.cybercultivator.out_empty", "输出: 空");
+        add("hud.cybercultivator.recipe_berry", "莓合成");
+        add("hud.cybercultivator.recipe_s01", "S-01");
+        add("hud.cybercultivator.recipe_s02", "S-02");
+        add("hud.cybercultivator.recipe_s03", "S-03");
+        add("hud.cybercultivator.recipe_idle", "空闲");
     }
 }

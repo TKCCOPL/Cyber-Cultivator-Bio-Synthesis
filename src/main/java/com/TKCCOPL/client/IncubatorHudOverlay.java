@@ -64,7 +64,7 @@ public final class IncubatorHudOverlay {
         gui.fill(x, y, x + 130, y + bgHeight, 0xAA000000);
 
         // Title
-        gui.drawString(mc.font, Component.literal("[Bio-Incubator]"), x + 4, y + 2, 0x44F7FF);
+        gui.drawString(mc.font, Component.translatable("hud.cybercultivator.incubator"), x + 4, y + 2, 0x44F7FF);
 
         // Nutrition bar
         drawBar(gui, mc, x + 4, y + 14, "N", incubator.getNutrition(), 0x44FF44);
@@ -76,8 +76,10 @@ public final class IncubatorHudOverlay {
         drawBar(gui, mc, x + 4, y + 38, "D", incubator.getDataSignal(), 0xFFFF44);
 
         // Seed status
-        String seedText = incubator.hasSeed() ? "Seed: In" : "Seed: Empty";
-        gui.drawString(mc.font, Component.literal(seedText), x + 4, y + 50,
+        Component seedText = incubator.hasSeed()
+                ? Component.translatable("hud.cybercultivator.seed_in")
+                : Component.translatable("hud.cybercultivator.seed_empty");
+        gui.drawString(mc.font, seedText, x + 4, y + 50,
                 incubator.hasSeed() ? 0x44FF44 : 0xFF4444);
 
         // Growth progress (only when seed is present)
@@ -86,7 +88,7 @@ public final class IncubatorHudOverlay {
             ItemStack seedStack = incubator.getSeed();
             net.minecraft.nbt.CompoundTag seedTag = seedStack.getTag();
             if (seedTag != null && seedTag.getBoolean("Mutation")) {
-                gui.drawString(mc.font, Component.literal("★ MUTATION!")
+                gui.drawString(mc.font, Component.translatable("hud.cybercultivator.mutation")
                         .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE),
                         x + 4, y + 62, 0xFF55FF);
             }
@@ -109,17 +111,17 @@ public final class IncubatorHudOverlay {
         gui.fill(x, y, x + 130, y + hudHeight, 0xAA000000);
 
         // Title
-        gui.drawString(mc.font, Component.literal("[Serum-Bottler]"), x + 4, y + 2, 0x44F7FF);
+        gui.drawString(mc.font, Component.translatable("hud.cybercultivator.bottler"), x + 4, y + 2, 0x44F7FF);
 
         // Recipe status
-        String recipeName = getRecipeName(activeRecipe);
+        Component recipeName = getRecipeName(activeRecipe);
         int recipeColor;
         if (activeRecipe >= 0 && processing) {
             recipeColor = 0x44FF44; // green — active
         } else {
             recipeColor = 0x999999; // gray — idle
         }
-        gui.drawString(mc.font, Component.literal("Recipe: " + recipeName), x + 4, y + 14, recipeColor);
+        gui.drawString(mc.font, Component.translatable("hud.cybercultivator.recipe").append(recipeName), x + 4, y + 14, recipeColor);
 
         // Progress bar (only when processing)
         if (processing) {
@@ -131,20 +133,19 @@ public final class IncubatorHudOverlay {
         net.minecraft.world.item.ItemStack output = bottler.getOutput();
         if (!output.isEmpty()) {
             int activity = SerumBottlerBlockEntity.getActivity(output);
-            gui.drawString(mc.font, Component.literal("Activity: " + activity), x + 4, y + (processing ? 40 : 26),
+            gui.drawString(mc.font, Component.translatable("hud.cybercultivator.activity", activity), x + 4, y + (processing ? 40 : 26),
                     0xFFFF44);
         }
 
         // Output item name (when idle and has output) — truncate to fit HUD width
         if (!processing && !output.isEmpty()) {
-            String prefix = "Output: ";
             String rawName = output.getHoverName().getString();
-            int maxNameWidth = 114 - mc.font.width(prefix); // 130 - 4(pad) - 12(margin) = 114
+            int maxNameWidth = 114;
             String displayName = rawName;
             if (mc.font.width(rawName) > maxNameWidth) {
                 displayName = mc.font.plainSubstrByWidth(rawName, maxNameWidth - 6) + "...";
             }
-            gui.drawString(mc.font, Component.literal(prefix + displayName),
+            gui.drawString(mc.font, Component.translatable("hud.cybercultivator.output_item", displayName),
                     x + 4, y + 38, 0xCCCCCC);
         }
     }
@@ -156,30 +157,29 @@ public final class IncubatorHudOverlay {
         gui.fill(x, y, x + 130, y + hudHeight, 0xAA000000);
 
         // Title
-        gui.drawString(mc.font, Component.literal("[Atmo-Condenser]"), x + 4, y + 2, 0x44F7FF);
+        gui.drawString(mc.font, Component.translatable("hud.cybercultivator.condenser"), x + 4, y + 2, 0x44F7FF);
 
         // Progress bar
         int progressPercent = (int) (condenser.getProgress() * 100.0 / condenser.getMaxProgress());
         drawBar(gui, mc, x + 4, y + 14, "P", progressPercent, 0x4488FF);
 
         // Stock
-        String stockText = "Stock: " + condenser.getStock() + "/" + condenser.getMaxStock();
-        gui.drawString(mc.font, Component.literal(stockText), x + 4, y + 26, 0xCCCCCC);
+        gui.drawString(mc.font, Component.translatable("hud.cybercultivator.stock", condenser.getStock(), condenser.getMaxStock()), x + 4, y + 26, 0xCCCCCC);
 
         // Status
-        String statusText;
+        Component statusText;
         int statusColor;
         if (condenser.getStock() >= condenser.getMaxStock()) {
-            statusText = "Status: Full";
+            statusText = Component.translatable("hud.cybercultivator.full");
             statusColor = 0xFFFF44; // yellow
         } else if (condenser.getProgress() > 0) {
-            statusText = "Status: Producing";
+            statusText = Component.translatable("hud.cybercultivator.producing");
             statusColor = 0x44FF44; // green
         } else {
-            statusText = "Status: Idle";
+            statusText = Component.translatable("hud.cybercultivator.idle");
             statusColor = 0x999999; // gray
         }
-        gui.drawString(mc.font, Component.literal(statusText), x + 4, y + 38, statusColor);
+        gui.drawString(mc.font, statusText, x + 4, y + 38, statusColor);
     }
 
     private static void drawSplicerHud(GuiGraphics gui, Minecraft mc, GeneSplicerBlockEntity splicer) {
@@ -204,7 +204,7 @@ public final class IncubatorHudOverlay {
         gui.fill(x, y, x + 200, y + hudHeight, 0xAA000000);
 
         // Title
-        gui.drawString(mc.font, Component.literal("[Gene-Splicer]"), x + 4, y + 2, 0x44F7FF);
+        gui.drawString(mc.font, Component.translatable("hud.cybercultivator.splicer"), x + 4, y + 2, 0x44F7FF);
 
         // Seed A (always show) — spacing 13px to accommodate mutation marker
         drawSeedInfo(gui, mc, x + 4, y + 14, "A", splicer.getSeedA());
@@ -231,15 +231,15 @@ public final class IncubatorHudOverlay {
             // Mutation marker on output
             net.minecraft.nbt.CompoundTag outputTag = output.getTag();
             if (outputTag != null && outputTag.getBoolean("Mutation")) {
-                gui.drawString(mc.font, Component.literal("★ MUTATION!")
+                gui.drawString(mc.font, Component.translatable("hud.cybercultivator.mutation")
                         .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE),
                         x + 4, y + outputBaseY + 14, 0xFF55FF);
-                gui.drawString(mc.font, Component.literal("Ready - Shift+Click to extract"), x + 4, y + outputBaseY + 24, 0xCCCCCC);
+                gui.drawString(mc.font, Component.translatable("hud.cybercultivator.ready_extract"), x + 4, y + outputBaseY + 24, 0xCCCCCC);
             } else {
-                gui.drawString(mc.font, Component.literal("Ready - Shift+Click to extract"), x + 4, y + outputBaseY + 14, 0xCCCCCC);
+                gui.drawString(mc.font, Component.translatable("hud.cybercultivator.ready_extract"), x + 4, y + outputBaseY + 14, 0xCCCCCC);
             }
         } else {
-            gui.drawString(mc.font, Component.literal("Out: Empty"), x + 4, y + outputBaseY, 0x999999);
+            gui.drawString(mc.font, Component.translatable("hud.cybercultivator.out_empty"), x + 4, y + outputBaseY, 0x999999);
         }
     }
 
@@ -265,20 +265,20 @@ public final class IncubatorHudOverlay {
             // Mutation marker — displayed on next line to avoid overflow
             net.minecraft.nbt.CompoundTag tag = seed.getTag();
             if (tag != null && tag.getBoolean("Mutation")) {
-                gui.drawString(mc.font, Component.literal("★ MUTATION!")
+                gui.drawString(mc.font, Component.translatable("hud.cybercultivator.mutation")
                         .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE),
                         x, y + 10, 0xFF55FF);
             }
         }
     }
 
-    private static String getRecipeName(int recipe) {
+    private static Component getRecipeName(int recipe) {
         return switch (recipe) {
-            case 0 -> "Berry";
-            case 1 -> "S-01";
-            case 2 -> "S-02";
-            case 3 -> "S-03";
-            default -> "Idle";
+            case 0 -> Component.translatable("hud.cybercultivator.recipe_berry");
+            case 1 -> Component.translatable("hud.cybercultivator.recipe_s01");
+            case 2 -> Component.translatable("hud.cybercultivator.recipe_s02");
+            case 3 -> Component.translatable("hud.cybercultivator.recipe_s03");
+            default -> Component.translatable("hud.cybercultivator.recipe_idle");
         };
     }
 
