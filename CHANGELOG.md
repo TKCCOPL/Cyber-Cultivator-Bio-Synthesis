@@ -1,5 +1,36 @@
 # Changelog
 
+## v1.1.0 — 血清品质链路 + 叠加升级 + HUD 扩展
+
+### 新功能
+- **血清品质链路：** 原料品质 NBT（植物纤维→Potency，工业乙醇→Purity，生化原液→Concentration）从种子基因继承，灌装机合成莓时计算突触活性（加权平均），血清继承莓的 Activity
+- **血清叠加升级：** 多次饮用同种血清 amplifier +1（上限 V 级），持续时间累加（上限 5 分钟），Activity ≥ 8 起步 II 级
+- **灌装机 4 种配方：** 莓合成（纤维+乙醇+原液）、S-01（莓+原液+瓶）、S-02（莓+稀土+瓶）、S-03（莓+乙醇+瓶）
+- **单片镜 HUD 扩展：** 支持灌装机（配方/进度/活性）、冷凝器（进度/库存/状态）、拼接机（种子基因/输出结果）
+- **创造栏品质变体：** 7 种物品 × 10 个品质等级
+- **基因拼接机 HUD：** 显示父本种子基因和输出结果
+
+### Bug 修复
+- `SynapticOverclockEffect` / `VisualEnhancementEffect` / `MetabolicBoostEffect`：修复 `removeAttributeModifiers` 中直接 `addEffect` 导致 `ConcurrentModificationException` 崩溃（喝牛奶时触发），改用 TickTask 延迟施加
+- `SynapticSerumItem`：修复血清叠加时提前触发神经过载副作用，添加 `entity.getEffect(this) == null` 检查
+- `SynapticSerumItem`：修复血清持续时间无法叠加，添加 `existing.getDuration()` 累加逻辑
+- `SerumBottlerBlockEntity`：修复 HUD 进度条不动，tick 中每 20 tick 同步一次进度
+- `SerumBottlerBlockEntity`：修复血清 Activity 继承失败，调换 `getRecipeOutput` 和 `consumeInputs` 调用顺序
+- `SerumBottlerBlockEntity`：修复 Activity 公式因输入槽位顺序不同导致结果不一致，改为按物品种类查找输入
+- `SerumBottlerBlockEntity`：修复灌装机取回输入物品时未取消加工状态，添加 `cancelProcessing()` 方法
+- `GeneSplicerBlockEntity`：修复插入种子 A 直接输出（Forge 1.20.1 单次右键触发两次 `Block.use()`），添加同 tick 防抖
+- `GeneSplicerBlockEntity`：修复拼接机 HUD 跳过种子 B 显示，`craftOutput` 后保留种子直到取出输出
+- `AtmosphericCondenserBlockEntity`：修复 HUD 进度条不动，tick 中每 20 tick 同步一次进度
+- `AtmosphericCondenserBlockEntity`：修复 `extractOutput()` 缺少客户端同步
+- `en_us.json`：补充 6 个血清品质链路翻译键
+
+### 变更
+- `build.gradle`：排除 `cybercultivator-github.png` 打包进 JAR（7.1MB → 295KB）
+- `ModRecipeProvider`：移除莓和 S-01 的合成台配方（迁移到灌装机）
+- `ModCreativeTabs`：添加品质变体（1-10 全等级）
+
+---
+
 ## v1.0.1 — Bug 修复与体验优化
 
 ### Bug 修复

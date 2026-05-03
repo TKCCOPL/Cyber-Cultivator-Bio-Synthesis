@@ -77,7 +77,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `CurioEventHandler` 通过 `PlayerTickEvent` + `CuriosApi.getCuriosInventory()` 检测装备状态并驱动逻辑
 - 腰带：扫描范围内培养槽，自动消耗背包材料注入三项数值
 - 支持箱：加速 NeuralOverload 消退 + 低血量应急治疗（冷却 60s）
-- 单片镜 HUD：`IncubatorHudOverlay` 监听 `RenderGuiOverlayEvent`，准星对准培养槽时显示 N/P/D 进度条 + 生长进度(G) + 预计成熟时间(ETA)
+- 单片镜 HUD：`IncubatorHudOverlay` 监听 `RenderGuiOverlayEvent`，准星对准机器时显示 HUD
+  - 培养槽：N/P/D 进度条 + 生长进度(G) + 预计成熟时间(ETA)
+  - 灌装机：配方名 + 加工进度条 + 突触活性值
+  - 冷凝器：生产进度条 + 库存量 + 状态
+  - 拼接机：父本种子基因 + 输出结果
 
 **大气冷凝器 (AtmosphericCondenserBlockEntity):**
 - 每 600 tick 生产 1 纯净水瓶，库存上限 32
@@ -85,9 +89,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 实现 `WorldlyContainer`，漏斗可从侧面抽取
 
 **血清灌装机 (SerumBottlerBlockEntity):**
-- 3 输入槽 + 1 输出槽，配方硬编码：S-02（莓+稀土+瓶）、S-03（莓+乙醇+瓶）
+- 3 输入槽 + 1 输出槽，4 种配方：莓合成（纤维+乙醇+原液）、S-01（莓+原液+瓶）、S-02（莓+稀土+瓶）、S-03（莓+乙醇+瓶）
 - 加工时间 300 tick，实现 `WorldlyContainer`（顶部/侧面注入，底部抽取）
 - `matchRecipe()` 遍历输入槽匹配配方，`consumeInputs()` 消耗材料
+- Activity 公式：`clamp(round(Potency×0.25 + Purity×0.375 + Concentration×0.375), 1, 10)`，按物品种类查找输入
+- `activeRecipe` 缓存配方索引避免 TOCTOU；加工开始时缓存，完成后使用缓存值
+
+**血清品质链路 (v1.1.0):**
+- 原料品质 NBT：培养槽产出时从种子 Potency 基因写入（纤维→Potency，乙醇→Purity，原液→Concentration）
+- 莓合成：灌装机中三种原料合成，Activity = 加权平均
+- 血清继承：灌装机合成血清时继承莓的 Activity
+- 效果缩放：`duration = base × (0.5 + Activity × 0.1)`，`baseAmplifier = Activity >= 8 ? 1 : 0`
+- 叠加升级：再次饮用 amplifier +1（上限 4），持续时间累加（上限 5 分钟）
+- 副作用：`removeAttributeModifiers` 中检查 `entity.getEffect(this) == null`，仅自然过期时施加 NeuralOverload；用 TickTask 延迟避免 CME
 
 ### 数据生成
 
