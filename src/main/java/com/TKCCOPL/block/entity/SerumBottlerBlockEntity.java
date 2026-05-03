@@ -29,14 +29,22 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
 
     /**
      * 计算突触活性：加权平均 (Potency×0.25 + Purity×0.375 + Concentration×0.375)
+     * 按物品种类查找输入，不依赖槽位顺序。
      */
-    public static int calculateActivity(ItemStack fiber, ItemStack ethanol, ItemStack solution) {
-        int potency = fiber.getOrCreateTag().getInt("Potency");
-        int purity = ethanol.getOrCreateTag().getInt("Purity");
-        int concentration = solution.getOrCreateTag().getInt("Concentration");
-        if (potency == 0) potency = 5;
-        if (purity == 0) purity = 5;
-        if (concentration == 0) concentration = 5;
+    public static int calculateActivity(ItemStack[] inputs) {
+        int potency = 5, purity = 5, concentration = 5;
+        for (ItemStack input : inputs) {
+            if (input.isEmpty()) continue;
+            CompoundTag tag = input.getTag();
+            if (tag == null) continue;
+            if (input.is(ModItems.PLANT_FIBER.get()) && tag.contains("Potency")) {
+                potency = tag.getInt("Potency");
+            } else if (input.is(ModItems.INDUSTRIAL_ETHANOL.get()) && tag.contains("Purity")) {
+                purity = tag.getInt("Purity");
+            } else if (input.is(ModItems.BIOCHEMICAL_SOLUTION.get()) && tag.contains("Concentration")) {
+                concentration = tag.getInt("Concentration");
+            }
+        }
         double raw = potency * 0.25 + purity * 0.375 + concentration * 0.375;
         return Math.max(1, Math.min(10, (int) Math.round(raw)));
     }
@@ -188,7 +196,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     private ItemStack getRecipeOutput(int recipe) {
         return switch (recipe) {
             case 0 -> {
-                int activity = calculateActivity(inputs[0], inputs[1], inputs[2]);
+                int activity = calculateActivity(inputs);
                 ItemStack berry = new ItemStack(ModItems.SYNAPTIC_NEURAL_BERRY.get());
                 berry.getOrCreateTag().putInt(TAG_ACTIVITY, activity);
                 yield berry;
