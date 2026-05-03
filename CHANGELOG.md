@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.1.1 — 血清效果重平衡
+
+### 血清效果重平衡
+- **S-01 突触超频：** 攻速+力量全部随 amplifier 动态增长（每级 +5%），移除急迫效果，新增抗性提升（上限 III 级）
+- **S-02 视觉强化：** 发光范围 16-48 格随 amplifier 增长（每级 +8 格），新增抗火效果（上限 III 级）
+- **S-03 代谢加速：** 移除急迫效果，新增移速+跳跃提升（上限 III 级），回血保持 amplifier 缩放
+- **副作用差异化：** 副作用按血清来源分支 — S-01 凋零+饥饿，S-02 失明+饥饿，S-03 缓慢+中毒
+- **来源感知机制：** `NeuralOverloadEffect` 通过静态 `ConcurrentHashMap` 存储来源 ID，按血清类型分支施加不同副作用组合
+
+### 变更
+- `SynapticOverclockEffect`：属性修饰符改为 `applyEffectTick` 中动态计算，每秒刷新
+- `VisualEnhancementEffect`：添加抗火效果 + 发光范围随 amplifier 增长
+- `MetabolicBoostEffect`：移速改为 transient modifier 动态计算，添加跳跃提升
+- `NeuralOverloadEffect`：`applyEffectTick` 中按 source 分支施加不同副作用
+
+---
+
 ## v1.1.0 — 血清品质链路 + 叠加升级 + HUD 扩展
 
 ### 新功能

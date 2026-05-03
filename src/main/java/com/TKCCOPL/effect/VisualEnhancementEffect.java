@@ -13,7 +13,6 @@ import net.minecraft.world.phys.AABB;
 import java.util.List;
 
 public class VisualEnhancementEffect extends MobEffect {
-    private static final double SCAN_RANGE = 32.0;
 
     public VisualEnhancementEffect() {
         super(MobEffectCategory.BENEFICIAL, 0x88FFAA);
@@ -26,9 +25,17 @@ public class VisualEnhancementEffect extends MobEffect {
 
     @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
+        // 夜视
         entity.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 100, 0, true, false, true));
+
+        // 抗火（上限 III = amplifier 2）
+        int fireResAmp = Math.min(amplifier, 2);
+        entity.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 100, fireResAmp, true, false, true));
+
+        // 发光范围随 amplifier 增长：16 + amp * 8
         if (!entity.level().isClientSide) {
-            AABB area = entity.getBoundingBox().inflate(SCAN_RANGE);
+            double scanRange = 16.0 + amplifier * 8.0;
+            AABB area = entity.getBoundingBox().inflate(scanRange);
             List<LivingEntity> nearby = entity.level().getEntitiesOfClass(LivingEntity.class, area, e -> e != entity);
             for (LivingEntity target : nearby) {
                 target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 80, 0, true, false, true));
@@ -44,7 +51,12 @@ public class VisualEnhancementEffect extends MobEffect {
             if (entity.getEffect(this) == null) {
                 entity.level().getServer().tell(new net.minecraft.server.TickTask(
                     entity.level().getServer().getTickCount() + 1,
-                    () -> entity.addEffect(new MobEffectInstance(ModEffects.NEURAL_OVERLOAD.get(), 20 * (12 + amplifier * 4), amplifier))
+                    () -> {
+                        // 设置来源为 S-02，amplifier 保持实际效果等级
+                        NeuralOverloadEffect.setSource(entity, 2);
+                        entity.addEffect(new MobEffectInstance(ModEffects.NEURAL_OVERLOAD.get(),
+                                20 * (12 + amplifier * 4), amplifier));
+                    }
                 ));
             }
         }

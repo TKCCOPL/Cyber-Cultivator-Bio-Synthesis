@@ -102,3 +102,36 @@
 - 260503 2350 发现问题：CurioEventHandler类加载风险(中等) + HUD/交互消息硬编码(i18n)
 - 260503 2350 判定：无功能性bug，无安全漏洞，可发布
 - 260503 2355 v1.1.0 发布：BUILD SUCCESSFUL + git tag v1.1.0
+
+- 260504 0000 ── 血清效果重平衡 ──
+- 260504 0000 需求：S-01攻速/移速/抗性随amp增长，S-02发光范围/抗火随amp增长，S-03急迫→移速+跳跃
+- 260504 0000 副作用差异化：S-01凋零+饥饿，S-02失明+饥饿，S-03缓慢+中毒
+- 260504 0000 任务拆分完成：T14-T18 共 5 个任务
+- 260504 0000 T14-T16 并行启动（三个效果类独立重写）
+- 260504 0001 T14 开发完成：SynapticOverclockEffect 重写，编译 PASS
+- 260504 0001 T15 开发完成：VisualEnhancementEffect 重写，编译 PASS
+- 260504 0001 T16 开发完成：MetabolicBoostEffect 重写，编译 PASS
+- 260504 0001 测试启动：core/infra/ui 并行（T14-T16 批次）
+- 260504 0002 测试结果：core=PASS / infra=PASS / ui=PASS
+- 260504 0002 全 PASS，2 个轻微观察项（S-01/S-03 移速可叠加、Tooltip 未描述子效果），无修正循环
+- 260504 0003 T17 开发启动：NeuralOverload 来源感知
+- 260504 0004 T17 开发完成：amplifier 编码方案（SOURCE_BASE=200），编译 PASS
+- 260504 0004 测试启动：core/infra/ui 并行（T17）
+- 260504 0005 测试结果：core=PASS / infra=PASS / ui=FAIL
+- 260504 0005 ui FAIL 原因：SOURCE_BASE 编码(201/202/203)暴露在效果面板，显示异常等级数字
+- 260504 0005 第1轮修正启动：改用静态 Map 存储来源信息
+- 260504 0006 第1轮修正完成：ConcurrentHashMap 方案，编译 PASS
+- 260504 0006 重测 UI 维度
+- 260504 0007 重测结果：ui=PASS（静态 Map 方案，amplifier 正常 0-4）
+- 260504 0007 T17 完成，1 轮修正
+- 260504 0008 T18 开发启动：编译验证 + 文档同步
+- 260504 0009 T18 完成：compileJava PASS / build PASS / README/USER_GUIDE/CHANGELOG/CLAUDE.md 已同步
+- 260504 0009 ──── T14-T18 全部完成 ────
+
+- 260504 0010 ── S-01 移速→力量 ──
+- 260504 0010 调度 cc-dev 修改：移除移速 modifier，新增力量(DAMAGE_BOOST)效果
+- 260504 0011 开发完成，编译 PASS
+- 260504 0011 测试：core=PASS / infra=PASS / ui=FAIL（4处文档未同步"移速→力量"）
+- 260504 0012 修正：README/USER_GUIDE/CHANGELOG/CLAUDE.md 同步更新
+- 260504 0012 ──── 全部完成 ────
+- 260504 0012 版本：v1.1.1（血清效果重平衡 + S-01 力量）

@@ -69,8 +69,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Tick 采用静态方法签名 `tick(Level, BlockPos, BlockState, BioIncubatorBlockEntity)`，通过 `BlockEntityTicker` 注册
 - 客户端同步：所有状态变更通过 `syncToClient()` → `setChanged()` + `level.sendBlockUpdated()` 推送到客户端
 
+**血清效果重平衡 (v1.1.1):**
+- S-01 突触超频：攻速+力量随 amplifier 动态增长（`applyEffectTick` 中 transient modifier + addEffect），抗性（上限 III）
+- S-02 视觉强化：夜视 + 发光范围 16-48 格随 amplifier 增长 + 抗火（上限 III）
+- S-03 代谢加速：回血 + 移速 transient modifier + 跳跃提升（上限 III）
+
 **血清副作用链:**
 - `SynapticOverclockEffect` / `VisualEnhancementEffect` / `MetabolicBoostEffect` 结束时均自动施加 `NeuralOverloadEffect`
+- 副作用按来源差异化：S-01 凋零+饥饿，S-02 失明+饥饿，S-03 缓慢+中毒
+- 来源通过 `NeuralOverloadEffect.setSource(entity, sourceId)` 静态 `ConcurrentHashMap` 传递
 
 **Curios 饰品系统:**
 - 饰品为纯 `Item` 子类（`CurioAccessoryItem`），不直接实现 `ICurioItem`（Curios 为 compileOnly）

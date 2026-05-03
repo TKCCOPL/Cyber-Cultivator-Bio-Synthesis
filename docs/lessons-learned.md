@@ -23,5 +23,9 @@
 
 - [260503] `removeAttributeModifiers` 中不能直接调用 `entity.addEffect()` → 当效果被 `curePotionEffects` 批量移除时，遍历 `activeEffects` HashMap 期间插入新效果会抛 `ConcurrentModificationException`。正确做法：用 `entity.level().getServer().tell(new TickTask(tickCount + 1, ...))` 延迟到下一 tick 再施加
 
+- [260504] 需要随 amplifier 动态缩放的属性修饰符，不能用构造函数中的 `addAttributeModifier`（固定值）→ 正确做法：构造函数留空，在 `applyEffectTick` 中用 `removeModifier(uuid)` + `addTransientModifier(new)` 每 tick 刷新；`removeAttributeModifiers` 中通过 `attributeMap.getInstance(Attributes.XXX)` 清理 transient modifier。已应用于：SynapticOverclockEffect（攻速/移速）
+
+- [260504] Forge 1.20.1 中 `MobEffectInstance` 没有 `getTag()` / `getOrCreateTag()` 方法（这些是 `ItemStack` 的 API），无法在效果实例上附加自定义 NBT 数据 → 如需在效果间传递元数据（如来源标识），不能用 amplifier 编码（会导致效果面板显示异常等级如 201/202/203）。正确做法：使用静态 `ConcurrentHashMap<UUID, Integer>` 存储元数据，施加前调用 `setSource()`，效果 tick 中读取 `getSource()`，效果结束时在 `removeAttributeModifiers` 中调用 `clearSource()` 清理。已应用于：NeuralOverloadEffect 来源感知（S-01/S-02/S-03）
+
 ## 其他
 
