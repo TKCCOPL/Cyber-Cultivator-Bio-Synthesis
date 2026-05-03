@@ -25,6 +25,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     private static final int INPUT_SLOTS = 3;
     private static final int OUTPUT_SLOT = 3;
     private static final String TAG_ACTIVITY = "SynapticActivity";
+    private static final String TAG_ACTIVE_RECIPE = "ActiveRecipe";
 
     /**
      * 计算突触活性：加权平均 (Potency×0.25 + Purity×0.375 + Concentration×0.375)
@@ -53,6 +54,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     private ItemStack output = ItemStack.EMPTY;
     private int progress;
     private int maxProgress;
+    private int activeRecipe = -1;
 
     public SerumBottlerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SERUM_BOTTLER.get(), pos, state);
@@ -70,6 +72,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         if (blockEntity.maxProgress == 0) {
             int recipe = blockEntity.matchRecipe();
             if (recipe >= 0) {
+                blockEntity.activeRecipe = recipe;
                 blockEntity.maxProgress = PROCESSING_TIME;
                 blockEntity.progress = 0;
                 changed = true;
@@ -80,8 +83,8 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         if (blockEntity.maxProgress > 0) {
             blockEntity.progress++;
             if (blockEntity.progress >= blockEntity.maxProgress) {
-                // Complete recipe
-                int recipe = blockEntity.matchRecipe();
+                // Complete recipe — use cached activeRecipe to avoid TOCTOU
+                int recipe = blockEntity.activeRecipe;
                 if (recipe >= 0) {
                     blockEntity.consumeInputs(recipe);
                     ItemStack result = blockEntity.getRecipeOutput(recipe);
@@ -91,6 +94,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
                         blockEntity.output.grow(result.getCount());
                     }
                 }
+                blockEntity.activeRecipe = -1;
                 blockEntity.progress = 0;
                 blockEntity.maxProgress = 0;
                 changed = true;
@@ -345,6 +349,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         super.load(tag);
         progress = Math.max(0, tag.getInt(TAG_PROGRESS));
         maxProgress = Math.max(0, tag.getInt(TAG_MAX_PROGRESS));
+        activeRecipe = tag.getInt(TAG_ACTIVE_RECIPE);
         for (int i = 0; i < INPUT_SLOTS; i++) {
             String key = TAG_INPUT + i;
             inputs[i] = tag.contains(key) ? ItemStack.of(tag.getCompound(key)) : ItemStack.EMPTY;
@@ -357,6 +362,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         super.saveAdditional(tag);
         tag.putInt(TAG_PROGRESS, progress);
         tag.putInt(TAG_MAX_PROGRESS, maxProgress);
+        tag.putInt(TAG_ACTIVE_RECIPE, activeRecipe);
         for (int i = 0; i < INPUT_SLOTS; i++) {
             if (!inputs[i].isEmpty()) {
                 tag.put(TAG_INPUT + i, inputs[i].save(new CompoundTag()));

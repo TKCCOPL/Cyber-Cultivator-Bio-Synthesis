@@ -29,7 +29,7 @@ public class MetabolicBoostEffect extends MobEffect {
     public void removeAttributeModifiers(LivingEntity entity, net.minecraft.world.entity.ai.attributes.AttributeMap attributeMap, int amplifier) {
         super.removeAttributeModifiers(entity, attributeMap, amplifier);
         if (!entity.level().isClientSide) {
-            entity.addEffect(new MobEffectInstance(ModEffects.NEURAL_OVERLOAD.get(), 20 * (15 + amplifier * 5), amplifier));
+            entity.addEffect(new MobEffectInstance(ModEffects.NEURAL_OVERLOAD.get(), 20 * (12 + amplifier * 4), amplifier));
         }
     }
 }
