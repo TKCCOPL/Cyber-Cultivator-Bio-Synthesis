@@ -14,7 +14,7 @@ public class GeneticSeedItem extends ItemNameBlockItem {
     public static final String GENE_YIELD = "Gene_Yield";
     public static final String GENE_POTENCY = "Gene_Potency";
     public static final String GENE_GENERATION = "Gene_Generation";
-    public static final String GENE_PURITY = "Gene_Purity";
+    public static final String GENE_SYNERGY = "Gene_Synergy";
 
     private final int defaultSpeed;
     private final int defaultYield;
@@ -98,9 +98,9 @@ public class GeneticSeedItem extends ItemNameBlockItem {
         return tag.getInt(GENE_GENERATION);
     }
 
-    public static int getPurity(ItemStack stack) {
+    public static int getSynergy(ItemStack stack) {
         CompoundTag tag = stack.getTag();
-        if (tag == null || !tag.contains(GENE_PURITY)) return 0;
-        return Math.max(0, Math.min(10, tag.getInt(GENE_PURITY)));
+        if (tag == null || !tag.contains(GENE_SYNERGY)) return 0;
+        return Math.max(0, Math.min(10, tag.getInt(GENE_SYNERGY)));
     }
 }

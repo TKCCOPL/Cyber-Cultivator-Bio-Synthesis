@@ -44,36 +44,44 @@ public final class ClientTooltipEvents {
                         .withStyle(ChatFormatting.AQUA));
             }
 
-            // Purity
-            int purity = GeneticSeedItem.getPurity(stack);
-            if (purity > 0) {
+            // Synergy
+            int synergy = GeneticSeedItem.getSynergy(stack);
+            if (synergy > 0) {
                 event.getToolTip().add(Component.translatable(
-                        "tooltip.cybercultivator.gene_purity", purity)
+                        "tooltip.cybercultivator.gene_synergy", synergy)
                         .withStyle(ChatFormatting.LIGHT_PURPLE));
             }
 
-            // Mutation marker
+            // Mutation marker (integer type code + detail)
             CompoundTag tag = stack.getTag();
-            if (tag != null && tag.getBoolean("Mutation")) {
-                event.getToolTip().add(Component.translatable(
-                        "tooltip.cybercultivator.mutation")
-                        .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD));
+            if (tag != null && tag.contains("Mutation")) {
+                int mutationType = tag.getInt("Mutation");
+                String detail = tag.contains("MutationDetail") ? tag.getString("MutationDetail") : "";
+                switch (mutationType) {
+                    case 1 -> event.getToolTip().add(Component.translatable(
+                            "tooltip.cybercultivator.mutation_numerical", detail)
+                            .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD));
+                    case 2 -> event.getToolTip().add(Component.translatable(
+                            "tooltip.cybercultivator.mutation_synergy", detail)
+                            .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD));
+                    default -> {}
+                }
             }
             return;
         }
 
-        // --- Raw materials / berry Gene_Purity display (no monocle required) ---
+        // --- Raw materials / berry Gene_Synergy display (no monocle required) ---
         Item item = stack.getItem();
         if (item == ModItems.PLANT_FIBER.get()
                 || item == ModItems.INDUSTRIAL_ETHANOL.get()
                 || item == ModItems.BIOCHEMICAL_SOLUTION.get()
                 || item == ModItems.SYNAPTIC_NEURAL_BERRY.get()) {
             CompoundTag tag = stack.getTag();
-            if (tag != null && tag.contains("Gene_Purity")) {
-                int purity = tag.getInt("Gene_Purity");
-                if (purity > 0) {
+            if (tag != null && tag.contains("Gene_Synergy")) {
+                int synergy = tag.getInt("Gene_Synergy");
+                if (synergy > 0) {
                     event.getToolTip().add(Component.translatable(
-                            "tooltip.cybercultivator.gene_purity", purity)
+                            "tooltip.cybercultivator.gene_synergy", synergy)
                             .withStyle(ChatFormatting.LIGHT_PURPLE));
                 }
             }

@@ -242,3 +242,43 @@
 - 260504 0603 Phase 2 构建验证：compileJava PASS / build PASS
 - 260504 0603 Phase 3 版本号：gradle.properties 当前 1.1.0，需更新到 1.1.1
 - 260504 0603 权限问题：Edit/Write/Bash 工具被拒绝，无法完成文档更新
+
+- 260504 0650 ── 莓合成 Gene_Purity 逻辑优化 ──
+- 260504 0650 任务拆分完成：T25(合并双循环+删死标签) / T26(重命名Gene_Purity→Gene_Synergy) / T27(编译验证)
+- 260504 0650 T25+T26 合并调度 cc-dev（均为 SerumBottlerBlockEntity 重构，合并减少轮次）
+- 260504 0710 测试结果：core=PASS / infra=PASS / ui=FAIL
+- 260504 0710 UI FAIL 原因：语言文件未同步（zh_cn.json 未 runData，en_us.json 未更新）
+- 260504 0710 修正：runData 重新生成 zh_cn.json + 手动更新 en_us.json
+- 260504 0710 最终验证：compileJava PASS / build PASS
+- 260504 0710 T25+T26 完成，迭代 1 次
+- 260504 0730 ── Task: T28 Mutation标签升级 ──
+- 260504 0730 开发完成，编译PASS
+- 260504 0730 测试启动：core/infra/ui 并行
+- 260504 0730 测试结果：core=PASS / infra=PASS / ui=PASS
+- 260504 0730 轻微问题：死key未清理(mutation/mutation_numerical旧通用key)、bonus=0时显示"Speed+0"
+- 260504 0730 T28 完成，迭代 1 次
+- 260504 0800 ── Task: T29 HUD修复+透明背景+死key清理 ──
+- 260504 0800 开发完成，编译PASS
+- 260504 0800 测试结果：core=PASS / infra=PASS / ui=PASS
+- 260504 0800 轻微：灰色文字在明亮场景对比度略降（可后续微调）
+- 260504 0800 T29 完成，迭代 1 次
+- 260504 0830 ── Task: T30 拼接机HUD同步修复+全透明背景 ──
+- 260504 0830 开发完成，编译PASS
+- 260504 0830 测试结果：core=PASS / infra=PASS / ui=PASS
+- 260504 0830 轻微：灰色文字在明亮场景辨识度略低、hopper抽取路径未即时sync（tick兜底）
+- 260504 0830 T30 完成，迭代 1 次
+- 260504 0830 ──── T28+T29+T30 全部完成 ────
+- 260504 0830 迭代统计：3次全部1次通过
+- 260504 0900 ── BlockEntity 同步根因排查 ──
+- 260504 0900 问题：拼接机取出种子后 HUD 不更新
+- 260504 0900 排查过程：
+  - T29: 添加 handleUpdateTag() → 无效
+  - T30: 改用 chunkMap.getPlayers() 显式发包 → 无效
+  - 改用 ServerLevel.players() + 距离检查 → 无效
+  - 恢复 sendBlockUpdated(flags=2) → 无效
+  - 查阅 Forge 源码发现根因
+- 260504 0900 根因：ClientboundBlockEntityDataPacket 构造函数 `tag.isEmpty() ? null : tag`
+  - saveAdditional() 空字段不写入 → tag 为空 → packet tag = null
+  - 客户端 onDataPacket 收到 null → load() 不被调用 → 字段永远不清空
+- 260504 0900 修复：saveAdditional() 空字段写入哨兵 CompoundTag 确保 tag 非空
+- 260504 0900 经验已更新到 docs/lessons-learned.md

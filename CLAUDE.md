@@ -67,7 +67,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 三项动态数值：Nutrition / Purity / Data Signal (0-100，随时间衰减)
 - 交互：放入种子、纯净水瓶注入纯净度、生化原液注入营养液、硅碎片注入信号、潜行取回
 - Tick 采用静态方法签名 `tick(Level, BlockPos, BlockState, BioIncubatorBlockEntity)`，通过 `BlockEntityTicker` 注册
-- 客户端同步：所有状态变更通过 `syncToClient()` → `setChanged()` + `level.sendBlockUpdated()` 推送到客户端
+- 客户端同步：所有状态变更通过 `syncToClient()` → `setChanged()` + `level.sendBlockUpdated(pos, state, state, 2)` 推送到客户端（flags=2 是 `Block.UPDATE_CLIENTS`）。注意：`saveAdditional()` 必须写入非空 tag（空字段写入哨兵 `new CompoundTag()`），否则 `ClientboundBlockEntityDataPacket` 会将 tag 设为 null 导致客户端不调用 `load()`
 
 **血清效果重平衡 (v1.1.1):**
 - S-01 突触超频：攻速+力量随 amplifier 动态增长（`applyEffectTick` 中 transient modifier + addEffect），抗性（上限 III）

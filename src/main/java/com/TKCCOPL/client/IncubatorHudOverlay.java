@@ -59,9 +59,7 @@ public final class IncubatorHudOverlay {
         int x = 10;
         int y = 10;
 
-        // Background — seed present: 97px (includes mutation line), no seed: 63px
-        int bgHeight = incubator.hasSeed() ? 97 : 63;
-        gui.fill(x, y, x + 130, y + bgHeight, 0xAA000000);
+        // Background removed — fully transparent overlay
 
         // Title
         gui.drawString(mc.font, Component.translatable("hud.cybercultivator.incubator"), x + 4, y + 2, 0x44F7FF);
@@ -84,12 +82,14 @@ public final class IncubatorHudOverlay {
 
         // Growth progress (only when seed is present)
         if (incubator.hasSeed()) {
-            // Mutation marker on seed
+            // Mutation marker on seed (type-aware)
             ItemStack seedStack = incubator.getSeed();
-            net.minecraft.nbt.CompoundTag seedTag = seedStack.getTag();
-            if (seedTag != null && seedTag.getBoolean("Mutation")) {
-                gui.drawString(mc.font, Component.translatable("hud.cybercultivator.mutation")
-                        .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE),
+            int seedMutation = getMutationType(seedStack);
+            if (seedMutation > 0) {
+                net.minecraft.network.chat.MutableComponent mutText = seedMutation == 1
+                        ? Component.translatable("hud.cybercultivator.mutation_numerical")
+                        : Component.translatable("hud.cybercultivator.mutation_synergy");
+                gui.drawString(mc.font, mutText.withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE),
                         x + 4, y + 62, 0xFF55FF);
             }
 
@@ -109,8 +109,7 @@ public final class IncubatorHudOverlay {
         int activeRecipe = bottler.getActiveRecipe();
         boolean processing = bottler.getMaxProgress() > 0;
 
-        int hudHeight = processing ? 74 : 50;
-        gui.fill(x, y, x + 130, y + hudHeight, 0xAA000000);
+        // Background removed — fully transparent overlay
 
         // Title
         gui.drawString(mc.font, Component.translatable("hud.cybercultivator.bottler"), x + 4, y + 2, 0x44F7FF);
@@ -155,8 +154,7 @@ public final class IncubatorHudOverlay {
     private static void drawCondenserHud(GuiGraphics gui, Minecraft mc, AtmosphericCondenserBlockEntity condenser) {
         int x = 10;
         int y = 10;
-        int hudHeight = 50;
-        gui.fill(x, y, x + 130, y + hudHeight, 0xAA000000);
+        // Background removed — fully transparent overlay
 
         // Title
         gui.drawString(mc.font, Component.translatable("hud.cybercultivator.condenser"), x + 4, y + 2, 0x44F7FF);
@@ -196,14 +194,11 @@ public final class IncubatorHudOverlay {
         int seedExtraLines = (seedAMutation ? 1 : 0) + (seedBMutation ? 1 : 0);
 
         // 有 output 时显示 4-5 行（父本 A + 父本 B + 空行 + 结果 [+ 突变标记]），否则 3 行
-        boolean hasOutputMutation = false;
+        int outputMutationType = 0;
         if (hasOutput) {
-            net.minecraft.nbt.CompoundTag outTag = output.getTag();
-            hasOutputMutation = outTag != null && outTag.getBoolean("Mutation");
+            outputMutationType = getMutationType(output);
         }
-        int baseHeight = hasOutput ? (hasOutputMutation ? 74 : 62) : 50;
-        int hudHeight = baseHeight + seedExtraLines * 11;
-        gui.fill(x, y, x + 200, y + hudHeight, 0xAA000000);
+        // Background removed — fully transparent overlay
 
         // Title
         gui.drawString(mc.font, Component.translatable("hud.cybercultivator.splicer"), x + 4, y + 2, 0x44F7FF);
@@ -218,23 +213,22 @@ public final class IncubatorHudOverlay {
         // Output section — offset depends on seed mutations
         int outputBaseY = 38 + seedExtraLines * 11;
         if (hasOutput) {
-            // 分隔线
-            gui.fill(x + 4, y + outputBaseY - 1, x + 196, y + outputBaseY, 0xFF333333);
             int speed = GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_SPEED);
             int yield = GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_YIELD);
             int potency = GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_POTENCY);
-            int purity = GeneticSeedItem.getPurity(output);
+            int synergy = GeneticSeedItem.getSynergy(output);
             String outLine = String.format("Out: [S:%d Y:%d P:%d]", speed, yield, potency);
-            if (purity > 0) {
-                outLine += String.format(" Pur:%d", purity);
+            if (synergy > 0) {
+                outLine += String.format(" Syn:%d", synergy);
             }
             gui.drawString(mc.font, Component.literal(outLine),
                     x + 4, y + outputBaseY + 2, 0xFFAA00);
-            // Mutation marker on output
-            net.minecraft.nbt.CompoundTag outputTag = output.getTag();
-            if (outputTag != null && outputTag.getBoolean("Mutation")) {
-                gui.drawString(mc.font, Component.translatable("hud.cybercultivator.mutation")
-                        .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE),
+            // Mutation marker on output (type-aware)
+            if (outputMutationType > 0) {
+                net.minecraft.network.chat.MutableComponent mutText = outputMutationType == 1
+                        ? Component.translatable("hud.cybercultivator.mutation_numerical")
+                        : Component.translatable("hud.cybercultivator.mutation_synergy");
+                gui.drawString(mc.font, mutText.withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE),
                         x + 4, y + outputBaseY + 14, 0xFF55FF);
                 gui.drawString(mc.font, Component.translatable("hud.cybercultivator.ready_extract"), x + 4, y + outputBaseY + 24, 0xCCCCCC);
             } else {
@@ -245,10 +239,17 @@ public final class IncubatorHudOverlay {
         }
     }
 
+    /** Returns mutation type (0=none, 1=numerical, 2=synergy) */
+    private static int getMutationType(ItemStack stack) {
+        if (stack.isEmpty()) return 0;
+        net.minecraft.nbt.CompoundTag tag = stack.getTag();
+        if (tag == null || !tag.contains("Mutation")) return 0;
+        return tag.getInt("Mutation");
+    }
+
+    /** Returns true if the stack has any mutation (type > 0) */
     private static boolean isSeedMutation(ItemStack seed) {
-        if (seed.isEmpty()) return false;
-        net.minecraft.nbt.CompoundTag tag = seed.getTag();
-        return tag != null && tag.getBoolean("Mutation");
+        return getMutationType(seed) > 0;
     }
 
     private static void drawSeedInfo(GuiGraphics gui, Minecraft mc, int x, int y, String label, ItemStack seed) {
@@ -264,11 +265,13 @@ public final class IncubatorHudOverlay {
                 text += " Gen:" + gen;
             }
             gui.drawString(mc.font, Component.literal(text), x, y, 0x44FF44);
-            // Mutation marker — displayed on next line to avoid overflow
-            net.minecraft.nbt.CompoundTag tag = seed.getTag();
-            if (tag != null && tag.getBoolean("Mutation")) {
-                gui.drawString(mc.font, Component.translatable("hud.cybercultivator.mutation")
-                        .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE),
+            // Mutation marker (type-aware) — displayed on next line to avoid overflow
+            int mutationType = getMutationType(seed);
+            if (mutationType > 0) {
+                net.minecraft.network.chat.MutableComponent mutText = mutationType == 1
+                        ? Component.translatable("hud.cybercultivator.mutation_numerical")
+                        : Component.translatable("hud.cybercultivator.mutation_synergy");
+                gui.drawString(mc.font, mutText.withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE),
                         x, y + 10, 0xFF55FF);
             }
         }
@@ -291,7 +294,7 @@ public final class IncubatorHudOverlay {
         // Bar background
         int barX = x + 12;
         int barWidth = 80;
-        gui.fill(barX, y, barX + barWidth, y + 8, 0xFF333333);
+        gui.fill(barX, y, barX + barWidth, y + 8, 0x99333333);
 
         // Bar fill
         int fillWidth = (int) (barWidth * value / 100.0);

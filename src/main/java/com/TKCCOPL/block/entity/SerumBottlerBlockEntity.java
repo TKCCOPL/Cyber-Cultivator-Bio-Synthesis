@@ -30,11 +30,12 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     /**
      * 计算突触活性值。加权平均 (Potency×0.25 + Purity×0.375 + Concentration×0.375)，
      * 按物品种类查找输入，不依赖槽位顺序。
-     * Gene_Purity 直接加成 Activity，突破 10 上限。
-     * Gene_Purity 从输入物品的 NBT 中读取（通过种子突变获得，经培养槽传递到原料，再传递到莓）。
+     * Gene_Synergy 直接加成 Activity，突破 10 上限。
+     * Gene_Synergy 从输入物品的 NBT 中读取（通过种子突变获得，经培养槽传递到原料，再传递到莓）。
      */
     public static int calculateActivity(ItemStack[] inputs) {
         int potency = 5, purity = 5, concentration = 5;
+        int geneSynergy = 0;
         for (ItemStack input : inputs) {
             if (input.isEmpty()) continue;
             CompoundTag tag = input.getTag();
@@ -46,29 +47,23 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
             } else if (input.is(ModItems.BIOCHEMICAL_SOLUTION.get()) && tag.contains("Concentration")) {
                 concentration = tag.getInt("Concentration");
             }
-        }
-
-        // 读取 Gene_Purity（从莓的 NBT 中，莓是合成血清的中间产物）
-        int genePurity = 0;
-        for (ItemStack input : inputs) {
-            if (input.isEmpty()) continue;
-            CompoundTag tag = input.getTag();
-            if (tag != null && tag.contains("Gene_Purity")) {
-                genePurity = Math.max(genePurity, tag.getInt("Gene_Purity"));
+            // Gene_Synergy：从任何输入物品的 NBT 中读取（莓或原料）
+            if (tag.contains("Gene_Synergy")) {
+                geneSynergy = Math.max(geneSynergy, tag.getInt("Gene_Synergy"));
             }
         }
 
         double raw = potency * 0.25 + purity * 0.375 + concentration * 0.375;
         int activity = (int) Math.round(raw);
 
-        // Gene_Purity 直接加成 Activity（突破 10 上限）
-        int bonus = genePurity / 2;
+        // Gene_Synergy 直接加成 Activity（突破 10 上限）
+        int bonus = geneSynergy / 2;
         return Math.max(1, activity + bonus);
     }
 
     /**
      * 从 ItemStack 读取 SynapticActivity，无 NBT 时返回 5（平衡点）
-     * Gene_Purity 可突破上限，此处不额外 clamp（上限由 calculateActivity 计算）
+     * Gene_Synergy 可突破上限，此处不额外 clamp（上限由 calculateActivity 计算）
      */
     public static int getActivity(ItemStack stack) {
         CompoundTag tag = stack.getTag();
@@ -133,8 +128,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         }
 
         if (changed) {
-            blockEntity.setChanged();
-            level.sendBlockUpdated(pos, state, state, 3);
+            blockEntity.syncToClient();
         }
     }
 
@@ -217,18 +211,26 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
                 int activity = calculateActivity(inputs);
                 ItemStack berry = new ItemStack(ModItems.SYNAPTIC_NEURAL_BERRY.get());
                 berry.getOrCreateTag().putInt(TAG_ACTIVITY, activity);
-                // 莓合成时继承原料的 Gene_Purity（用于后续突破 Activity 上限）
-                int maxPurity = 0;
+
+                // 继承原料的 Mutation 标签（取最大值，2>1>0）
+                int mutationType = 0;
+                String mutationDetail = "";
                 for (ItemStack input : inputs) {
                     if (input.isEmpty()) continue;
                     CompoundTag tag = input.getTag();
-                    if (tag != null && tag.contains("Gene_Purity")) {
-                        maxPurity = Math.max(maxPurity, tag.getInt("Gene_Purity"));
+                    if (tag != null && tag.contains("Mutation")) {
+                        int mt = tag.getInt("Mutation");
+                        if (mt > mutationType) {
+                            mutationType = mt;
+                            mutationDetail = tag.contains("MutationDetail") ? tag.getString("MutationDetail") : "";
+                        }
                     }
                 }
-                if (maxPurity > 0) {
-                    berry.getOrCreateTag().putInt("Gene_Purity", maxPurity);
+                if (mutationType > 0) {
+                    berry.getOrCreateTag().putInt("Mutation", mutationType);
+                    berry.getOrCreateTag().putString("MutationDetail", mutationDetail);
                 }
+
                 yield berry;
             }
             case 1 -> {
@@ -306,7 +308,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     private void syncToClient() {
         setChanged();
         if (level != null && !level.isClientSide) {
-            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
         }
     }
 

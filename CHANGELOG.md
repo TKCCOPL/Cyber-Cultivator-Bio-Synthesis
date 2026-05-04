@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.1.2 — Gene_Synergy 重命名 + Mutation 标签升级 + HUD 透明化 + BlockEntity 同步修复
+
+### 变更
+- **Gene_Purity → Gene_Synergy 重命名：** 基因标签从 `Gene_Purity` 改为 `Gene_Synergy`（协同基因），避免与乙醇品质 `Purity` 混淆。涉及 8 个文件全量替换
+- **Mutation 标签升级：** 从布尔值升级为整数类型码（0=未突变, 1=数值突破, 2=协同基因），新增 `MutationDetail` 字符串标签记录突变详情（如 `Potency+3`、`Synergy+2`）
+- **calculateActivity 合并：** 灌装机 Activity 计算从双循环合并为单循环，删除莓的 Gene_Purity 死标签
+- **HUD 全透明背景：** 移除 4 个 HUD 面板的背景 fill 调用，只保留进度条背景
+- **Tooltip/HUD 突变显示：** 按 Mutation 类型码显示"数值突破"或"协同基因"+具体详情
+
+### Bug 修复
+- **BlockEntity 同步修复：** `saveAdditional()` 空字段写入哨兵 CompoundTag，修复 `ClientboundBlockEntityDataPacket` 因 tag 为空导致客户端不调用 `load()` 的问题
+- **死 key 清理：** 删除 3 个无引用的语言 key（`tooltip.cybercultivator.mutation`、`hud.cybercultivator.mutation`、`hud.cybercultivator.progress`）
+- **语言文件同步：** `en_us.json` 和 `zh_cn.json` 通过 datagen 和手动更新保持一致
+
+---
+
 ## v1.1.1 — 血清效果重平衡
 
 ### 血清效果重平衡

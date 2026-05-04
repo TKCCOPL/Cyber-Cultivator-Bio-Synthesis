@@ -7,7 +7,9 @@
 
 - [260503] 状态机周期性产出后必须清除输入状态，否则会导致无限循环 → BioIncubator 成熟后需同时重置 growthProgress 和 seed；通用规则：任何 tick 驱动的加工流程完成后，必须移除输入物品/标记，不能只重置进度计数器
 
-- [260503] BlockEntity tick 中的进度值必须定期同步到客户端，否则 HUD 进度条无法动画 → `progress++` 后需添加 `if (progress % 20 == 0) { changed = true; }` 触发 `sendBlockUpdated()`。通用规则：任何需要在客户端实时显示的 BlockEntity 状态（进度条、库存数量等），tick 中必须周期性调用 `setChanged()` + `sendBlockUpdated()`，不能只在状态变更完成时同步。已应用于：BioIncubatorBlockEntity、SerumBottlerBlockEntity、AtmosphericCondenserBlockEntity
+- [260503] BlockEntity tick 中的进度值必须定期同步到客户端，否则 HUD 进度条无法动画 → `progress++` 后需添加 `if (progress % 20 == 0) { changed = true; }` 触发同步。通用规则：任何需要在客户端实时显示的 BlockEntity 状态（进度条、库存数量等），tick 中必须周期性调用 `setChanged()` + `syncToClient()`，不能只在状态变更完成时同步。已应用于：BioIncubatorBlockEntity、SerumBottlerBlockEntity、AtmosphericCondenserBlockEntity
+
+- [260504] **BlockEntity 客户端同步完整链路** — 三个条件缺一不可：① `getUpdatePacket()` 返回 `ClientboundBlockEntityDataPacket.create(this)`；② `saveAdditional()` 写入的 tag **必须非空**（否则 packet 构造函数将 tag 设为 null，客户端 `onDataPacket` 收到 null 后跳过 `load()`）；③ 调用 `level.sendBlockUpdated(pos, state, state, 2)` 触发发送（flags=2 是 `Block.UPDATE_CLIENTS`）。**关键陷阱**：`ClientboundBlockEntityDataPacket` 构造函数中有 `this.tag = pTag.isEmpty() ? null : pTag`，当 `saveAdditional()` 只有条件写入 ItemStack（空时跳过）且无其他 `putInt/putString` 时，tag 为空 → packet tag = null → 客户端永远收不到更新。**修复**：空字段写入哨兵空 CompoundTag `new CompoundTag()` 确保 tag 非空。BioIncubator/SerumBottler/AtmosphericCondenser 不受影响（有 putInt 值），仅 GeneSplicer 纯靠 ItemStack 字段会触发此问题。已应用于：GeneSplicerBlockEntity
 
 - [260504] `syncToClient()` 必须包含 `!level.isClientSide` 守卫 → 在客户端调用 `sendBlockUpdated()` 会导致冗余网络包甚至异常。统一模板：`if (level != null && !level.isClientSide) { level.sendBlockUpdated(...) }`。同时，WorldlyContainer 的 `removeItem()` 漏斗抽取路径也需要调用 `syncToClient()` 而非仅 `setChanged()`，否则 HUD 不会实时更新库存变化
 
@@ -18,6 +20,8 @@
 ## 双端相关
 
 - [260503] Forge 1.20.1 中 `Block.use()` 在单次右键时可能被服务器端调用两次（同一 tick 内） → 对于有多阶段交互的方块（如基因拼接机：先放种子A再放种子B），必须在 BlockEntity 中添加同 tick 防抖机制，使用 `level.getGameTime()` 记录上次交互 tick，同一 tick 内拒绝重复操作。单阶段交互方块（如培养槽）不受影响，因为第二次调用时状态已变更会自然跳过
+
+- [260504] Forge 1.20.1 中 `Component.translatable()` 返回 `MutableComponent`，但赋值给 `Component` 变量后会丢失 `withStyle()` 方法 → 需要 `withStyle()` 时必须声明为 `net.minecraft.network.chat.MutableComponent` 类型，或将 `.withStyle()` 链式调用内联到 `translatable()` 返回值上
 
 ## 数据生成相关
 
@@ -32,6 +36,12 @@
 ## NBT 数据链传递
 
 - [260504] 向多阶段数据管道（种子→培养槽→莓→血清）添加新 NBT 字段时，必须逐阶段检查所有中间产出点是否已传递该字段 → T22 中 Gene_Purity 在 getCropOutput() 中遗漏，导致下游 calculateActivity() 始终读到 0。通用规则：新增 NBT 字段后，用 grep 追踪该字段名在所有 ItemStack 创建点的出现情况，确保从源头到终点的完整传递链
+
+## 重命名/重构相关
+
+- [260504] 重命名 NBT 标签/常量时，必须用 `grep -rn` 全量扫描整个 `src/` 目录，不能只改任务明确列出的文件 → T26 重命名 Gene_Purity→Gene_Synergy 时，任务列了 5 个文件，但 grep 发现 ClientTooltipEvents、ModCreativeTabs、IncubatorHudOverlay 也引用了该符号，漏改会导致编译失败。通用规则：任何跨文件符号重命名，先 grep 全量收集引用点，再逐一修改
+
+- [260504] 升级 NBT 标签类型（如 boolean→int）时，必须 grep 全量扫描 `putBoolean("TagName"` 和 `getBoolean("TagName"` → T28 任务只列了 5 个文件，但 ModCreativeTabs 中的创造栏预置物品也有 `putBoolean("Mutation", true)` 需要同步改为 `putInt`。通用规则：任何 NBT 标签类型变更，用 grep 收集所有写入点和读取点，确保全量替换
 
 ## 其他
 

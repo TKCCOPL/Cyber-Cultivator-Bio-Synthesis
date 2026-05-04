@@ -92,8 +92,7 @@ public class BioIncubatorBlockEntity extends BlockEntity {
         }
 
         if (changed) {
-            blockEntity.setChanged();
-            level.sendBlockUpdated(pos, state, state, 3);
+            blockEntity.syncToClient();
         }
     }
 
@@ -107,7 +106,7 @@ public class BioIncubatorBlockEntity extends BlockEntity {
         int geneYield = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_YIELD);
         int genePotency = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_POTENCY);
         int generation = GeneticSeedItem.getGeneration(seed);
-        int genePurity = GeneticSeedItem.getPurity(seed);
+        int geneSynergy = GeneticSeedItem.getSynergy(seed);
         int count = 2 + geneYield / 3; // yield 1-10 → count 2-5
 
         ItemStack output;
@@ -127,15 +126,18 @@ public class BioIncubatorBlockEntity extends BlockEntity {
             output = seed.copy();
         }
 
-        // 将种子的 Gene_Purity 传递到产出物，确保后续莓合成和血清合成能读取到该值
-        if (genePurity > 0) {
-            output.getOrCreateTag().putInt(GeneticSeedItem.GENE_PURITY, genePurity);
+        // 将种子的 Gene_Synergy 传递到产出物，确保后续莓合成和血清合成能读取到该值
+        if (geneSynergy > 0) {
+            output.getOrCreateTag().putInt(GeneticSeedItem.GENE_SYNERGY, geneSynergy);
         }
 
-        // 如果种子携带 Mutation 标签，传递到产出物
+        // 如果种子携带 Mutation 标签，传递到产出物（整数类型码 + 详情）
         CompoundTag seedTag = seed.getTag();
-        if (seedTag != null && seedTag.getBoolean("Mutation")) {
-            output.getOrCreateTag().putBoolean("Mutation", true);
+        if (seedTag != null && seedTag.contains("Mutation")) {
+            output.getOrCreateTag().putInt("Mutation", seedTag.getInt("Mutation"));
+            if (seedTag.contains("MutationDetail")) {
+                output.getOrCreateTag().putString("MutationDetail", seedTag.getString("MutationDetail"));
+            }
         }
 
         return output;
@@ -192,7 +194,7 @@ public class BioIncubatorBlockEntity extends BlockEntity {
     private void syncToClient() {
         setChanged();
         if (level != null && !level.isClientSide) {
-            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
         }
     }
 

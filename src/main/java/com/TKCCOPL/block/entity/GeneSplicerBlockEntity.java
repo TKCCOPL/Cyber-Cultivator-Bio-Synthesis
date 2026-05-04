@@ -145,40 +145,51 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         int newPotency = GeneticSeedItem.clampGene((potencyA + potencyB) / 2 + random.nextInt(5) - 2);
 
         // 4. 如果突变触发，应用突变结果
-        double roll = 0;
+        int mutationType = 0; // 0=未突变, 1=数值突破, 2=协同基因
+        String mutationDetail = "";
         if (isMutation) {
-            roll = random.nextDouble();
+            double roll = random.nextDouble();
             if (roll < 0.80) {
                 // 数值突破（80%）：随机一个基因变异 ±4（覆盖标准公式结果）
                 int target = random.nextInt(3); // 0=Speed, 1=Yield, 2=Potency
                 int bonus = random.nextInt(9) - 4; // -4 to +4
 
+                String geneName;
                 if (target == 0) {
                     newSpeed = GeneticSeedItem.clampGene((speedA + speedB) / 2 + bonus);
+                    geneName = "Speed";
                 } else if (target == 1) {
                     newYield = GeneticSeedItem.clampGene((yieldA + yieldB) / 2 + bonus);
+                    geneName = "Yield";
                 } else {
                     newPotency = GeneticSeedItem.clampGene((potencyA + potencyB) / 2 + bonus);
+                    geneName = "Potency";
                 }
+                mutationType = 1;
+                mutationDetail = geneName + (bonus >= 0 ? "+" : "") + bonus;
+            } else {
+                // Gene_Synergy 获得（20%）在步骤 6 处理
+                mutationType = 2;
             }
-            // Gene_Purity 获得（20%）在步骤 6 处理
         }
 
         // 5. 设置基因到输出种子
         ItemStack result = new ItemStack(seedA.getItem());
         GeneticSeedItem.setGenes(result, newSpeed, newYield, newPotency);
 
-        // 6. 如果是 Purity 突变，写入 Gene_Purity（累加，上限 10）
-        if (isMutation && roll >= 0.80) {
-            int currentPurity = GeneticSeedItem.getPurity(result);
-            int purityGain = 1 + random.nextInt(3); // 1-3
-            int newPurity = Math.min(10, currentPurity + purityGain);
-            result.getOrCreateTag().putInt(GeneticSeedItem.GENE_PURITY, newPurity);
+        // 6. 如果是 Synergy 突变，写入 Gene_Synergy（累加，上限 10）
+        if (mutationType == 2) {
+            int currentSynergy = GeneticSeedItem.getSynergy(result);
+            int synergyGain = 1 + random.nextInt(3); // 1-3
+            int newSynergy = Math.min(10, currentSynergy + synergyGain);
+            result.getOrCreateTag().putInt(GeneticSeedItem.GENE_SYNERGY, newSynergy);
+            mutationDetail = "Synergy+" + synergyGain;
         }
 
-        // 7. 标记突变
-        if (isMutation) {
-            result.getOrCreateTag().putBoolean("Mutation", true);
+        // 7. 标记突变（整数类型码 + 详情）
+        if (mutationType > 0) {
+            result.getOrCreateTag().putInt("Mutation", mutationType);
+            result.getOrCreateTag().putString("MutationDetail", mutationDetail);
         }
 
         // 8. 设置 Generation
@@ -203,19 +214,25 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         super.saveAdditional(tag);
         if (!seedA.isEmpty()) {
             tag.put(TAG_SEED_A, seedA.save(new CompoundTag()));
+        } else {
+            tag.put(TAG_SEED_A, new CompoundTag()); // sentinel: ensure tag is non-empty for sync
         }
         if (!seedB.isEmpty()) {
             tag.put(TAG_SEED_B, seedB.save(new CompoundTag()));
+        } else {
+            tag.put(TAG_SEED_B, new CompoundTag());
         }
         if (!output.isEmpty()) {
             tag.put(TAG_OUTPUT, output.save(new CompoundTag()));
+        } else {
+            tag.put(TAG_OUTPUT, new CompoundTag());
         }
     }
 
     private void syncToClient() {
         setChanged();
         if (level != null && !level.isClientSide) {
-            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
         }
     }
 
@@ -228,5 +245,10 @@ public class GeneSplicerBlockEntity extends BlockEntity {
     @Override
     public CompoundTag getUpdateTag() {
         return saveWithoutMetadata();
+    }
+
+    @Override
+    public void handleUpdateTag(CompoundTag tag) {
+        this.load(tag);
     }
 }

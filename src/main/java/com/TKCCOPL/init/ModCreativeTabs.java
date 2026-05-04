@@ -59,22 +59,22 @@ public final class ModCreativeTabs {
                         // S-03 血清：SynapticActivity 1-10
                         for (int i = 1; i <= 10; i++) output.accept(withTag(ModItems.SYNAPTIC_SERUM_S03.get(), "SynapticActivity", i));
 
-                        // --- Gene_Purity 高 Activity 变体（突破 10 上限），方便测试 ---
-                        // Gene_Purity=4 → cap=12, Gene_Purity=8 → cap=14, Gene_Purity=10 → cap=15
-                        int[] purityValues = {4, 8, 10};
+                        // --- Gene_Synergy 高 Activity 变体（突破 10 上限），方便测试 ---
+                        // Gene_Synergy=4 → cap=12, Gene_Synergy=8 → cap=14, Gene_Synergy=10 → cap=15
+                        int[] synergyValues = {4, 8, 10};
                         int[] activityCaps = {12, 14, 15};
-                        for (int idx = 0; idx < purityValues.length; idx++) {
-                            int purity = purityValues[idx];
+                        for (int idx = 0; idx < synergyValues.length; idx++) {
+                            int synergy = synergyValues[idx];
                             int cap = activityCaps[idx];
                             // 莓
-                            output.accept(withPurityAndActivity(ModItems.SYNAPTIC_NEURAL_BERRY.get(), purity, cap));
+                            output.accept(withSynergyAndActivity(ModItems.SYNAPTIC_NEURAL_BERRY.get(), synergy, cap));
                             // S-01 / S-02 / S-03 血清
-                            output.accept(withPurityAndActivity(ModItems.SYNAPTIC_SERUM_S01.get(), purity, cap));
-                            output.accept(withPurityAndActivity(ModItems.SYNAPTIC_SERUM_S02.get(), purity, cap));
-                            output.accept(withPurityAndActivity(ModItems.SYNAPTIC_SERUM_S03.get(), purity, cap));
+                            output.accept(withSynergyAndActivity(ModItems.SYNAPTIC_SERUM_S01.get(), synergy, cap));
+                            output.accept(withSynergyAndActivity(ModItems.SYNAPTIC_SERUM_S02.get(), synergy, cap));
+                            output.accept(withSynergyAndActivity(ModItems.SYNAPTIC_SERUM_S03.get(), synergy, cap));
                         }
 
-                        // --- Gene_Generation / Gene_Purity / Mutation 样本种子 ---
+                        // --- Gene_Generation / Gene_Synergy / Mutation 样本种子 ---
 
                         // 纤维蔗种子：默认 (gen 0)、gen 3、gen 5、gen 10
                         output.accept(ModItems.FIBER_REED_SEEDS.get()); // gen 0 默认
@@ -97,14 +97,15 @@ public final class ModCreativeTabs {
                         gen10Fiber.getOrCreateTag().putInt("Gene_Generation", 10);
                         output.accept(gen10Fiber);
 
-                        // 纤维蔗：突变种子 (Gene_Purity + Mutation)
+                        // 纤维蔗：突变种子 (Gene_Synergy + Mutation)
                         ItemStack mutFiber = new ItemStack(ModItems.FIBER_REED_SEEDS.get());
                         mutFiber.getOrCreateTag().putInt("Gene_Speed", 8);
                         mutFiber.getOrCreateTag().putInt("Gene_Yield", 6);
                         mutFiber.getOrCreateTag().putInt("Gene_Potency", 9);
                         mutFiber.getOrCreateTag().putInt("Gene_Generation", 5);
-                        mutFiber.getOrCreateTag().putInt("Gene_Purity", 6);
-                        mutFiber.getOrCreateTag().putBoolean("Mutation", true);
+                        mutFiber.getOrCreateTag().putInt("Gene_Synergy", 6);
+                        mutFiber.getOrCreateTag().putInt("Mutation", 2);
+                        mutFiber.getOrCreateTag().putString("MutationDetail", "Synergy+6");
                         output.accept(mutFiber);
 
                         // 蛋白质豆种子：默认 (gen 0)、gen 3、gen 5、gen 10
@@ -128,14 +129,15 @@ public final class ModCreativeTabs {
                         gen10Soy.getOrCreateTag().putInt("Gene_Generation", 10);
                         output.accept(gen10Soy);
 
-                        // 蛋白质豆：突变种子 (Gene_Purity + Mutation)
+                        // 蛋白质豆：突变种子 (Gene_Synergy + Mutation)
                         ItemStack mutSoy = new ItemStack(ModItems.PROTEIN_SOY_SEEDS.get());
                         mutSoy.getOrCreateTag().putInt("Gene_Speed", 7);
                         mutSoy.getOrCreateTag().putInt("Gene_Yield", 5);
                         mutSoy.getOrCreateTag().putInt("Gene_Potency", 8);
                         mutSoy.getOrCreateTag().putInt("Gene_Generation", 4);
-                        mutSoy.getOrCreateTag().putInt("Gene_Purity", 4);
-                        mutSoy.getOrCreateTag().putBoolean("Mutation", true);
+                        mutSoy.getOrCreateTag().putInt("Gene_Synergy", 4);
+                        mutSoy.getOrCreateTag().putInt("Mutation", 2);
+                        mutSoy.getOrCreateTag().putString("MutationDetail", "Synergy+4");
                         output.accept(mutSoy);
 
                         // 酒精花种子：默认 (gen 0)、gen 3、gen 5、gen 10
@@ -159,14 +161,15 @@ public final class ModCreativeTabs {
                         gen10Bloom.getOrCreateTag().putInt("Gene_Generation", 10);
                         output.accept(gen10Bloom);
 
-                        // 酒精花：突变种子 (Gene_Purity + Mutation)
+                        // 酒精花：突变种子 (Gene_Synergy + Mutation)
                         ItemStack mutBloom = new ItemStack(ModItems.ALCOHOL_BLOOM_SEEDS.get());
                         mutBloom.getOrCreateTag().putInt("Gene_Speed", 9);
                         mutBloom.getOrCreateTag().putInt("Gene_Yield", 7);
                         mutBloom.getOrCreateTag().putInt("Gene_Potency", 10);
                         mutBloom.getOrCreateTag().putInt("Gene_Generation", 6);
-                        mutBloom.getOrCreateTag().putInt("Gene_Purity", 8);
-                        mutBloom.getOrCreateTag().putBoolean("Mutation", true);
+                        mutBloom.getOrCreateTag().putInt("Gene_Synergy", 8);
+                        mutBloom.getOrCreateTag().putInt("Mutation", 2);
+                        mutBloom.getOrCreateTag().putString("MutationDetail", "Synergy+8");
                         output.accept(mutBloom);
                     })
                     .build());
@@ -184,9 +187,9 @@ public final class ModCreativeTabs {
         return stack;
     }
 
-    private static ItemStack withPurityAndActivity(Item item, int genePurity, int activity) {
+    private static ItemStack withSynergyAndActivity(Item item, int geneSynergy, int activity) {
         ItemStack stack = new ItemStack(item);
-        stack.getOrCreateTag().putInt("Gene_Purity", genePurity);
+        stack.getOrCreateTag().putInt("Gene_Synergy", geneSynergy);
         stack.getOrCreateTag().putInt("SynapticActivity", activity);
         return stack;
     }

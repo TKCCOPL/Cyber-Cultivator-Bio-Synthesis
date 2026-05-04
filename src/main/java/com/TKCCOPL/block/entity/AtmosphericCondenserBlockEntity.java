@@ -64,8 +64,14 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
         }
 
         if (changed) {
-            blockEntity.setChanged();
-            level.sendBlockUpdated(pos, state, state, 3);
+            blockEntity.syncToClient();
+        }
+    }
+
+    private void syncToClient() {
+        setChanged();
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
         }
     }
 
@@ -98,10 +104,7 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
         ItemStack out = output.split(output.getCount());
         if (output.isEmpty()) output = ItemStack.EMPTY;
         progress = 0;
-        setChanged();
-        if (level != null && !level.isClientSide) {
-            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
-        }
+        syncToClient();
         return out;
     }
 

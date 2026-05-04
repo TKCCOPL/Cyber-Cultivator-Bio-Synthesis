@@ -49,8 +49,9 @@ public class ModLangProvider extends LanguageProvider {
         add("tooltip.cybercultivator.gene_yield", "产量基因: %s");
         add("tooltip.cybercultivator.gene_potency", "效价基因: %s");
         add("tooltip.cybercultivator.gene_generation", "代数: %s");
-        add("tooltip.cybercultivator.gene_purity", "纯度基因: %s");
-        add("tooltip.cybercultivator.mutation", "★ 突变体");
+        add("tooltip.cybercultivator.gene_synergy", "协同基因: %s");
+        add("tooltip.cybercultivator.mutation_numerical", "⚡ 突变: 数值突破 %s");
+        add("tooltip.cybercultivator.mutation_synergy", "⚡ 突变: 协同基因 %s");
         add("tooltip.cybercultivator.bio_incubator", "放入种子后，可注入纯净水/营养液/数据信号进行培养");
         add("tooltip.cybercultivator.gene_splicer", "放入两颗基因种子后自动拼接；潜行可取回输入或输出");
         add("tooltip.cybercultivator.atmospheric_condenser", "自动凝结纯净水；下方放置培养槽可自动注入纯净度");
@@ -95,10 +96,10 @@ public class ModLangProvider extends LanguageProvider {
         add("hud.cybercultivator.incubator", "生物培养槽");
         add("hud.cybercultivator.seed_in", "种子: 已放入");
         add("hud.cybercultivator.seed_empty", "种子: 空");
-        add("hud.cybercultivator.mutation", "★ 突变体");
+        add("hud.cybercultivator.mutation_numerical", "⚡数值突破");
+        add("hud.cybercultivator.mutation_synergy", "⚡协同基因");
         add("hud.cybercultivator.bottler", "血清灌装机");
         add("hud.cybercultivator.recipe", "配方: ");
-        add("hud.cybercultivator.progress", "进度:");
         add("hud.cybercultivator.activity", "活性: %s");
         add("hud.cybercultivator.output_item", "输出: %s");
         add("hud.cybercultivator.condenser", "大气冷凝器");

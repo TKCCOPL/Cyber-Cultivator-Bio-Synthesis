@@ -6,7 +6,7 @@
 <h3 align="center">Cyber-Cultivator: Bio-Synthesis</h3>
 
 <p align="center">
-  <b>v1.1.1</b> | Minecraft Forge 1.20.1 | Curios API 5.3.5<br>
+  <b>v1.1.2</b> | Minecraft Forge 1.20.1 | Curios API 5.3.5<br>
   遗传育种算法 + 生物强化血清系统
 </p>
 
@@ -130,6 +130,15 @@
 - **Curios API** 5.3.5（饰品系统，可选 — 无 Curios 时饰品功能不可用，其余功能正常）
 
 ## 更新日志
+
+### v1.1.2 — Gene_Synergy 重命名 + Mutation 标签升级 + HUD 透明化
+
+**变更：**
+- Gene_Purity → Gene_Synergy（协同基因）重命名，避免与乙醇品质 Purity 混淆
+- Mutation 标签从布尔值升级为整数类型码（数值突破/协同基因），Tooltip/HUD 显示突变详情
+- calculateActivity 双循环合并为单循环，删除莓的 Gene_Purity 死标签
+- HUD 背景改为全透明，只保留进度条背景
+- 3 个 BlockEntity 同步机制统一修复（空 tag 哨兵 + flags=2）
 
 ### v1.1.1 — 血清效果重平衡
 
