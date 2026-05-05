@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mcp-bridge-server"
+version = "1.0.0"
+description = "MCP Bridge Server for Minecraft Forge Cyber-Cultivator mod"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.0.0",
+]
+
+[project.scripts]
+mcp-bridge-server = "mcp_bridge_server.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mcp_bridge_server"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
