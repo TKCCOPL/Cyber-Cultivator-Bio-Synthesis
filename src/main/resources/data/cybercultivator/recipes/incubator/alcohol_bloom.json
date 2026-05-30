@@ -1,0 +1,9 @@
+{
+  "type": "cybercultivator:incubator_output",
+  "seed": { "item": "cybercultivator:alcohol_bloom_seeds" },
+  "output": { "item": "cybercultivator:industrial_ethanol" },
+  "count_formula": "2 + yield / 3",
+  "quality_tag": "Purity",
+  "crop_name": "酒精花",
+  "default_genes": { "speed": 6, "yield": 3, "potency": 5 }
+}
