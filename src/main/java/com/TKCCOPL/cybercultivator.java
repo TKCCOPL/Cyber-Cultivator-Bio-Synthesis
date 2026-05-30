@@ -7,6 +7,7 @@ import com.TKCCOPL.init.ModCreativeTabs;
 import com.TKCCOPL.init.ModEffects;
 import com.TKCCOPL.init.ModItems;
 import com.TKCCOPL.curios.CuriosCompat;
+import com.TKCCOPL.recipe.ModRecipeTypes;
 import com.mojang.logging.LogUtils;
 
 import net.minecraft.client.Minecraft;
@@ -46,6 +47,7 @@ public class cybercultivator {
         ModItems.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
         ModLootModifiers.register(modEventBus);
+        ModRecipeTypes.register(modEventBus);
 
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);

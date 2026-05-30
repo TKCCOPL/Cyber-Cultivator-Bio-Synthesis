@@ -1,0 +1,12 @@
+{
+  "type": "cybercultivator:serum_bottling",
+  "ingredients": [
+    { "item": "cybercultivator:plant_fiber" },
+    { "item": "cybercultivator:industrial_ethanol" },
+    { "item": "cybercultivator:biochemical_solution" }
+  ],
+  "result": { "item": "cybercultivator:synaptic_neural_berry" },
+  "processing_time": 300,
+  "inherit_activity": true,
+  "inherit_mutation": true
+}
