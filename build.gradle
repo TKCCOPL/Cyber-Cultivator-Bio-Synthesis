@@ -67,6 +67,7 @@ repositories {
     maven { url = 'https://maven.parchmentmc.org' }
     maven { url = 'https://maven.theillusivec4.top/' }
     maven { url = 'https://maven.blamejared.com/' }
+    maven { url = 'https://maven.latvian.dev/releases' }
 }
 
 dependencies {
@@ -78,6 +79,10 @@ dependencies {
     compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}")
     compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}")
     runtimeOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge:${jei_version}")
+
+    // KubeJS 暂时注释掉，版本需要验证
+    // compileOnly fg.deobf("dev.latvian.mods:kubejs-forge-${kubejs_version}:api")
+    // runtimeOnly fg.deobf("dev.latvian.mods:kubejs-forge-${kubejs_version}")
 }
 
 tasks.named('processResources', ProcessResources).configure {
