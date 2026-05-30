@@ -70,37 +70,66 @@ public class GeneSplicingCategory implements IRecipeCategory<GeneSplicingCategor
         // 输入槽 B（带基因值的种子）
         builder.addSlot(RecipeIngredientRole.INPUT, 37, 21)
                 .addItemStack(recipe.seedB());
-        // 输出槽（与 seedA 同类型的种子）
+        // 输出槽：显示带默认基因值的种子（平均值）
+        int avgSpeed = (recipe.speedA() + recipe.speedB()) / 2;
+        int avgYield = (recipe.yieldA() + recipe.yieldB()) / 2;
+        int avgPotency = (recipe.potencyA() + recipe.potencyB()) / 2;
+        ItemStack output = seedWithGenes(new ItemStack(recipe.seedA().getItem()), avgSpeed, avgYield, avgPotency);
         builder.addSlot(RecipeIngredientRole.OUTPUT, 113, 21)
-                .addItemStack(new ItemStack(recipe.seedA().getItem()));
+                .addItemStack(output);
     }
 
     @Override
     public void draw(DisplayRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphics guiGraphics,
                      double mouseX, double mouseY) {
-        // 父本 A 基因信息
-        String geneA = String.format("A: S:%d Y:%d P:%d",
-                recipe.speedA(), recipe.yieldA(), recipe.potencyA());
-        guiGraphics.drawString(Minecraft.getInstance().font, geneA, 1, 4, 0x808080, false);
+        var font = Minecraft.getInstance().font;
 
-        // 父本 B 基因信息
-        String geneB = String.format("B: S:%d Y:%d P:%d",
-                recipe.speedB(), recipe.yieldB(), recipe.potencyB());
-        guiGraphics.drawString(Minecraft.getInstance().font, geneB, 37, 4, 0x808080, false);
+        // 父本 A 基因（槽 A 上方）
+        guiGraphics.drawString(font,
+                Component.translatable("jei.cybercultivator.gene_info_a",
+                        recipe.speedA(), recipe.yieldA(), recipe.potencyA()),
+                1, 2, 0x808080, false);
 
-        // 突变概率
-        String mutation = String.format("%.0f%%", recipe.mutationChance() * 100);
-        guiGraphics.drawString(Minecraft.getInstance().font, mutation, 70, 10, 0xFF55FF, false);
+        // 父本 B 基因（槽 B 上方）
+        guiGraphics.drawString(font,
+                Component.translatable("jei.cybercultivator.gene_info_b",
+                        recipe.speedB(), recipe.yieldB(), recipe.potencyB()),
+                1, 12, 0x808080, false);
 
-        // 子代基因范围
+        // 突变概率（输出槽上方）
+        guiGraphics.drawString(font,
+                Component.translatable("jei.cybercultivator.mutation_chance",
+                        String.format("%.0f", recipe.mutationChance() * 100)),
+                75, 2, 0xFF55FF, false);
+
+        // 子代基因范围（输出槽下方）
         int minS = Math.max(1, (recipe.speedA() + recipe.speedB()) / 2 - 2);
         int maxS = Math.min(10, (recipe.speedA() + recipe.speedB()) / 2 + 2);
         int minY = Math.max(1, (recipe.yieldA() + recipe.yieldB()) / 2 - 2);
         int maxY = Math.min(10, (recipe.yieldA() + recipe.yieldB()) / 2 + 2);
         int minP = Math.max(1, (recipe.potencyA() + recipe.potencyB()) / 2 - 2);
         int maxP = Math.min(10, (recipe.potencyA() + recipe.potencyB()) / 2 + 2);
-        String range = String.format("S:%d-%d Y:%d-%d P:%d-%d", minS, maxS, minY, maxY, minP, maxP);
-        guiGraphics.drawString(Minecraft.getInstance().font, range, 70, 40, 0x55FF55, false);
+        guiGraphics.drawString(font,
+                Component.translatable("jei.cybercultivator.gene_range",
+                        minS, maxS, minY, maxY, minP, maxP),
+                1, 48, 0x55FF55, false);
+    }
+
+    @Override
+    public List<Component> getTooltipStrings(DisplayRecipe recipe, IRecipeSlotsView recipeSlotsView,
+                                             double mouseX, double mouseY) {
+        List<Component> tooltip = new ArrayList<>();
+        // 突变区域提示
+        if (mouseX >= 75 && mouseX <= 140 && mouseY >= 0 && mouseY <= 12) {
+            tooltip.add(Component.translatable("jei.cybercultivator.tooltip.mutation_formula")
+                    .withStyle(net.minecraft.ChatFormatting.GRAY));
+        }
+        // 子代范围区域提示
+        if (mouseX >= 1 && mouseX <= 140 && mouseY >= 46 && mouseY <= 58) {
+            tooltip.add(Component.translatable("jei.cybercultivator.tooltip.gene_formula")
+                    .withStyle(net.minecraft.ChatFormatting.GRAY));
+        }
+        return tooltip;
     }
 
     /** 设置种子基因值（用于 JEI 展示） */

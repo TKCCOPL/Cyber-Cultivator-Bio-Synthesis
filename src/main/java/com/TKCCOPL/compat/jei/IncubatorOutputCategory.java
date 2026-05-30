@@ -37,7 +37,7 @@ public class IncubatorOutputCategory implements IRecipeCategory<IncubatorOutputC
     ) {}
 
     public IncubatorOutputCategory(IGuiHelper guiHelper) {
-        this.background = guiHelper.createDrawable(TEXTURE, 0, 0, 140, 50);
+        this.background = guiHelper.createDrawable(TEXTURE, 0, 0, 140, 60);
         this.icon = guiHelper.createDrawableItemStack(new ItemStack(ModItems.BIO_INCUBATOR_ITEM.get()));
     }
 
@@ -72,21 +72,78 @@ public class IncubatorOutputCategory implements IRecipeCategory<IncubatorOutputC
     @Override
     public void draw(DisplayRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphics guiGraphics,
                      double mouseX, double mouseY) {
-        // 默认基因值
-        String genes = String.format("S:%d Y:%d P:%d",
-                recipe.defaultSpeed(), recipe.defaultYield(), recipe.defaultPotency());
-        guiGraphics.drawString(Minecraft.getInstance().font, genes, 30, 2, 0x808080, false);
+        var font = Minecraft.getInstance().font;
 
+        // ── 基因行（输入槽右侧，每行一个基因）──
+        // 速度 — 控制生长速率
+        guiGraphics.drawString(font,
+                Component.translatable("jei.cybercultivator.gene_speed", recipe.defaultSpeed()),
+                22, 2, 0x808080, false);
+        // 产量 — 控制产出数量
+        guiGraphics.drawString(font,
+                Component.translatable("jei.cybercultivator.gene_yield", recipe.defaultYield()),
+                22, 13, 0x808080, false);
+        // 潜力 — 决定产出品质
+        guiGraphics.drawString(font,
+                Component.translatable("jei.cybercultivator.gene_potency", recipe.defaultPotency()),
+                22, 24, 0x808080, false);
+
+        // ── 派生数值行 ──
         // 产出数量范围（基于 Yield：2 + yield/3）
         int minOutput = 2;
         int maxOutput = 2 + recipe.defaultYield() / 3;
-        String outputRange = String.format("产出: %d-%d", minOutput, maxOutput);
-        guiGraphics.drawString(Minecraft.getInstance().font, outputRange, 30, 14, 0x55FF55, false);
+        guiGraphics.drawString(font,
+                Component.translatable("jei.cybercultivator.output_range", minOutput, maxOutput),
+                22, 37, 0x55FF55, false);
 
         // 生长速率（基于 Speed：0.5 + speed/10*1.5）
         double growthRate = 0.5 + recipe.defaultSpeed() / 10.0 * 1.5;
-        String rate = String.format("速率: %.1fx", growthRate);
-        guiGraphics.drawString(Minecraft.getInstance().font, rate, 30, 26, 0xFFFF55, false);
+        guiGraphics.drawString(font,
+                Component.translatable("jei.cybercultivator.growth_rate",
+                        String.format("%.1f", growthRate)),
+                80, 37, 0xFFFF55, false);
+
+        // 产出品质（基于 Potency 基因直接决定）
+        guiGraphics.drawString(font,
+                Component.translatable("jei.cybercultivator.output_quality", recipe.defaultPotency()),
+                22, 50, 0xFFAA00, false);
+    }
+
+    @Override
+    public List<Component> getTooltipStrings(DisplayRecipe recipe, IRecipeSlotsView recipeSlotsView,
+                                             double mouseX, double mouseY) {
+        List<Component> tooltip = new ArrayList<>();
+        // 速度基因提示
+        if (mouseX >= 20 && mouseX <= 80 && mouseY >= 0 && mouseY <= 12) {
+            tooltip.add(Component.translatable("jei.cybercultivator.tooltip.gene_speed")
+                    .withStyle(net.minecraft.ChatFormatting.GRAY));
+        }
+        // 产量基因提示
+        if (mouseX >= 20 && mouseX <= 80 && mouseY >= 11 && mouseY <= 23) {
+            tooltip.add(Component.translatable("jei.cybercultivator.tooltip.gene_yield")
+                    .withStyle(net.minecraft.ChatFormatting.GRAY));
+        }
+        // 潜力基因提示
+        if (mouseX >= 20 && mouseX <= 80 && mouseY >= 22 && mouseY <= 34) {
+            tooltip.add(Component.translatable("jei.cybercultivator.tooltip.gene_potency")
+                    .withStyle(net.minecraft.ChatFormatting.GRAY));
+        }
+        // 产出范围提示
+        if (mouseX >= 20 && mouseX <= 75 && mouseY >= 35 && mouseY <= 47) {
+            tooltip.add(Component.translatable("jei.cybercultivator.tooltip.output_formula")
+                    .withStyle(net.minecraft.ChatFormatting.GRAY));
+        }
+        // 生长速率提示
+        if (mouseX >= 78 && mouseX <= 130 && mouseY >= 35 && mouseY <= 47) {
+            tooltip.add(Component.translatable("jei.cybercultivator.tooltip.rate_formula")
+                    .withStyle(net.minecraft.ChatFormatting.GRAY));
+        }
+        // 品质提示
+        if (mouseX >= 20 && mouseX <= 100 && mouseY >= 48 && mouseY <= 58) {
+            tooltip.add(Component.translatable("jei.cybercultivator.tooltip.quality_formula")
+                    .withStyle(net.minecraft.ChatFormatting.GRAY));
+        }
+        return tooltip;
     }
 
     /** 设置种子基因值（用于 JEI 展示） */
