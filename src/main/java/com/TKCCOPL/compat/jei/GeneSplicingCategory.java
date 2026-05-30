@@ -1,5 +1,6 @@
 package com.TKCCOPL.compat.jei;
 
+import com.TKCCOPL.Config;
 import com.TKCCOPL.cybercultivator;
 import com.TKCCOPL.init.ModItems;
 import com.TKCCOPL.recipe.ModRecipes;
@@ -104,12 +105,13 @@ public class GeneSplicingCategory implements IRecipeCategory<GeneSplicingCategor
                 75, 2, 0xFF55FF, false);
 
         // 子代基因范围（输出槽下方）
-        int minS = Math.max(1, (recipe.speedA() + recipe.speedB()) / 2 - 2);
-        int maxS = Math.min(10, (recipe.speedA() + recipe.speedB()) / 2 + 2);
-        int minY = Math.max(1, (recipe.yieldA() + recipe.yieldB()) / 2 - 2);
-        int maxY = Math.min(10, (recipe.yieldA() + recipe.yieldB()) / 2 + 2);
-        int minP = Math.max(1, (recipe.potencyA() + recipe.potencyB()) / 2 - 2);
-        int maxP = Math.min(10, (recipe.potencyA() + recipe.potencyB()) / 2 + 2);
+        int range = Config.mutationRange;
+        int minS = Math.max(Config.geneMin, (recipe.speedA() + recipe.speedB()) / 2 - range);
+        int maxS = Math.min(Config.geneMax, (recipe.speedA() + recipe.speedB()) / 2 + range);
+        int minY = Math.max(Config.geneMin, (recipe.yieldA() + recipe.yieldB()) / 2 - range);
+        int maxY = Math.min(Config.geneMax, (recipe.yieldA() + recipe.yieldB()) / 2 + range);
+        int minP = Math.max(Config.geneMin, (recipe.potencyA() + recipe.potencyB()) / 2 - range);
+        int maxP = Math.min(Config.geneMax, (recipe.potencyA() + recipe.potencyB()) / 2 + range);
         guiGraphics.drawString(font,
                 Component.translatable("jei.cybercultivator.gene_range",
                         minS, maxS, minY, maxY, minP, maxP),

@@ -1,6 +1,8 @@
 package com.TKCCOPL.recipe;
 
+import com.TKCCOPL.Config;
 import com.TKCCOPL.init.ModItems;
+import com.TKCCOPL.item.GeneticSeedItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.util.RandomSource;
 
@@ -47,19 +49,16 @@ public final class ModRecipes {
         public int[] calculateOffspring(int speedA, int yieldA, int potencyA,
                                         int speedB, int yieldB, int potencyB,
                                         RandomSource random) {
-            int newSpeed = clampGene((speedA + speedB) / 2 + random.nextInt(5) - 2);
-            int newYield = clampGene((yieldA + yieldB) / 2 + random.nextInt(5) - 2);
-            int newPotency = clampGene((potencyA + potencyB) / 2 + random.nextInt(5) - 2);
+            int range = Config.mutationRange;
+            int newSpeed = GeneticSeedItem.clampGene((speedA + speedB) / 2 + random.nextInt(range * 2 + 1) - range);
+            int newYield = GeneticSeedItem.clampGene((yieldA + yieldB) / 2 + random.nextInt(range * 2 + 1) - range);
+            int newPotency = GeneticSeedItem.clampGene((potencyA + potencyB) / 2 + random.nextInt(range * 2 + 1) - range);
             return new int[]{newSpeed, newYield, newPotency};
         }
 
         @Override
         public double getMutationChance(int generation, int geneDifference) {
-            return 0.05 + generation * 0.02 + geneDifference * 0.01;
-        }
-
-        private int clampGene(int value) {
-            return Math.max(1, Math.min(10, value));
+            return Config.mutationChanceBase + generation * Config.mutationChancePerGen + geneDifference * Config.mutationChancePerGeneDiff;
         }
     };
 

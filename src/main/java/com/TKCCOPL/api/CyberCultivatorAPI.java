@@ -1,5 +1,6 @@
 package com.TKCCOPL.api;
 
+import com.TKCCOPL.Config;
 import com.TKCCOPL.block.entity.*;
 import com.TKCCOPL.curios.CuriosCompat;
 import com.TKCCOPL.cybercultivator;
@@ -123,9 +124,9 @@ public final class CyberCultivatorAPI {
     public static SerumEffectInfo getSerumEffectInfo(ItemStack serum) {
         if (serum == null) return null;
         int activity = SynapticSerumItem.getActivity(serum);
-        double multiplier = 0.5 + activity * 0.1;
+        double multiplier = Config.durationMultiplierBase + activity * Config.durationMultiplierPerActivity;
         int baseAmp = Math.min(SynapticSerumItem.getBaseAmplifier(activity)
-                + SynapticSerumItem.getActivityBonusAmplifier(activity), 7);
+                + SynapticSerumItem.getActivityBonusAmplifier(activity), Config.stackAmplifierCap);
         return new SerumEffectInfo(
                 serum.getItem().getDescriptionId(),
                 0, // baseDuration 由具体血清类型决定

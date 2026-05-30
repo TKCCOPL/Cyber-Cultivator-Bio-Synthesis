@@ -135,8 +135,8 @@ public class SynapticSerumItem extends Item {
         tooltip.add(net.minecraft.network.chat.Component.translatable(
                 "tooltip.cybercultivator.serum_activity", activity).withStyle(net.minecraft.ChatFormatting.GOLD));
 
-        double multiplier = 0.5 + activity * 0.1;
-        int totalAmp = Math.min(getBaseAmplifier(activity) + getActivityBonusAmplifier(activity), MAX_AMPLIFIER);
+        double multiplier = Config.durationMultiplierBase + activity * Config.durationMultiplierPerActivity;
+        int totalAmp = Math.min(getBaseAmplifier(activity) + getActivityBonusAmplifier(activity), Config.stackAmplifierCap);
         String baseLevel = toRoman(totalAmp + 1);
         tooltip.add(net.minecraft.network.chat.Component.translatable(
                 "tooltip.cybercultivator.serum_base_level", baseLevel).withStyle(net.minecraft.ChatFormatting.GRAY));

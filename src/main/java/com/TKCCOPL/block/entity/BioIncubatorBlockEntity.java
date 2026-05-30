@@ -36,8 +36,6 @@ public class BioIncubatorBlockEntity extends BlockEntity {
 
     // 基因缓存（避免每 tick 解析 NBT）
     private int cachedSpeed = 1;
-    private int cachedYield = 1;
-    private int cachedPotency = 1;
     private int syncCounter = 0;
 
     public BioIncubatorBlockEntity(BlockPos pos, BlockState state) {
@@ -86,22 +84,23 @@ public class BioIncubatorBlockEntity extends BlockEntity {
 
                 // 触发 CropMatureEvent，允许其他 mod 修改产出
                 CropMatureEvent cropEvent = new CropMatureEvent(level, pos, blockEntity.seed, cropOutput);
-                if (net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(cropEvent)) {
-                    return; // 事件被取消，不产出
-                }
-                cropOutput = cropEvent.getOutput();
+                boolean cancelled = net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(cropEvent);
 
-                if (!cropOutput.isEmpty()) {
-                    // 尝试弹出到世界（类似漏斗/箱子溢出机制）
-                    Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, cropOutput);
-                }
-
-                // 消耗资源、重置生长进度、清除种子（防止无限产出）
+                // 无论是否取消，都重置生长进度和清除种子（避免无限循环）
                 blockEntity.growthProgress = 0;
                 blockEntity.seed = ItemStack.EMPTY;
-                blockEntity.nutrition = Math.max(0, blockEntity.nutrition - Config.matureNutritionCost);
-                blockEntity.purity = Math.max(0, blockEntity.purity - Config.maturePurityCost);
                 changed = true;
+
+                if (!cancelled) {
+                    // 事件未取消，正常产出
+                    cropOutput = cropEvent.getOutput();
+                    if (!cropOutput.isEmpty()) {
+                        Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, cropOutput);
+                    }
+                    // 消耗资源
+                    blockEntity.nutrition = Math.max(0, blockEntity.nutrition - Config.matureNutritionCost);
+                    blockEntity.purity = Math.max(0, blockEntity.purity - Config.maturePurityCost);
+                }
             }
         }
 
@@ -149,8 +148,6 @@ public class BioIncubatorBlockEntity extends BlockEntity {
         }
         seed = stack;
         cachedSpeed = GeneticSeedItem.getGene(stack, GeneticSeedItem.GENE_SPEED);
-        cachedYield = GeneticSeedItem.getGene(stack, GeneticSeedItem.GENE_YIELD);
-        cachedPotency = GeneticSeedItem.getGene(stack, GeneticSeedItem.GENE_POTENCY);
         growthProgress = 0;
         syncCounter = 0;
         syncToClient();
@@ -164,8 +161,6 @@ public class BioIncubatorBlockEntity extends BlockEntity {
         ItemStack out = seed;
         seed = ItemStack.EMPTY;
         cachedSpeed = 1;
-        cachedYield = 1;
-        cachedPotency = 1;
         growthProgress = 0;
         syncCounter = 0;
         syncToClient();
@@ -243,12 +238,8 @@ public class BioIncubatorBlockEntity extends BlockEntity {
         // 初始化基因缓存
         if (!seed.isEmpty()) {
             cachedSpeed = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_SPEED);
-            cachedYield = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_YIELD);
-            cachedPotency = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_POTENCY);
         } else {
             cachedSpeed = 1;
-            cachedYield = 1;
-            cachedPotency = 1;
         }
         syncCounter = 0;
     }

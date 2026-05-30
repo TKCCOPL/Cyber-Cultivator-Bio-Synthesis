@@ -1,19 +1,24 @@
 package com.TKCCOPL.recipe;
 
 import com.TKCCOPL.item.GeneticSeedItem;
+import com.mojang.logging.LogUtils;
 import net.minecraft.core.RegistryAccess;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
+import org.slf4j.Logger;
 
 /**
  * 培养槽产出配方（JSON 数据驱动）。
  * 定义种子类型 → 作物产出的映射关系。
  */
 public class IncubatorOutputRecipe implements net.minecraft.world.item.crafting.Recipe<Container> {
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private final ResourceLocation id;
     private final ItemStack seedItem;      // 匹配用的种子物品
     private final ItemStack outputItem;    // 输出物品模板
@@ -48,11 +53,27 @@ public class IncubatorOutputRecipe implements net.minecraft.world.item.crafting.
     public ItemStack assemble(ItemStack seedStack) {
         int yield = GeneticSeedItem.getGene(seedStack, GeneticSeedItem.GENE_YIELD);
         int potency = GeneticSeedItem.getGene(seedStack, GeneticSeedItem.GENE_POTENCY);
+        int generation = GeneticSeedItem.getGeneration(seedStack);
+        int synergy = GeneticSeedItem.getSynergy(seedStack);
         int count = evaluateCountFormula(yield);
 
         ItemStack result = new ItemStack(outputItem.getItem(), count);
         if (!qualityTag.isEmpty()) {
             result.getOrCreateTag().putInt(qualityTag, potency);
+        }
+        // 传递 Generation 标签
+        result.getOrCreateTag().putInt("Generation", generation);
+        // 传递 Gene_Synergy 标签（确保后续莓合成和血清合成能读取到该值）
+        if (synergy > 0) {
+            result.getOrCreateTag().putInt(GeneticSeedItem.GENE_SYNERGY, synergy);
+        }
+        // 传递 Mutation 标签（整数类型码 + 详情）
+        CompoundTag seedTag = seedStack.getTag();
+        if (seedTag != null && seedTag.contains("Mutation")) {
+            result.getOrCreateTag().putInt("Mutation", seedTag.getInt("Mutation"));
+            if (seedTag.contains("MutationDetail")) {
+                result.getOrCreateTag().putString("MutationDetail", seedTag.getString("MutationDetail"));
+            }
         }
         return result;
     }
@@ -96,6 +117,8 @@ public class IncubatorOutputRecipe implements net.minecraft.world.item.crafting.
             }
             return result;
         } catch (Exception e) {
+            LOGGER.error("[IncubatorOutputRecipe] Failed to evaluate count_formula '{}' (yield={}): {}",
+                    countFormula, yieldValue, e.getMessage());
             return 2; // 保底
         }
     }

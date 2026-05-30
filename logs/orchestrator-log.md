@@ -282,3 +282,74 @@
   - 客户端 onDataPacket 收到 null → load() 不被调用 → 字段永远不清空
 - 260504 0900 修复：saveAdditional() 空字段写入哨兵 CompoundTag 确保 tag 非空
 - 260504 0900 经验已更新到 docs/lessons-learned.md
+
+- 260530 0000 ── 代码质量优化 ──
+- 260530 0000 分支：refactor/code-quality-optimization
+- 260530 0000 计划：docs/superpowers/plans/2026-05-30-code-quality-optimization-plan.md
+- 260530 0000 任务拆分完成：Task 1-10（BlockEntity哨兵/SOURCE_MAP泄漏/TickTask检查/Configvolatile/注入量配置化/扫描性能/容器缓存/配方匹配/扫描范围上限/公式解析器）
+- 260530 0000 测试策略：跳过3-agent测试，仅编译验证
+
+- 260530 0001 ── Task 1: BlockEntity saveAdditional 哨兵写入 ──
+- 260530 0001 修改文件：BioIncubatorBlockEntity.java + SerumBottlerBlockEntity.java
+- 260530 0001 编译验证：PASS
+- 260530 0001 提交：a0a9bf1
+
+- 260530 0002 ── Task 2: NeuralOverloadEffect SOURCE_MAP 内存泄漏修复 ──
+- 260530 0002 修改文件：NeuralOverloadEffect.java + cybercultivator.java
+- 260530 0002 编译验证：PASS
+- 260530 0002 提交：8f7db04
+
+- 260530 0003 ── Task 3: TickTask 执行前检查实体有效性 ──
+- 260530 0003 修改文件：SynapticOverclockEffect.java + MetabolicBoostEffect.java + VisualEnhancementEffect.java
+- 260530 0003 编译验证：PASS
+- 260530 0003 提交：8591319
+
+- 260530 0004 ── Task 4: Config 字段添加 volatile ──
+- 260530 0004 修改文件：Config.java
+- 260530 0004 编译验证：PASS
+- 260530 0004 提交：180d358
+
+- 260530 0005 ── Task 5: BioIncubatorBlock 注入量改用 Config 值 ──
+- 260530 0005 修改文件：BioIncubatorBlock.java
+- 260530 0005 编译验证：PASS
+- 260530 0005 提交：dd5f18c
+
+- 260530 0006 ── Task 6: BioPulseBelt 扫描性能优化 ──
+- 260530 0006 修改文件：BioPulseBeltItem.java
+- 260530 0006 编译验证：PASS
+- 260530 0006 提交：034b9df
+
+- 260530 0007 ── Task 7: SerumBottlerBlockEntity SimpleContainer 缓存 ──
+- 260530 0007 修改文件：SerumBottlerBlockEntity.java
+- 260530 0007 编译验证：PASS
+- 260530 0007 提交：8094f98
+
+- 260530 0008 ── Task 8: SerumRecipe.matches() 拒绝多余物品 ──
+- 260530 0008 修改文件：SerumRecipe.java
+- 260530 0008 编译验证：PASS
+- 260530 0008 提交：576ddfc
+
+- 260530 0009 ── Task 9: VisualEnhancementEffect 扫描范围上限 ──
+- 260530 0009 修改文件：VisualEnhancementEffect.java
+- 260530 0009 编译验证：PASS
+- 260530 0009 提交：49d19bd
+
+- 260530 0010 ── Task 10: IncubatorOutputRecipe 公式解析器增强 ──
+- 260530 0010 修改文件：IncubatorOutputRecipe.java
+- 260530 0010 编译验证：PASS
+- 260530 0010 提交：e8007ba
+
+- 260530 0011 ──── 代码质量优化全部完成 ────
+- 260530 0011 共 10 个任务，全部 1 次通过
+- 260530 0011 最终验证：compileJava PASS / build PASS
+- 260530 0011 提交列表：
+  - a0a9bf1 fix(blockentity): saveAdditional 写入空 tag 哨兵确保客户端同步
+  - 8f7db04 fix(effect): 清理 NeuralOverload SOURCE_MAP 防止实体卸载后内存泄漏
+  - 8591319 fix(effect): TickTask 执行前检查实体有效性防止泄漏
+  - 180d358 fix(config): 运行时字段添加 volatile 保证多线程可见性
+  - dd5f18c fix(block): BioIncubatorBlock 注入量改用 Config 值
+  - 034b9df perf(curios): BioPulseBelt 降低扫描频率并限制范围上限
+  - 8094f98 perf(bottler): 缓存 SimpleContainer 避免每 tick 分配
+  - 576ddfc fix(recipe): SerumRecipe.matches() 拒绝含多余物品的容器
+  - 49d19bd fix(effect): VisualEnhancementEffect 扫描范围上限 32 格
+  - e8007ba fix(recipe): IncubatorOutputRecipe 公式解析器支持操作数任意顺序
