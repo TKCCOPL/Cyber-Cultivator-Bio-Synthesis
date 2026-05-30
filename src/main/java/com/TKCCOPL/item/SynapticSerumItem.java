@@ -1,5 +1,6 @@
 package com.TKCCOPL.item;
 
+import com.TKCCOPL.Config;
 import com.TKCCOPL.init.ModEffects;
 import com.TKCCOPL.event.SerumConsumeEvent;
 import net.minecraft.world.InteractionHand;
@@ -22,18 +23,23 @@ public class SynapticSerumItem extends Item {
     private static final int MAX_AMPLIFIER = 7;
 
     private final Supplier<MobEffect> effect;
-    private final int durationTicks;
+    private final Supplier<Integer> durationSupplier;
     private final int amplifier;
 
     public SynapticSerumItem(Properties properties) {
-        this(properties, ModEffects.SYNAPTIC_OVERCLOCK, 20 * 25, 0);
+        this(properties, ModEffects.SYNAPTIC_OVERCLOCK, () -> Config.s01BaseDuration, 0);
     }
 
-    public SynapticSerumItem(Properties properties, Supplier<MobEffect> effect, int durationTicks, int amplifier) {
+    public SynapticSerumItem(Properties properties, Supplier<MobEffect> effect, Supplier<Integer> durationSupplier, int amplifier) {
         super(properties);
         this.effect = effect;
-        this.durationTicks = durationTicks;
+        this.durationSupplier = durationSupplier;
         this.amplifier = amplifier;
+    }
+
+    // 保留旧构造函数（向后兼容，固定值转为 Supplier）
+    public SynapticSerumItem(Properties properties, Supplier<MobEffect> effect, int durationTicks, int amplifier) {
+        this(properties, effect, () -> durationTicks, amplifier);
     }
 
     @Override
@@ -59,12 +65,12 @@ public class SynapticSerumItem extends Item {
     }
 
     public static int getScaledDuration(int baseDuration, int activity) {
-        double multiplier = 0.5 + activity * 0.1;
+        double multiplier = Config.durationMultiplierBase + activity * Config.durationMultiplierPerActivity;
         return (int) Math.round(baseDuration * multiplier);
     }
 
     public static int getBaseAmplifier(int activity) {
-        return activity >= 8 ? 1 : 0;
+        return activity >= Config.activityThresholdForBonus ? 1 : 0;
     }
 
     /**
@@ -87,16 +93,16 @@ public class SynapticSerumItem extends Item {
     public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity entity) {
         if (!level.isClientSide) {
             int activity = getActivity(stack);
-            int scaledDuration = getScaledDuration(durationTicks, activity);
+            int scaledDuration = getScaledDuration(durationSupplier.get(), activity);
 
             int amp;
             MobEffectInstance existing = entity.getEffect(effect.get());
             if (existing != null) {
-                amp = Math.min(existing.getAmplifier() + 1, MAX_AMPLIFIER);
-                // 累加剩余持续时间，上限 5 分钟
-                scaledDuration = Math.min(scaledDuration + existing.getDuration(), 20 * 300);
+                amp = Math.min(existing.getAmplifier() + 1, Config.stackAmplifierCap);
+                // 累加剩余持续时间，上限 Config.stackDurationCap
+                scaledDuration = Math.min(scaledDuration + existing.getDuration(), Config.stackDurationCap);
             } else {
-                amp = Math.min(getBaseAmplifier(activity) + getActivityBonusAmplifier(activity), MAX_AMPLIFIER);
+                amp = Math.min(getBaseAmplifier(activity) + getActivityBonusAmplifier(activity), Config.stackAmplifierCap);
             }
 
             // 触发 SerumConsumeEvent，允许其他 mod 修改效果参数

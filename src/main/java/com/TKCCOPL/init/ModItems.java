@@ -1,5 +1,6 @@
 package com.TKCCOPL.init;
 
+import com.TKCCOPL.Config;
 import com.TKCCOPL.cybercultivator;
 import com.TKCCOPL.curios.BioPulseBeltItem;
 import com.TKCCOPL.curios.CurioAccessoryItem;
@@ -71,7 +72,8 @@ public final class ModItems {
             }
         }
     });
-    public static final RegistryObject<Item> SYNAPTIC_SERUM_S01 = ITEMS.register("synaptic_serum_s01", () -> new SynapticSerumItem(new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON)));
+    public static final RegistryObject<Item> SYNAPTIC_SERUM_S01 = ITEMS.register("synaptic_serum_s01",
+            () -> new SynapticSerumItem(new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON)));
 
     public static final RegistryObject<Item> FIBER_REED_SEEDS = ITEMS.register("fiber_reed_seeds",
             () -> new GeneticSeedItem(ModBlocks.FIBER_REED_CROP.get(), new Item.Properties(), 4, 7, 3));
@@ -82,8 +84,12 @@ public final class ModItems {
 
     public static final RegistryObject<Item> PURIFIED_WATER_BOTTLE = ITEMS.register("purified_water_bottle", () -> new Item(new Item.Properties().stacksTo(16)));
 
-    public static final RegistryObject<Item> SYNAPTIC_SERUM_S02 = ITEMS.register("synaptic_serum_s02", () -> new SynapticSerumItem(new Item.Properties().stacksTo(16).rarity(Rarity.RARE), ModEffects.VISUAL_ENHANCEMENT, 20 * 30, 0));
-    public static final RegistryObject<Item> SYNAPTIC_SERUM_S03 = ITEMS.register("synaptic_serum_s03", () -> new SynapticSerumItem(new Item.Properties().stacksTo(16).rarity(Rarity.RARE), ModEffects.METABOLIC_BOOST, 20 * 15, 0));
+    public static final RegistryObject<Item> SYNAPTIC_SERUM_S02 = ITEMS.register("synaptic_serum_s02",
+            () -> new SynapticSerumItem(new Item.Properties().stacksTo(16).rarity(Rarity.RARE),
+                    () -> ModEffects.VISUAL_ENHANCEMENT.get(), () -> Config.s02BaseDuration, 0));
+    public static final RegistryObject<Item> SYNAPTIC_SERUM_S03 = ITEMS.register("synaptic_serum_s03",
+            () -> new SynapticSerumItem(new Item.Properties().stacksTo(16).rarity(Rarity.RARE),
+                    () -> ModEffects.METABOLIC_BOOST.get(), () -> Config.s03BaseDuration, 0));
 
     public static final RegistryObject<Item> SPECTRUM_MONOCLE = ITEMS.register("spectrum_monocle",
             () -> new CurioAccessoryItem(new Item.Properties().rarity(Rarity.RARE), "head", "tooltip.cybercultivator.spectrum_monocle") {
