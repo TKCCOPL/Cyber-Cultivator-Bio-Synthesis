@@ -1,5 +1,6 @@
 package com.TKCCOPL.block.entity;
 
+import com.TKCCOPL.Config;
 import com.TKCCOPL.init.ModBlockEntities;
 import com.TKCCOPL.init.ModItems;
 import com.TKCCOPL.item.GeneticSeedItem;
@@ -24,11 +25,6 @@ public class BioIncubatorBlockEntity extends BlockEntity {
     private static final String TAG_GROWTH_PROGRESS = "GrowthProgress";
     private static final String TAG_SEED = "Seed";
 
-    /** 成熟所需的基础生长进度 */
-    private static final int MATURATION_THRESHOLD = 200;
-    /** 资源消耗阈值：低于此值不生长 */
-    private static final int RESOURCE_THRESHOLD = 10;
-
     private int nutrition;
     private int purity;
     private int dataSignal;
@@ -47,22 +43,22 @@ public class BioIncubatorBlockEntity extends BlockEntity {
         boolean changed = false;
 
         // 资源自然衰减
-        if (level.getGameTime() % 20L == 0L && blockEntity.nutrition > 0) {
+        if (level.getGameTime() % (long) Config.nutritionDecayInterval == 0L && blockEntity.nutrition > 0) {
             blockEntity.nutrition -= 1;
             changed = true;
         }
-        if (level.getGameTime() % 40L == 0L && blockEntity.purity > 0) {
+        if (level.getGameTime() % (long) Config.purityDecayInterval == 0L && blockEntity.purity > 0) {
             blockEntity.purity -= 1;
             changed = true;
         }
-        if (level.getGameTime() % 60L == 0L && blockEntity.dataSignal > 0) {
+        if (level.getGameTime() % (long) Config.dataSignalDecayInterval == 0L && blockEntity.dataSignal > 0) {
             blockEntity.dataSignal -= 1;
             changed = true;
         }
 
         // 生长推进：需要三项资源均高于阈值
-        if (blockEntity.nutrition > RESOURCE_THRESHOLD
-                && blockEntity.purity > RESOURCE_THRESHOLD
+        if (blockEntity.nutrition > Config.resourceThreshold
+                && blockEntity.purity > Config.resourceThreshold
                 && blockEntity.dataSignal > 0) {
 
             // 计算生长速率：基础速率 * 基因倍率 * 环境倍率
@@ -75,7 +71,7 @@ public class BioIncubatorBlockEntity extends BlockEntity {
             changed = true;
 
             // 成熟判定
-            if (blockEntity.growthProgress >= MATURATION_THRESHOLD) {
+            if (blockEntity.growthProgress >= Config.maturationThreshold) {
                 // 产出作物物品
                 ItemStack cropOutput = getCropOutput(blockEntity.seed);
 
@@ -94,8 +90,8 @@ public class BioIncubatorBlockEntity extends BlockEntity {
                 // 消耗资源、重置生长进度、清除种子（防止无限产出）
                 blockEntity.growthProgress = 0;
                 blockEntity.seed = ItemStack.EMPTY;
-                blockEntity.nutrition = Math.max(0, blockEntity.nutrition - 5);
-                blockEntity.purity = Math.max(0, blockEntity.purity - 5);
+                blockEntity.nutrition = Math.max(0, blockEntity.nutrition - Config.matureNutritionCost);
+                blockEntity.purity = Math.max(0, blockEntity.purity - Config.maturePurityCost);
                 changed = true;
             }
         }
@@ -221,14 +217,14 @@ public class BioIncubatorBlockEntity extends BlockEntity {
 
     /** 获取生长进度百分比 (0-100) */
     public int getGrowthPercent() {
-        if (seed.isEmpty() || MATURATION_THRESHOLD <= 0) return 0;
-        return Math.min(100, (int) ((long) growthProgress * 100 / MATURATION_THRESHOLD));
+        if (seed.isEmpty() || Config.maturationThreshold <= 0) return 0;
+        return Math.min(100, (int) ((long) growthProgress * 100 / Config.maturationThreshold));
     }
 
     /** 获取当前生长速率（每 tick 推进量），用于外部估算 */
     public int getCurrentGrowthRate() {
         if (seed.isEmpty()) return 0;
-        if (nutrition <= RESOURCE_THRESHOLD || purity <= RESOURCE_THRESHOLD || dataSignal <= 0) return 0;
+        if (nutrition <= Config.resourceThreshold || purity <= Config.resourceThreshold || dataSignal <= 0) return 0;
         int geneSpeed = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_SPEED);
         double geneMultiplier = 0.5 + (geneSpeed / 10.0) * 1.5;
         double envMultiplier = (nutrition + purity + dataSignal) / 300.0;
@@ -239,7 +235,7 @@ public class BioIncubatorBlockEntity extends BlockEntity {
     public int getEstimatedSecondsRemaining() {
         int rate = getCurrentGrowthRate();
         if (rate <= 0) return -1;
-        int remaining = MATURATION_THRESHOLD - growthProgress;
+        int remaining = Config.maturationThreshold - growthProgress;
         if (remaining <= 0) return 0;
         // 每秒 20 tick
         return (int) Math.ceil(remaining / (double) rate / 20.0);
