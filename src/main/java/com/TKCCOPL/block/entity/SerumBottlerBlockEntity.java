@@ -403,12 +403,17 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         tag.putInt(TAG_MAX_PROGRESS, maxProgress);
         tag.putInt(TAG_ACTIVE_RECIPE, activeRecipe);
         for (int i = 0; i < INPUT_SLOTS; i++) {
+            String key = TAG_INPUT + i;
             if (!inputs[i].isEmpty()) {
-                tag.put(TAG_INPUT + i, inputs[i].save(new CompoundTag()));
+                tag.put(key, inputs[i].save(new CompoundTag()));
+            } else {
+                tag.put(key, new CompoundTag()); // sentinel: ensure tag is non-empty for client sync
             }
         }
         if (!output.isEmpty()) {
             tag.put(TAG_OUTPUT, output.save(new CompoundTag()));
+        } else {
+            tag.put(TAG_OUTPUT, new CompoundTag()); // sentinel: ensure tag is non-empty for client sync
         }
     }
 
