@@ -161,11 +161,13 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     private ItemStack assembleRecipe(SerumRecipe recipe) {
         ItemStack result = recipe.getBaseOutput();
 
-        if (recipe.isInheritActivity()) {
+        // 莓合成：从三种原料计算 Activity
+        if (recipe.isInheritActivity() && result.is(ModItems.SYNAPTIC_NEURAL_BERRY.get())) {
             int activity = calculateActivity(inputs);
             result.getOrCreateTag().putInt(TAG_ACTIVITY, activity);
         }
 
+        // Mutation 标签继承（仅莓合成）
         if (recipe.isInheritMutation()) {
             int mutationType = 0;
             String mutationDetail = "";
@@ -186,9 +188,9 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
             }
         }
 
-        // 对于血清配方（非莓合成），从莓输入继承 Activity
-        if (!recipe.isInheritActivity() || recipe.isInheritMutation()) {
-            // 如果输出是血清，从莓输入继承 Activity
+        // 血清配方（S-01/S-02/S-03）：从莓输入直接继承 Activity
+        boolean isSerumOutput = !result.is(ModItems.SYNAPTIC_NEURAL_BERRY.get());
+        if (isSerumOutput) {
             ItemStack berry = findInput(ModItems.SYNAPTIC_NEURAL_BERRY.get());
             if (!berry.isEmpty()) {
                 int activity = getActivity(berry);
