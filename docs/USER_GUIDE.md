@@ -5,6 +5,7 @@
 赛博农夫 (Cyber-Cultivator) 是一个中型 Minecraft Forge 模组，用精密的实验室设备取代传统农业，融合遗传育种算法与生物强化血清系统。你需要通过挖掘矿物、种植生化作物、培育基因、合成血清来强化自身能力。
 
 **前置依赖：** Curios API（饰品系统）
+**可选依赖：** JEI（配方查看器，安装后可在 JEI 中查看所有配方）
 
 ---
 
@@ -264,6 +265,8 @@
 | 植物纤维 | Potency | 纤维草种子的 Potency 基因 |
 | 工业乙醇 | Purity | 酒精花种子的 Potency 基因 |
 | 生化原液 | Concentration | 蛋白质豆种子的 Potency 基因 |
+
+> 注：Gene_Purity 已在 v1.1.2 重命名为 Gene_Synergy（协同基因），避免与乙醇品质 Purity 混淆。
 
 ### 突触活性 (Synaptic Activity)
 

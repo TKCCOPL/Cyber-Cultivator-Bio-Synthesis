@@ -10,6 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **包名:** `com.TKCCOPL`
 - **Forge:** 47.4.18 | **Java:** 17
 - **前置依赖:** Curios API 5.3.5 (饰品系统，compileOnly API + runtimeOnly 完整模组)
+- **可选依赖:** JEI 15.0.0+ (配方查看器，compileOnly API + runtimeOnly 完整模组)
 - **Mappings:** Parchment 2023.09.03-1.20.1
 
 ## 常用构建命令
@@ -50,10 +51,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 |---|------|
 | `init/` | 注册表入口：`ModBlocks`, `ModItems`, `ModBlockEntities`, `ModEffects`, `ModCreativeTabs` |
 | `block/` | 方块类：`BioIncubatorBlock` (培养槽), `GeneSplicerBlock` (拼接机), `AtmosphericCondenserBlock` (冷凝器), `SerumBottlerBlock` (灌装机), `BasicCropBlock` (基础作物) |
-| `block/entity/` | TileEntity：`BioIncubatorBlockEntity` (培养槽状态机), `GeneSplicerBlockEntity` (遗传算法), `AtmosphericCondenserBlockEntity` (纯净水生产+相邻传输), `SerumBottlerBlockEntity` (配方驱动加工+漏斗兼容) |
+| `block/entity/` | TileEntity：`BioIncubatorBlockEntity` (培养槽状态机), `GeneSplicerBlockEntity` (遗传算法), `AtmosphericCondenserBlockEntity` (纯净水生产+相邻传输), `SerumBottlerBlockEntity` (RecipeType 驱动加工+漏斗兼容) |
 | `item/` | `GeneticSeedItem` (NBT基因标签), `SynapticSerumItem` (血清效果触发，支持构造函数注入不同效果) |
 | `effect/` | `SynapticOverclockEffect` (突触超频), `NeuralOverloadEffect` (神经过载副作用), `VisualEnhancementEffect` (S-02 视觉强化), `MetabolicBoostEffect` (S-03 代谢加速) |
+| `recipe/` | `ModRecipeTypes` (RecipeType 注册), `SerumRecipe` (JSON 配方), `SerumRecipeSerializer` (序列化器), `ModRecipes` (静态注册表：拼接机/培养槽配方，供 JEI 和第三方 mod 查询) |
+| `api/` | `CyberCultivatorAPI` (门面类), 5 个只读 DTO record：`IncubatorInfo`, `BottlerInfo`, `CondenserInfo`, `SplicerInfo`, `SerumEffectInfo` |
+| `event/` | 自定义 Forge 事件：`GeneSpliceEvent`, `CropMatureEvent`, `SerumCraftEvent`, `SerumConsumeEvent`（均支持取消+字段修改） |
 | `curios/` | `CuriosCompat` — Curios API 饰品集成（compileOnly），`CurioAccessoryItem` 基类，`BioPulseBeltItem`（腰带），`LifeSupportPackItem`（支持箱），`CurioEventHandler`（事件驱动 tick） |
+| `compat/jei/` | JEI 集成（compileOnly）：`CyberCultivatorJEIPlugin` (入口), `SerumBottlingCategory` (灌装), `GeneSplicingCategory` (拼接), `IncubatorOutputCategory` (培养槽产出) |
 | `datagen/` | 数据生成器：配方、战利品表、方块状态、物品模型、语言文件、标签、进度引导 |
 | `client/` | `ClientTooltipEvents` — 客户端渲染/Tooltip 逻辑，`IncubatorHudOverlay` — 单片镜 HUD 浮窗 |
 
@@ -96,9 +101,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 实现 `WorldlyContainer`，漏斗可从侧面抽取
 
 **血清灌装机 (SerumBottlerBlockEntity):**
-- 3 输入槽 + 1 输出槽，4 种配方：莓合成（纤维+乙醇+原液）、S-01（莓+原液+瓶）、S-02（莓+稀土+瓶）、S-03（莓+乙醇+瓶）
+- 3 输入槽 + 1 输出槽，配方通过 `RecipeType<SerumRecipe>` JSON 数据驱动（`data/cybercultivator/recipes/serum/`）
+- 4 种配方：莓合成（纤维+乙醇+原液）、S-01（莓+原液+瓶）、S-02（莓+稀土+瓶）、S-03（莓+乙醇+瓶）
 - 加工时间 300 tick，实现 `WorldlyContainer`（顶部/侧面注入，底部抽取）
-- `matchRecipe()` 遍历输入槽匹配配方，`consumeInputs()` 消耗材料
+- `matchRecipe()` 从 `RecipeManager` 查询 `SerumRecipe`，`consumeInputs()` 消耗材料
 - Activity 公式：`clamp(round(Potency×0.25 + Purity×0.375 + Concentration×0.375), 1, 10)`，按物品种类查找输入
 - `activeRecipe` 缓存配方索引避免 TOCTOU；加工开始时缓存，完成后使用缓存值
 
@@ -109,6 +115,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 效果缩放：`duration = base × (0.5 + Activity × 0.1)`，`baseAmplifier = Activity >= 8 ? 1 : 0`
 - 叠加升级：再次饮用 amplifier +1（上限 7，VIII 级），持续时间累加（上限 5 分钟）
 - 副作用：`removeAttributeModifiers` 中检查 `entity.getEffect(this) == null`，仅自然过期时施加 NeuralOverload；用 TickTask 延迟避免 CME
+
+**配方系统 (recipe/):**
+- `ModRecipeTypes`：注册 `RecipeType<SerumRecipe>` + `RecipeSerializer`，DeferredRegister 模式
+- `SerumRecipe`：JSON 数据驱动配方，支持 `inheritActivity` / `inheritMutation` 标签
+- `ModRecipes`：静态注册表，暴露 `IGeneSpliceRecipe`（拼接算法）和 `IIncubatorOutput`（培养槽产出）接口，供 JEI 和第三方 mod 查询
+- `getSeedItemForType(String)`：根据种子类型标识查找对应种子物品
+
+**自定义事件 (event/):**
+- `GeneSpliceEvent`：拼接完成后触发，可修改子代基因/突变类型（可取消）
+- `CropMatureEvent`：作物成熟产出前触发，可修改产出（可取消）
+- `SerumCraftEvent`：灌装完成后触发，可修改输出/活性（可取消）
+- `SerumConsumeEvent`：血清饮用时触发，可修改效果参数（可取消）
+
+**公开 API (api/):**
+- `CyberCultivatorAPI`：门面类，提供基因读写、机器状态查询、血清配方查询
+- DTO record：`IncubatorInfo`, `BottlerInfo`, `CondenserInfo`, `SplicerInfo`, `SerumEffectInfo`（ItemStack 字段 defensive copy）
+- 所有方法 null 安全，API 包不依赖任何 compileOnly 依赖
+
+**JEI 集成 (compat/jei/):**
+- `@JeiPlugin` 注解发现，compileOnly 隔离
+- 4 个配方类别：血清灌装（RecipeType 自动发现）、基因拼接（ModRecipes 静态注册表）、培养槽产出（ModRecipes 静态注册表）、机器合成（标准 CraftingRecipe）
+- 背景统一 140×60，预留扩展空间
 
 ### 数据生成
 
