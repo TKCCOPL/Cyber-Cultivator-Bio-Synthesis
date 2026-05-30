@@ -35,12 +35,16 @@ public class SerumRecipe implements Recipe<Container> {
         for (int i = 0; i < container.getContainerSize(); i++) {
             ItemStack slotStack = container.getItem(i);
             if (slotStack.isEmpty()) continue;
+            boolean slotMatched = false;
             for (int j = 0; j < inputs.length; j++) {
                 if (!matched[j] && inputs[j].test(slotStack)) {
                     matched[j] = true;
+                    slotMatched = true;
                     break;
                 }
             }
+            // 非空槽位无法匹配任何配方输入 → 拒绝
+            if (!slotMatched) return false;
         }
         for (boolean m : matched) {
             if (!m) return false;
