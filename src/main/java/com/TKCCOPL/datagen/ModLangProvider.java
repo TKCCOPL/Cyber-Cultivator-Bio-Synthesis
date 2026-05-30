@@ -123,5 +123,16 @@ public class ModLangProvider extends LanguageProvider {
         add("jei.cybercultivator.serum_bottling", "血清灌装");
         add("jei.cybercultivator.gene_splicing", "基因拼接");
         add("jei.cybercultivator.incubator_output", "培养槽产出");
+
+        // JEI 信息
+        add("jei.cybercultivator.activity", "活性: %s");
+        add("jei.cybercultivator.processing_time", "%ss");
+        add("jei.cybercultivator.mutation_chance", "突变: %s%%");
+        add("jei.cybercultivator.gene_info_a", "A: S:%s Y:%s P:%s");
+        add("jei.cybercultivator.gene_info_b", "B: S:%s Y:%s P:%s");
+        add("jei.cybercultivator.gene_range", "子代: S:%s-%s Y:%s-%s P:%s-%s");
+        add("jei.cybercultivator.gene_default", "基因: S:%s Y:%s P:%s");
+        add("jei.cybercultivator.output_range", "产出: %s-%s");
+        add("jei.cybercultivator.growth_rate", "速率: %sx");
     }
 }

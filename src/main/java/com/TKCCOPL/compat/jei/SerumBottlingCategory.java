@@ -5,11 +5,14 @@ import com.TKCCOPL.init.ModItems;
 import com.TKCCOPL.recipe.SerumRecipe;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
+import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -26,7 +29,7 @@ public class SerumBottlingCategory implements IRecipeCategory<SerumRecipe> {
     private final IDrawable icon;
 
     public SerumBottlingCategory(IGuiHelper guiHelper) {
-        this.background = guiHelper.createDrawable(TEXTURE, 0, 0, 120, 40);
+        this.background = guiHelper.createDrawable(TEXTURE, 0, 0, 140, 50);
         this.icon = guiHelper.createDrawableItemStack(new ItemStack(ModItems.SERUM_BOTTLER_ITEM.get()));
     }
 
@@ -54,10 +57,31 @@ public class SerumBottlingCategory implements IRecipeCategory<SerumRecipe> {
     public void setRecipe(IRecipeLayoutBuilder builder, SerumRecipe recipe, IFocusGroup focuses) {
         Ingredient[] inputs = recipe.getInputs();
         for (int i = 0; i < inputs.length; i++) {
-            builder.addSlot(RecipeIngredientRole.INPUT, 1 + i * 18, 1)
+            builder.addSlot(RecipeIngredientRole.INPUT, 1 + i * 18, 11)
                     .addIngredients(inputs[i]);
         }
-        builder.addSlot(RecipeIngredientRole.OUTPUT, 91, 11)
-                .addItemStack(recipe.getBaseOutput());
+
+        // 输出物品（带 Activity NBT 用于展示）
+        ItemStack output = recipe.getBaseOutput();
+        if (!output.is(ModItems.SYNAPTIC_NEURAL_BERRY.get())) {
+            output.getOrCreateTag().putInt("SynapticActivity", 8);
+        }
+        builder.addSlot(RecipeIngredientRole.OUTPUT, 113, 11)
+                .addItemStack(output);
+    }
+
+    @Override
+    public void draw(SerumRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphics guiGraphics,
+                     double mouseX, double mouseY) {
+        // 加工时间
+        int seconds = recipe.getProcessingTime() / 20;
+        String time = seconds + "s";
+        guiGraphics.drawString(Minecraft.getInstance().font, time, 60, 2, 0x808080, false);
+
+        // Activity 值（仅血清配方）
+        ItemStack output = recipe.getBaseOutput();
+        if (!output.is(ModItems.SYNAPTIC_NEURAL_BERRY.get())) {
+            guiGraphics.drawString(Minecraft.getInstance().font, "活性: 8", 60, 38, 0xFFAA00, false);
+        }
     }
 }
