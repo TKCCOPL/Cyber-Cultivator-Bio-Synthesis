@@ -1,5 +1,6 @@
 package com.TKCCOPL.event;
 
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.eventbus.api.Event;
 
@@ -11,13 +12,13 @@ public class SerumCraftEvent extends Event {
     private final ItemStack[] inputs;
     private ItemStack output;
     private int activity;
-    private final int recipeIndex;
+    private final ResourceLocation recipeId;
 
-    public SerumCraftEvent(ItemStack[] inputs, ItemStack output, int activity, int recipeIndex) {
+    public SerumCraftEvent(ItemStack[] inputs, ItemStack output, int activity, ResourceLocation recipeId) {
         this.inputs = inputs;
         this.output = output;
         this.activity = activity;
-        this.recipeIndex = recipeIndex;
+        this.recipeId = recipeId;
     }
 
     public ItemStack[] getInputs() { return inputs; }
@@ -28,7 +29,11 @@ public class SerumCraftEvent extends Event {
     public int getActivity() { return activity; }
     public void setActivity(int activity) { this.activity = activity; }
 
-    public int getRecipeIndex() { return recipeIndex; }
+    public ResourceLocation getRecipeId() { return recipeId; }
+
+    /** @deprecated 使用 {@link #getRecipeId()} 替代 */
+    @Deprecated
+    public int getRecipeIndex() { return -1; }
 
     @Override
     public boolean isCancelable() { return true; }

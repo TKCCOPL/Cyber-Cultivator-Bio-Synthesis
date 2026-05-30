@@ -125,7 +125,9 @@ public class IncubatorOutputRecipe implements net.minecraft.world.item.crafting.
 
     @Override
     public ItemStack assemble(Container container, RegistryAccess registryAccess) {
-        return outputItem.copy();
+        ItemStack seedStack = container.getItem(0);
+        if (seedStack.isEmpty()) return outputItem.copy();
+        return assemble(seedStack);
     }
 
     @Override

@@ -209,14 +209,27 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         if (net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(event)) {
             return; // 事件被取消
         }
-        // 使用事件修改后的值
+        // 使用事件修改后的值（Task 3: 回读所有 setter）
         newSpeed = event.getSpeed();
         newYield = event.getYield();
         newPotency = event.getPotency();
         GeneticSeedItem.setGenes(result, newSpeed, newYield, newPotency);
-        if (event.getSynergy() > 0) {
-            result.getOrCreateTag().putInt(GeneticSeedItem.GENE_SYNERGY, event.getSynergy());
+
+        // 回读 synergy（无条件写入，支持清零）
+        result.getOrCreateTag().putInt(GeneticSeedItem.GENE_SYNERGY, event.getSynergy());
+
+        // 回读 mutation 信息
+        if (event.isMutation()) {
+            result.getOrCreateTag().putInt("Mutation", event.getMutationType());
+            result.getOrCreateTag().putString("MutationDetail", event.getMutationDetail());
+        } else {
+            // 事件监听器清除了突变，移除标签
+            result.getOrCreateTag().remove("Mutation");
+            result.getOrCreateTag().remove("MutationDetail");
         }
+
+        // 回读 generation
+        result.getOrCreateTag().putInt(GeneticSeedItem.GENE_GENERATION, event.getGeneration());
 
         output = result;
 

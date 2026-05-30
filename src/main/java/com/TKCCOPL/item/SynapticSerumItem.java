@@ -110,10 +110,7 @@ public class SynapticSerumItem extends Item {
                     entity, stack, effect.get(), activity, scaledDuration, amp
             );
             if (net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(consumeEvent)) {
-                // 事件被取消，不施加效果
-                if (entity instanceof Player player && !player.getAbilities().instabuild) {
-                    stack.shrink(1);
-                }
+                // 事件被取消，不施加效果，不消耗物品
                 return stack;
             }
             scaledDuration = consumeEvent.getDuration();

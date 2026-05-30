@@ -11,6 +11,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.item.ItemStack;
@@ -31,6 +32,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     private static final int OUTPUT_SLOT = 3;
     private static final String TAG_ACTIVITY = "SynapticActivity";
     private static final String TAG_ACTIVE_RECIPE = "ActiveRecipe";
+    private static final String TAG_RECIPE_ID = "RecipeId";
 
     /**
      * 计算突触活性值。加权平均 (Potency×0.25 + Purity×0.375 + Concentration×0.375)，
@@ -81,7 +83,8 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     private int progress;
     private int maxProgress;
     private int activeRecipe = -1;
-    private SerumRecipe cachedRecipe; // 运行时缓存，不持久化
+    private SerumRecipe cachedRecipe;
+    private String pendingRecipeId; // Task 1: 用于 load() 后延迟恢复 cachedRecipe
 
     public SerumBottlerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SERUM_BOTTLER.get(), pos, state);
@@ -94,6 +97,24 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         if (level.isClientSide) return;
 
         boolean changed = false;
+
+        // Task 1: 延迟恢复 cachedRecipe（load() 时 level 为 null）
+        if (blockEntity.maxProgress > 0 && blockEntity.cachedRecipe == null && blockEntity.pendingRecipeId != null) {
+            ResourceLocation recipeId = new ResourceLocation(blockEntity.pendingRecipeId);
+            blockEntity.cachedRecipe = level.getRecipeManager()
+                    .getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get())
+                    .stream()
+                    .filter(r -> r.getId().equals(recipeId))
+                    .findFirst()
+                    .orElse(null);
+            blockEntity.pendingRecipeId = null;
+            if (blockEntity.cachedRecipe == null) {
+                // 配方已被移除（数据包变更），重置加工状态
+                blockEntity.progress = 0;
+                blockEntity.maxProgress = 0;
+                changed = true;
+            }
+        }
 
         // Try to start a recipe
         if (blockEntity.maxProgress == 0) {
@@ -198,9 +219,14 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
             }
         }
 
+        // Task 4: 深拷贝 inputs（防止事件监听器污染内部状态）
+        ItemStack[] copiedInputs = new ItemStack[inputs.length];
+        for (int i = 0; i < inputs.length; i++) {
+            copiedInputs[i] = inputs[i].copy();
+        }
         // 触发 SerumCraftEvent，允许其他 mod 修改输出
-        int recipeIndex = getActiveRecipe();
-        SerumCraftEvent craftEvent = new SerumCraftEvent(inputs.clone(), result, getActivity(result), recipeIndex);
+        ResourceLocation recipeId = getActiveRecipeId();
+        SerumCraftEvent craftEvent = new SerumCraftEvent(copiedInputs, result, getActivity(result), recipeId);
         if (net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(craftEvent)) {
             return ItemStack.EMPTY; // 事件被取消
         }
@@ -241,6 +267,10 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         if (out.is(ModItems.SYNAPTIC_SERUM_S02.get())) return 2;
         if (out.is(ModItems.SYNAPTIC_SERUM_S03.get())) return 3;
         return -1;
+    }
+    /** Task 7: 返回当前配方的 ResourceLocation ID */
+    public ResourceLocation getActiveRecipeId() {
+        return cachedRecipe != null ? cachedRecipe.getId() : null;
     }
     public ItemStack getOutput() { return output; }
 
@@ -389,6 +419,10 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         progress = Math.max(0, tag.getInt(TAG_PROGRESS));
         maxProgress = Math.max(0, tag.getInt(TAG_MAX_PROGRESS));
         activeRecipe = tag.getInt(TAG_ACTIVE_RECIPE);
+        // Task 1: 加载配方 ID（延迟恢复，因为 load() 时 level 为 null）
+        if (tag.contains(TAG_RECIPE_ID)) {
+            pendingRecipeId = tag.getString(TAG_RECIPE_ID);
+        }
         for (int i = 0; i < INPUT_SLOTS; i++) {
             String key = TAG_INPUT + i;
             inputs[i] = tag.contains(key) ? ItemStack.of(tag.getCompound(key)) : ItemStack.EMPTY;
@@ -402,6 +436,10 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         tag.putInt(TAG_PROGRESS, progress);
         tag.putInt(TAG_MAX_PROGRESS, maxProgress);
         tag.putInt(TAG_ACTIVE_RECIPE, activeRecipe);
+        // Task 1: 持久化配方 ID，用于世界重载后恢复
+        if (cachedRecipe != null) {
+            tag.putString(TAG_RECIPE_ID, cachedRecipe.getId().toString());
+        }
         for (int i = 0; i < INPUT_SLOTS; i++) {
             if (!inputs[i].isEmpty()) {
                 tag.put(TAG_INPUT + i, inputs[i].save(new CompoundTag()));
