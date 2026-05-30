@@ -2,15 +2,19 @@ package com.TKCCOPL.block.entity;
 
 import com.TKCCOPL.init.ModBlockEntities;
 import com.TKCCOPL.init.ModItems;
+import com.TKCCOPL.recipe.ModRecipeTypes;
+import com.TKCCOPL.recipe.SerumRecipe;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -76,6 +80,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     private int progress;
     private int maxProgress;
     private int activeRecipe = -1;
+    private SerumRecipe cachedRecipe; // 运行时缓存，不持久化
 
     public SerumBottlerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SERUM_BOTTLER.get(), pos, state);
@@ -91,10 +96,10 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
 
         // Try to start a recipe
         if (blockEntity.maxProgress == 0) {
-            int recipe = blockEntity.matchRecipe();
-            if (recipe >= 0) {
-                blockEntity.activeRecipe = recipe;
-                blockEntity.maxProgress = PROCESSING_TIME;
+            SerumRecipe recipe = blockEntity.findRecipe();
+            if (recipe != null) {
+                blockEntity.cachedRecipe = recipe;
+                blockEntity.maxProgress = recipe.getProcessingTime();
                 blockEntity.progress = 0;
                 changed = true;
             }
@@ -108,18 +113,18 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
                 changed = true;
             }
             if (blockEntity.progress >= blockEntity.maxProgress) {
-                // Complete recipe — use cached activeRecipe to avoid TOCTOU
-                int recipe = blockEntity.activeRecipe;
-                if (recipe >= 0) {
-                    // 先获取产出（需要读取输入的 NBT），再消耗输入
-                    ItemStack result = blockEntity.getRecipeOutput(recipe);
-                    blockEntity.consumeInputs(recipe);
+                // Complete recipe — use cached recipe to avoid TOCTOU
+                SerumRecipe recipe = blockEntity.cachedRecipe;
+                if (recipe != null) {
+                    ItemStack result = blockEntity.assembleRecipe(recipe);
+                    blockEntity.consumeRecipeInputs(recipe);
                     if (blockEntity.output.isEmpty()) {
                         blockEntity.output = result;
                     } else {
                         blockEntity.output.grow(result.getCount());
                     }
                 }
+                blockEntity.cachedRecipe = null;
                 blockEntity.activeRecipe = -1;
                 blockEntity.progress = 0;
                 blockEntity.maxProgress = 0;
@@ -133,129 +138,75 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     }
 
     /**
-     * @return recipe index (0=berry, 1=S-01, 2=S-02, 3=S-03), or -1 if no match
+     * @return 匹配的 SerumRecipe，无匹配返回 null
      */
-    private int matchRecipe() {
-        // Berry: plant_fiber + industrial_ethanol + biochemical_solution
-        if (hasIngredients(ModItems.PLANT_FIBER.get(), ModItems.INDUSTRIAL_ETHANOL.get(), ModItems.BIOCHEMICAL_SOLUTION.get())
-                && canOutput(ModItems.SYNAPTIC_NEURAL_BERRY.get())) {
-            return 0;
+    private SerumRecipe findRecipe() {
+        if (level == null) return null;
+        SimpleContainer container = new SimpleContainer(INPUT_SLOTS);
+        for (int i = 0; i < INPUT_SLOTS; i++) {
+            container.setItem(i, inputs[i]);
         }
-        // S-01: synaptic_neural_berry + biochemical_solution + glass_bottle
-        if (hasIngredients(ModItems.SYNAPTIC_NEURAL_BERRY.get(), ModItems.BIOCHEMICAL_SOLUTION.get(), Items.GLASS_BOTTLE)
-                && canOutput(ModItems.SYNAPTIC_SERUM_S01.get())) {
-            return 1;
-        }
-        // S-02: synaptic_neural_berry + rare_earth_dust + glass_bottle
-        if (hasIngredients(ModItems.SYNAPTIC_NEURAL_BERRY.get(), ModItems.RARE_EARTH_DUST.get(), Items.GLASS_BOTTLE)
-                && canOutput(ModItems.SYNAPTIC_SERUM_S02.get())) {
-            return 2;
-        }
-        // S-03: synaptic_neural_berry + industrial_ethanol + glass_bottle
-        if (hasIngredients(ModItems.SYNAPTIC_NEURAL_BERRY.get(), ModItems.INDUSTRIAL_ETHANOL.get(), Items.GLASS_BOTTLE)
-                && canOutput(ModItems.SYNAPTIC_SERUM_S03.get())) {
-            return 3;
-        }
-        return -1;
+        return level.getRecipeManager()
+                .getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get())
+                .stream()
+                .filter(r -> r.matches(container, level))
+                .findFirst()
+                .orElse(null);
     }
 
-    private boolean hasIngredients(net.minecraft.world.item.Item... required) {
-        boolean[] matched = new boolean[required.length];
-        for (int i = 0; i < INPUT_SLOTS; i++) {
-            if (inputs[i].isEmpty()) continue;
-            for (int j = 0; j < required.length; j++) {
-                if (!matched[j] && inputs[i].is(required[j])) {
-                    matched[j] = true;
-                    break;
+    /**
+     * 根据配方组装输出，处理 Activity 继承和 Mutation 标签转移。
+     */
+    private ItemStack assembleRecipe(SerumRecipe recipe) {
+        ItemStack result = recipe.getBaseOutput();
+
+        if (recipe.isInheritActivity()) {
+            int activity = calculateActivity(inputs);
+            result.getOrCreateTag().putInt(TAG_ACTIVITY, activity);
+        }
+
+        if (recipe.isInheritMutation()) {
+            int mutationType = 0;
+            String mutationDetail = "";
+            for (ItemStack input : inputs) {
+                if (input.isEmpty()) continue;
+                CompoundTag tag = input.getTag();
+                if (tag != null && tag.contains("Mutation")) {
+                    int mt = tag.getInt("Mutation");
+                    if (mt > mutationType) {
+                        mutationType = mt;
+                        mutationDetail = tag.contains("MutationDetail") ? tag.getString("MutationDetail") : "";
+                    }
                 }
             }
+            if (mutationType > 0) {
+                result.getOrCreateTag().putInt("Mutation", mutationType);
+                result.getOrCreateTag().putString("MutationDetail", mutationDetail);
+            }
         }
-        for (boolean m : matched) {
-            if (!m) return false;
+
+        // 对于血清配方（非莓合成），从莓输入继承 Activity
+        if (!recipe.isInheritActivity() || recipe.isInheritMutation()) {
+            // 如果输出是血清，从莓输入继承 Activity
+            ItemStack berry = findInput(ModItems.SYNAPTIC_NEURAL_BERRY.get());
+            if (!berry.isEmpty()) {
+                int activity = getActivity(berry);
+                result.getOrCreateTag().putInt(TAG_ACTIVITY, activity);
+            }
         }
-        return true;
+
+        return result;
     }
 
-    private boolean canOutput(ItemStack result) {
-        if (output.isEmpty()) return true;
-        if (!ItemStack.isSameItemSameTags(output, result)) return false;
-        return output.getCount() + result.getCount() <= output.getMaxStackSize();
-    }
-
-    private boolean canOutput(net.minecraft.world.item.Item result) {
-        return canOutput(new ItemStack(result));
-    }
-
-    private void consumeInputs(int recipe) {
-        net.minecraft.world.item.Item[] required = switch (recipe) {
-            case 0 -> new net.minecraft.world.item.Item[]{ModItems.PLANT_FIBER.get(), ModItems.INDUSTRIAL_ETHANOL.get(), ModItems.BIOCHEMICAL_SOLUTION.get()};
-            case 1 -> new net.minecraft.world.item.Item[]{ModItems.SYNAPTIC_NEURAL_BERRY.get(), ModItems.BIOCHEMICAL_SOLUTION.get(), Items.GLASS_BOTTLE};
-            case 2 -> new net.minecraft.world.item.Item[]{ModItems.SYNAPTIC_NEURAL_BERRY.get(), ModItems.RARE_EARTH_DUST.get(), Items.GLASS_BOTTLE};
-            case 3 -> new net.minecraft.world.item.Item[]{ModItems.SYNAPTIC_NEURAL_BERRY.get(), ModItems.INDUSTRIAL_ETHANOL.get(), Items.GLASS_BOTTLE};
-            default -> new net.minecraft.world.item.Item[0];
-        };
-
-        for (net.minecraft.world.item.Item item : required) {
+    private void consumeRecipeInputs(SerumRecipe recipe) {
+        for (Ingredient ingredient : recipe.getInputs()) {
             for (int i = 0; i < INPUT_SLOTS; i++) {
-                if (inputs[i].is(item)) {
+                if (!inputs[i].isEmpty() && ingredient.test(inputs[i])) {
                     inputs[i].shrink(1);
                     break;
                 }
             }
         }
-    }
-
-    private ItemStack getRecipeOutput(int recipe) {
-        return switch (recipe) {
-            case 0 -> {
-                int activity = calculateActivity(inputs);
-                ItemStack berry = new ItemStack(ModItems.SYNAPTIC_NEURAL_BERRY.get());
-                berry.getOrCreateTag().putInt(TAG_ACTIVITY, activity);
-
-                // 继承原料的 Mutation 标签（取最大值，2>1>0）
-                int mutationType = 0;
-                String mutationDetail = "";
-                for (ItemStack input : inputs) {
-                    if (input.isEmpty()) continue;
-                    CompoundTag tag = input.getTag();
-                    if (tag != null && tag.contains("Mutation")) {
-                        int mt = tag.getInt("Mutation");
-                        if (mt > mutationType) {
-                            mutationType = mt;
-                            mutationDetail = tag.contains("MutationDetail") ? tag.getString("MutationDetail") : "";
-                        }
-                    }
-                }
-                if (mutationType > 0) {
-                    berry.getOrCreateTag().putInt("Mutation", mutationType);
-                    berry.getOrCreateTag().putString("MutationDetail", mutationDetail);
-                }
-
-                yield berry;
-            }
-            case 1 -> {
-                ItemStack berry = findInput(ModItems.SYNAPTIC_NEURAL_BERRY.get());
-                int activity = getActivity(berry);
-                ItemStack serum = new ItemStack(ModItems.SYNAPTIC_SERUM_S01.get());
-                serum.getOrCreateTag().putInt(TAG_ACTIVITY, activity);
-                yield serum;
-            }
-            case 2 -> {
-                ItemStack berry = findInput(ModItems.SYNAPTIC_NEURAL_BERRY.get());
-                int activity = getActivity(berry);
-                ItemStack serum = new ItemStack(ModItems.SYNAPTIC_SERUM_S02.get());
-                serum.getOrCreateTag().putInt(TAG_ACTIVITY, activity);
-                yield serum;
-            }
-            case 3 -> {
-                ItemStack berry = findInput(ModItems.SYNAPTIC_NEURAL_BERRY.get());
-                int activity = getActivity(berry);
-                ItemStack serum = new ItemStack(ModItems.SYNAPTIC_SERUM_S03.get());
-                serum.getOrCreateTag().putInt(TAG_ACTIVITY, activity);
-                yield serum;
-            }
-            default -> ItemStack.EMPTY;
-        };
     }
 
     private ItemStack findInput(net.minecraft.world.item.Item item) {
@@ -267,7 +218,16 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
 
     public int getProgress() { return progress; }
     public int getMaxProgress() { return maxProgress; }
-    public int getActiveRecipe() { return activeRecipe; }
+    public int getActiveRecipe() {
+        if (cachedRecipe == null) return -1;
+        // 简化：根据输出物品判断配方类型
+        ItemStack out = cachedRecipe.getBaseOutput();
+        if (out.is(ModItems.SYNAPTIC_NEURAL_BERRY.get())) return 0;
+        if (out.is(ModItems.SYNAPTIC_SERUM_S01.get())) return 1;
+        if (out.is(ModItems.SYNAPTIC_SERUM_S02.get())) return 2;
+        if (out.is(ModItems.SYNAPTIC_SERUM_S03.get())) return 3;
+        return -1;
+    }
     public ItemStack getOutput() { return output; }
 
     public ItemStack extractOutput() {
@@ -299,6 +259,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
      * Called when the player extracts input materials mid-processing.
      */
     public void cancelProcessing() {
+        cachedRecipe = null;
         activeRecipe = -1;
         progress = 0;
         maxProgress = 0;
