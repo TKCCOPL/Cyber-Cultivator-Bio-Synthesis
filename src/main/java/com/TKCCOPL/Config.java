@@ -141,41 +141,41 @@ public class Config {
 
     // === Runtime values ===
     // genes
-    public static int mutationRange;
-    public static double mutationChanceBase;
-    public static double mutationChancePerGen;
-    public static double mutationChancePerGeneDiff;
-    public static int geneMin;
-    public static int geneMax;
+    public static volatile int mutationRange;
+    public static volatile double mutationChanceBase;
+    public static volatile double mutationChancePerGen;
+    public static volatile double mutationChancePerGeneDiff;
+    public static volatile int geneMin;
+    public static volatile int geneMax;
     // serum
-    public static int s01BaseDuration;
-    public static int s02BaseDuration;
-    public static int s03BaseDuration;
-    public static int stackAmplifierCap;
-    public static int stackDurationCap;
-    public static int activityThresholdForBonus;
-    public static double durationMultiplierBase;
-    public static double durationMultiplierPerActivity;
+    public static volatile int s01BaseDuration;
+    public static volatile int s02BaseDuration;
+    public static volatile int s03BaseDuration;
+    public static volatile int stackAmplifierCap;
+    public static volatile int stackDurationCap;
+    public static volatile int activityThresholdForBonus;
+    public static volatile double durationMultiplierBase;
+    public static volatile double durationMultiplierPerActivity;
     // incubator
-    public static int maturationThreshold;
-    public static int resourceThreshold;
-    public static int nutritionDecayInterval;
-    public static int purityDecayInterval;
-    public static int dataSignalDecayInterval;
-    public static int nutritionInjectAmount;
-    public static int purityInjectAmount;
-    public static int dataSignalInjectAmount;
-    public static int matureNutritionCost;
-    public static int maturePurityCost;
+    public static volatile int maturationThreshold;
+    public static volatile int resourceThreshold;
+    public static volatile int nutritionDecayInterval;
+    public static volatile int purityDecayInterval;
+    public static volatile int dataSignalDecayInterval;
+    public static volatile int nutritionInjectAmount;
+    public static volatile int purityInjectAmount;
+    public static volatile int dataSignalInjectAmount;
+    public static volatile int matureNutritionCost;
+    public static volatile int maturePurityCost;
     // curios
-    public static int beltScanRange;
-    public static int beltNutritionThreshold;
-    public static int beltPurityThreshold;
-    public static int beltDataSignalThreshold;
-    public static int packEffectReductionRate;
-    public static float packHealThreshold;
-    public static int packHealCooldown;
-    public static int monocleHudRange;
+    public static volatile int beltScanRange;
+    public static volatile int beltNutritionThreshold;
+    public static volatile int beltPurityThreshold;
+    public static volatile int beltDataSignalThreshold;
+    public static volatile int packEffectReductionRate;
+    public static volatile float packHealThreshold;
+    public static volatile int packHealCooldown;
+    public static volatile int monocleHudRange;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
