@@ -1,5 +1,6 @@
 package com.TKCCOPL.block;
 
+import com.TKCCOPL.Config;
 import com.TKCCOPL.block.entity.BioIncubatorBlockEntity;
 import com.TKCCOPL.init.ModBlockEntities;
 import com.TKCCOPL.init.ModItems;
@@ -60,7 +61,7 @@ public class BioIncubatorBlock extends MachineBlock {
         }
 
         if (held.is(ModItems.PURIFIED_WATER_BOTTLE.get())) {
-            blockEntity.addPurity(20);
+            blockEntity.addPurity(Config.purityInjectAmount);
             if (!player.getAbilities().instabuild) {
                 held.shrink(1);
                 ItemStack bottle = new ItemStack(Items.GLASS_BOTTLE);
@@ -68,25 +69,25 @@ public class BioIncubatorBlock extends MachineBlock {
                     player.drop(bottle, false);
                 }
             }
-            sendMachineStatus(player, blockEntity, "注入纯净水 +20");
+            sendMachineStatus(player, blockEntity, "注入纯净水 +" + Config.purityInjectAmount);
             return InteractionResult.CONSUME;
         }
 
         if (held.is(ModItems.BIOCHEMICAL_SOLUTION.get())) {
-            blockEntity.addNutrition(25);
+            blockEntity.addNutrition(Config.nutritionInjectAmount);
             if (!player.getAbilities().instabuild) {
                 held.shrink(1);
             }
-            sendMachineStatus(player, blockEntity, "注入营养液 +25");
+            sendMachineStatus(player, blockEntity, "注入营养液 +" + Config.nutritionInjectAmount);
             return InteractionResult.CONSUME;
         }
 
         if (held.is(ModItems.SILICON_SHARD.get())) {
-            blockEntity.addDataSignal(15);
+            blockEntity.addDataSignal(Config.dataSignalInjectAmount);
             if (!player.getAbilities().instabuild) {
                 held.shrink(1);
             }
-            sendMachineStatus(player, blockEntity, "注入数据信号 +15");
+            sendMachineStatus(player, blockEntity, "注入数据信号 +" + Config.dataSignalInjectAmount);
             return InteractionResult.CONSUME;
         }
 
