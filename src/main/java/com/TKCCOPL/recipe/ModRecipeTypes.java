@@ -30,6 +30,18 @@ public final class ModRecipeTypes {
     public static final RegistryObject<RecipeSerializer<SerumRecipe>> SERUM_BOTTLING_SERIALIZER =
             SERIALIZERS.register("serum_bottling", SerumRecipeSerializer::new);
 
+    public static final RegistryObject<RecipeType<IncubatorOutputRecipe>> INCUBATOR_OUTPUT =
+            RECIPE_TYPES.register("incubator_output",
+                    () -> new RecipeType<>() {
+                        @Override
+                        public String toString() {
+                            return "cybercultivator:incubator_output";
+                        }
+                    });
+
+    public static final RegistryObject<RecipeSerializer<IncubatorOutputRecipe>> INCUBATOR_OUTPUT_SERIALIZER =
+            SERIALIZERS.register("incubator_output", IncubatorOutputSerializer::new);
+
     private ModRecipeTypes() {
     }
 
