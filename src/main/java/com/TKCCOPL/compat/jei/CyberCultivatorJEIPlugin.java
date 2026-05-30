@@ -53,7 +53,7 @@ public class CyberCultivatorJEIPlugin implements IModPlugin {
         // 培养槽产出
         registration.addRecipes(
                 IncubatorOutputCategory.RECIPE_TYPE,
-                IncubatorOutputCategory.buildRecipes()
+                IncubatorOutputCategory.buildRecipes(level)
         );
 
         // 物品信息页面

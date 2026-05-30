@@ -2,7 +2,7 @@ package com.TKCCOPL.compat.jei;
 
 import com.TKCCOPL.cybercultivator;
 import com.TKCCOPL.init.ModItems;
-import com.TKCCOPL.recipe.ModRecipes;
+import com.TKCCOPL.recipe.ModRecipeTypes;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
@@ -156,19 +156,18 @@ public class IncubatorOutputCategory implements IRecipeCategory<IncubatorOutputC
         return stack;
     }
 
-    /** 从 ModRecipes 静态注册表构建展示用配方列表（第三方 mod 注册后自动显示） */
-    public static List<DisplayRecipe> buildRecipes() {
+    /** 从 RecipeManager 构建展示用配方列表（JSON 数据驱动） */
+    public static List<DisplayRecipe> buildRecipes(net.minecraft.world.level.Level level) {
+        if (level == null) return java.util.Collections.emptyList();
+
         List<DisplayRecipe> recipes = new ArrayList<>();
-        for (var output : ModRecipes.getINCUBATOR_OUTPUTS()) {
-            ItemStack seedItem = ModRecipes.getSeedItemForType(output.getSeedType());
-            if (seedItem.isEmpty()) continue;
-            int[] genes = output.getDefaultGenes();
+        for (var recipe : level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.INCUBATOR_OUTPUT.get())) {
+            int[] genes = recipe.getDefaultGenes();
             recipes.add(new DisplayRecipe(
-                    seedWithGenes(seedItem, genes[0], genes[1], genes[2]),
-                    output.getOutput(),
-                    output.getDisplayName(),
-                    genes[0], genes[1], genes[2]
-            ));
+                    seedWithGenes(recipe.getSeedItem(), genes[0], genes[1], genes[2]),
+                    recipe.getOutputItem(),
+                    recipe.getCropName(),
+                    genes[0], genes[1], genes[2]));
         }
         return recipes;
     }
