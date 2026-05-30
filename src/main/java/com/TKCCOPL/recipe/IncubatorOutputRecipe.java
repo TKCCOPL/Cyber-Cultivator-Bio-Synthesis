@@ -73,28 +73,26 @@ public class IncubatorOutputRecipe implements net.minecraft.world.item.crafting.
         // 替换 yield 为实际值
         formula = formula.replace("yield", String.valueOf(yieldValue));
 
-        // 解析 "A + B / C" 或 "A + B * C" 格式
         try {
-            // 按 + 分割
-            String[] addParts = formula.split("\\+");
-            int result = 0;
-            for (String part : addParts) {
-                part = part.trim();
-                if (part.contains("/")) {
-                    String[] divParts = part.split("/");
-                    int dividend = Integer.parseInt(divParts[0].trim());
-                    int divisor = Integer.parseInt(divParts[1].trim());
-                    result += divisor == 0 ? 0 : dividend / divisor;
-                } else if (part.contains("*")) {
-                    String[] mulParts = part.split("\\*");
-                    int a = Integer.parseInt(mulParts[0].trim());
-                    int b = Integer.parseInt(mulParts[1].trim());
-                    result += a * b;
-                } else {
-                    result += Integer.parseInt(part);
-                }
+            // 先处理乘除（从左到右，支持操作数任意顺序）
+            java.util.regex.Pattern mulDiv = java.util.regex.Pattern.compile("(\\d+)\\s*([*/])\\s*(\\d+)");
+            java.util.regex.Matcher matcher;
+            String current = formula;
+            while ((matcher = mulDiv.matcher(current)).find()) {
+                int a = Integer.parseInt(matcher.group(1));
+                String op = matcher.group(2);
+                int b = Integer.parseInt(matcher.group(3));
+                int result = "*".equals(op) ? a * b : (b == 0 ? 0 : a / b);
+                current = current.substring(0, matcher.start()) + result + current.substring(matcher.end());
             }
-            return result;
+
+            // 再处理加法
+            String[] addParts = current.split("\\+");
+            int total = 0;
+            for (String part : addParts) {
+                total += Integer.parseInt(part.trim());
+            }
+            return total;
         } catch (Exception e) {
             return 2; // 保底
         }
