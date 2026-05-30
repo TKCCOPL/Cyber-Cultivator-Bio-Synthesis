@@ -47,6 +47,13 @@ public class NeuralOverloadEffect extends MobEffect {
         SOURCE_MAP.remove(entity.getUUID());
     }
 
+    /**
+     * 按 UUID 清理来源信息。用于实体卸载时防止内存泄漏。
+     */
+    public static void cleanupByUUID(UUID uuid) {
+        SOURCE_MAP.remove(uuid);
+    }
+
     @Override
     public boolean isDurationEffectTick(int duration, int amplifier) {
         return duration % 20 == 0;
