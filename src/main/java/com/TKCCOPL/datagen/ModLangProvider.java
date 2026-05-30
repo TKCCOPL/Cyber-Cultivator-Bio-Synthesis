@@ -118,5 +118,10 @@ public class ModLangProvider extends LanguageProvider {
         add("hud.cybercultivator.eta", "ETA: 约%ss");
         add("hud.cybercultivator.eta_insufficient", "ETA: 资源不足");
         add("hud.cybercultivator.seed_empty_slot", "%s: 空");
+
+        // JEI 配方类别
+        add("jei.cybercultivator.serum_bottling", "血清灌装");
+        add("jei.cybercultivator.gene_splicing", "基因拼接");
+        add("jei.cybercultivator.incubator_output", "培养槽产出");
     }
 }
