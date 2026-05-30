@@ -1,5 +1,6 @@
 package com.TKCCOPL.block.entity;
 
+import com.TKCCOPL.Config;
 import com.TKCCOPL.init.ModBlockEntities;
 import com.TKCCOPL.item.GeneticSeedItem;
 import com.TKCCOPL.event.GeneSpliceEvent;
@@ -129,7 +130,7 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         int potencyA = GeneticSeedItem.getGene(seedA, GeneticSeedItem.GENE_POTENCY);
         int potencyB = GeneticSeedItem.getGene(seedB, GeneticSeedItem.GENE_POTENCY);
 
-        // 2. 计算突变概率: base 5% + 代数 2%/代 + 基因差异 1%/点
+        // 2. 计算突变概率: base + 代数 * perGen + 基因差异 * perGeneDiff
         int genA = GeneticSeedItem.getGeneration(seedA);
         int genB = GeneticSeedItem.getGeneration(seedB);
         int maxGen = Math.max(genA, genB);
@@ -137,13 +138,14 @@ public class GeneSplicerBlockEntity extends BlockEntity {
                 Math.abs(speedA - speedB),
                 Math.max(Math.abs(yieldA - yieldB), Math.abs(potencyA - potencyB))
         );
-        double mutationChance = 0.05 + maxGen * 0.02 + maxDiff * 0.01;
+        double mutationChance = Config.mutationChanceBase + maxGen * Config.mutationChancePerGen + maxDiff * Config.mutationChancePerGeneDiff;
         boolean isMutation = random.nextDouble() < mutationChance;
 
-        // 3. 计算子代基因（标准公式 ±2）
-        int newSpeed = GeneticSeedItem.clampGene((speedA + speedB) / 2 + random.nextInt(5) - 2);
-        int newYield = GeneticSeedItem.clampGene((yieldA + yieldB) / 2 + random.nextInt(5) - 2);
-        int newPotency = GeneticSeedItem.clampGene((potencyA + potencyB) / 2 + random.nextInt(5) - 2);
+        // 3. 计算子代基因（标准公式 ±mutationRange）
+        int mutationRange = Config.mutationRange;
+        int newSpeed = GeneticSeedItem.clampGene((speedA + speedB) / 2 + random.nextInt(mutationRange * 2 + 1) - mutationRange);
+        int newYield = GeneticSeedItem.clampGene((yieldA + yieldB) / 2 + random.nextInt(mutationRange * 2 + 1) - mutationRange);
+        int newPotency = GeneticSeedItem.clampGene((potencyA + potencyB) / 2 + random.nextInt(mutationRange * 2 + 1) - mutationRange);
 
         // 4. 如果突变触发，应用突变结果
         int mutationType = 0; // 0=未突变, 1=数值突破, 2=协同基因
@@ -151,9 +153,10 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         if (isMutation) {
             double roll = random.nextDouble();
             if (roll < 0.80) {
-                // 数值突破（80%）：随机一个基因变异 ±4（覆盖标准公式结果）
+                // 数值突破（80%）：随机一个基因变异 ±mutationRange*2（覆盖标准公式结果）
                 int target = random.nextInt(3); // 0=Speed, 1=Yield, 2=Potency
-                int bonus = random.nextInt(9) - 4; // -4 to +4
+                int bonusRange = Config.mutationRange * 2 + 1;
+                int bonus = random.nextInt(bonusRange * 2 - 1) - (bonusRange - 1); // -mutationRange*2 to +mutationRange*2
 
                 String geneName;
                 if (target == 0) {

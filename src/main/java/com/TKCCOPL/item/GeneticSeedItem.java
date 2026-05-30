@@ -1,5 +1,6 @@
 package com.TKCCOPL.item;
 
+import com.TKCCOPL.Config;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -89,7 +90,7 @@ public class GeneticSeedItem extends ItemNameBlockItem {
     }
 
     public static int clampGene(int value) {
-        return Math.max(1, Math.min(10, value));
+        return Math.max(Config.geneMin, Math.min(Config.geneMax, value));
     }
 
     public static int getGeneration(ItemStack stack) {
