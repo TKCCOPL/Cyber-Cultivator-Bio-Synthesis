@@ -4,6 +4,7 @@ import com.TKCCOPL.init.ModBlockEntities;
 import com.TKCCOPL.init.ModItems;
 import com.TKCCOPL.recipe.ModRecipeTypes;
 import com.TKCCOPL.recipe.SerumRecipe;
+import com.TKCCOPL.event.SerumCraftEvent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -193,6 +194,17 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
                 int activity = getActivity(berry);
                 result.getOrCreateTag().putInt(TAG_ACTIVITY, activity);
             }
+        }
+
+        // 触发 SerumCraftEvent，允许其他 mod 修改输出
+        int recipeIndex = getActiveRecipe();
+        SerumCraftEvent craftEvent = new SerumCraftEvent(inputs.clone(), result, getActivity(result), recipeIndex);
+        if (net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(craftEvent)) {
+            return ItemStack.EMPTY; // 事件被取消
+        }
+        result = craftEvent.getOutput();
+        if (craftEvent.getActivity() > 0) {
+            result.getOrCreateTag().putInt(TAG_ACTIVITY, craftEvent.getActivity());
         }
 
         return result;

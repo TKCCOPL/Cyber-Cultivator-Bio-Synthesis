@@ -2,6 +2,7 @@ package com.TKCCOPL.block.entity;
 
 import com.TKCCOPL.init.ModBlockEntities;
 import com.TKCCOPL.item.GeneticSeedItem;
+import com.TKCCOPL.event.GeneSpliceEvent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
@@ -195,6 +196,24 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         // 8. 设置 Generation
         int childGen = maxGen + 1;
         result.getOrCreateTag().putInt(GeneticSeedItem.GENE_GENERATION, childGen);
+
+        // 9. 触发 GeneSpliceEvent，允许其他 mod 修改结果
+        int currentSynergy = result.getOrCreateTag().getInt(GeneticSeedItem.GENE_SYNERGY);
+        GeneSpliceEvent event = new GeneSpliceEvent(
+                seedA, seedB, newSpeed, newYield, newPotency,
+                currentSynergy, childGen, isMutation, mutationType, mutationDetail
+        );
+        if (net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(event)) {
+            return; // 事件被取消
+        }
+        // 使用事件修改后的值
+        newSpeed = event.getSpeed();
+        newYield = event.getYield();
+        newPotency = event.getPotency();
+        GeneticSeedItem.setGenes(result, newSpeed, newYield, newPotency);
+        if (event.getSynergy() > 0) {
+            result.getOrCreateTag().putInt(GeneticSeedItem.GENE_SYNERGY, event.getSynergy());
+        }
 
         output = result;
 

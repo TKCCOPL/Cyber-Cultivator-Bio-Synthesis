@@ -1,6 +1,7 @@
 package com.TKCCOPL.item;
 
 import com.TKCCOPL.init.ModEffects;
+import com.TKCCOPL.event.SerumConsumeEvent;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.effect.MobEffect;
@@ -97,6 +98,20 @@ public class SynapticSerumItem extends Item {
             } else {
                 amp = Math.min(getBaseAmplifier(activity) + getActivityBonusAmplifier(activity), MAX_AMPLIFIER);
             }
+
+            // 触发 SerumConsumeEvent，允许其他 mod 修改效果参数
+            SerumConsumeEvent consumeEvent = new SerumConsumeEvent(
+                    entity, stack, effect.get(), activity, scaledDuration, amp
+            );
+            if (net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(consumeEvent)) {
+                // 事件被取消，不施加效果
+                if (entity instanceof Player player && !player.getAbilities().instabuild) {
+                    stack.shrink(1);
+                }
+                return stack;
+            }
+            scaledDuration = consumeEvent.getDuration();
+            amp = consumeEvent.getAmplifier();
 
             entity.addEffect(new MobEffectInstance(effect.get(), scaledDuration, amp));
         }

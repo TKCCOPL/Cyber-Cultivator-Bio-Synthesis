@@ -3,6 +3,7 @@ package com.TKCCOPL.block.entity;
 import com.TKCCOPL.init.ModBlockEntities;
 import com.TKCCOPL.init.ModItems;
 import com.TKCCOPL.item.GeneticSeedItem;
+import com.TKCCOPL.event.CropMatureEvent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
@@ -77,6 +78,14 @@ public class BioIncubatorBlockEntity extends BlockEntity {
             if (blockEntity.growthProgress >= MATURATION_THRESHOLD) {
                 // 产出作物物品
                 ItemStack cropOutput = getCropOutput(blockEntity.seed);
+
+                // 触发 CropMatureEvent，允许其他 mod 修改产出
+                CropMatureEvent cropEvent = new CropMatureEvent(level, pos, blockEntity.seed, cropOutput);
+                if (net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(cropEvent)) {
+                    return; // 事件被取消，不产出
+                }
+                cropOutput = cropEvent.getOutput();
+
                 if (!cropOutput.isEmpty()) {
                     // 尝试弹出到世界（类似漏斗/箱子溢出机制）
                     Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, cropOutput);
