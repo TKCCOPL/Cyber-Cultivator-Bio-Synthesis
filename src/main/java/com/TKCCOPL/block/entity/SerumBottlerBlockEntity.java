@@ -84,7 +84,9 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     private int maxProgress;
     private int activeRecipe = -1;
     private SerumRecipe cachedRecipe;
-    private String pendingRecipeId; // Task 1: 用于 load() 后延迟恢复 cachedRecipe
+    private String pendingRecipeId; // 用于 load() 后延迟恢复 cachedRecipe
+    private final SimpleContainer recipeContainer = new SimpleContainer(INPUT_SLOTS);
+    private boolean inputsDirty = true;
 
     public SerumBottlerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SERUM_BOTTLER.get(), pos, state);
@@ -164,14 +166,16 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
      */
     private SerumRecipe findRecipe() {
         if (level == null) return null;
-        SimpleContainer container = new SimpleContainer(INPUT_SLOTS);
-        for (int i = 0; i < INPUT_SLOTS; i++) {
-            container.setItem(i, inputs[i]);
+        if (inputsDirty) {
+            for (int i = 0; i < INPUT_SLOTS; i++) {
+                recipeContainer.setItem(i, inputs[i]);
+            }
+            inputsDirty = false;
         }
         return level.getRecipeManager()
                 .getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get())
                 .stream()
-                .filter(r -> r.matches(container, level))
+                .filter(r -> r.matches(recipeContainer, level))
                 .findFirst()
                 .orElse(null);
     }
@@ -247,6 +251,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
                 }
             }
         }
+        markInputsDirty();
     }
 
     private ItemStack findInput(net.minecraft.world.item.Item item) {
@@ -310,6 +315,10 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         syncToClient();
     }
 
+    private void markInputsDirty() {
+        inputsDirty = true;
+    }
+
     private void syncToClient() {
         setChanged();
         if (level != null && !level.isClientSide) {
@@ -351,6 +360,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
             int taken = Math.min(amount, inputs[slot].getCount());
             ItemStack result = inputs[slot].split(taken);
             if (inputs[slot].isEmpty()) inputs[slot] = ItemStack.EMPTY;
+            markInputsDirty();
             setChanged();
             return result;
         }
@@ -368,6 +378,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         if (slot < INPUT_SLOTS) {
             ItemStack out = inputs[slot];
             inputs[slot] = ItemStack.EMPTY;
+            markInputsDirty();
             setChanged();
             return out;
         }
@@ -378,6 +389,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     public void setItem(int slot, ItemStack stack) {
         if (slot < INPUT_SLOTS) {
             inputs[slot] = stack;
+            markInputsDirty();
             setChanged();
         }
     }
@@ -393,6 +405,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
             inputs[i] = ItemStack.EMPTY;
         }
         output = ItemStack.EMPTY;
+        markInputsDirty();
         setChanged();
     }
 
@@ -428,6 +441,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
             inputs[i] = tag.contains(key) ? ItemStack.of(tag.getCompound(key)) : ItemStack.EMPTY;
         }
         output = tag.contains(TAG_OUTPUT) ? ItemStack.of(tag.getCompound(TAG_OUTPUT)) : ItemStack.EMPTY;
+        markInputsDirty();
     }
 
     @Override
@@ -441,12 +455,17 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
             tag.putString(TAG_RECIPE_ID, cachedRecipe.getId().toString());
         }
         for (int i = 0; i < INPUT_SLOTS; i++) {
+            String key = TAG_INPUT + i;
             if (!inputs[i].isEmpty()) {
-                tag.put(TAG_INPUT + i, inputs[i].save(new CompoundTag()));
+                tag.put(key, inputs[i].save(new CompoundTag()));
+            } else {
+                tag.put(key, new CompoundTag()); // sentinel: ensure tag is non-empty for client sync
             }
         }
         if (!output.isEmpty()) {
             tag.put(TAG_OUTPUT, output.save(new CompoundTag()));
+        } else {
+            tag.put(TAG_OUTPUT, new CompoundTag()); // sentinel: ensure tag is non-empty for client sync
         }
     }
 

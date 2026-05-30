@@ -253,6 +253,8 @@ public class BioIncubatorBlockEntity extends BlockEntity {
         tag.putInt(TAG_GROWTH_PROGRESS, growthProgress);
         if (!seed.isEmpty()) {
             tag.put(TAG_SEED, seed.save(new CompoundTag()));
+        } else {
+            tag.put(TAG_SEED, new CompoundTag()); // sentinel: ensure tag is non-empty for client sync
         }
     }
 
