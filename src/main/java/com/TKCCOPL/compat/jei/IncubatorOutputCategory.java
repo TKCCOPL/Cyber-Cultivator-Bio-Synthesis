@@ -2,6 +2,7 @@ package com.TKCCOPL.compat.jei;
 
 import com.TKCCOPL.cybercultivator;
 import com.TKCCOPL.init.ModItems;
+import com.TKCCOPL.recipe.ModRecipes;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
@@ -155,31 +156,20 @@ public class IncubatorOutputCategory implements IRecipeCategory<IncubatorOutputC
         return stack;
     }
 
-    /** 构建展示用配方列表 */
+    /** 从 ModRecipes 静态注册表构建展示用配方列表（第三方 mod 注册后自动显示） */
     public static List<DisplayRecipe> buildRecipes() {
         List<DisplayRecipe> recipes = new ArrayList<>();
-
-        // Fiber Reed: Speed=4, Yield=7, Potency=3
-        recipes.add(new DisplayRecipe(
-                seedWithGenes(new ItemStack(ModItems.FIBER_REED_SEEDS.get()), 4, 7, 3),
-                new ItemStack(ModItems.PLANT_FIBER.get()),
-                "纤维草", 4, 7, 3
-        ));
-
-        // Protein Soy: Speed=5, Yield=4, Potency=7
-        recipes.add(new DisplayRecipe(
-                seedWithGenes(new ItemStack(ModItems.PROTEIN_SOY_SEEDS.get()), 5, 4, 7),
-                new ItemStack(ModItems.BIOCHEMICAL_SOLUTION.get()),
-                "蛋白质豆", 5, 4, 7
-        ));
-
-        // Alcohol Bloom: Speed=6, Yield=3, Potency=5
-        recipes.add(new DisplayRecipe(
-                seedWithGenes(new ItemStack(ModItems.ALCOHOL_BLOOM_SEEDS.get()), 6, 3, 5),
-                new ItemStack(ModItems.INDUSTRIAL_ETHANOL.get()),
-                "酒精花", 6, 3, 5
-        ));
-
+        for (var output : ModRecipes.getINCUBATOR_OUTPUTS()) {
+            ItemStack seedItem = ModRecipes.getSeedItemForType(output.getSeedType());
+            if (seedItem.isEmpty()) continue;
+            int[] genes = output.getDefaultGenes();
+            recipes.add(new DisplayRecipe(
+                    seedWithGenes(seedItem, genes[0], genes[1], genes[2]),
+                    output.getOutput(),
+                    output.getDisplayName(),
+                    genes[0], genes[1], genes[2]
+            ));
+        }
         return recipes;
     }
 }

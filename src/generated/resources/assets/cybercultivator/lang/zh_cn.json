@@ -121,7 +121,7 @@
   "jei.cybercultivator.tooltip.berry_chain_detail": "链路：培养槽种植→收获原料→灌装机合成莓→莓+辅料+瓶→血清",
   "jei.cybercultivator.tooltip.gene_formula": "子代基因 = (A+B)/2 ± 随机(-2,+2)，限制 1-10",
   "jei.cybercultivator.tooltip.level_scaling": "持续时间 = 基础 × (0.5 + 活性×0.1)\n活性 ≥8 起步 II 级，叠加上限 VIII 级",
-  "jei.cybercultivator.tooltip.mutation_formula": "突变概率：同类 5% / 跨类 9%",
+  "jei.cybercultivator.tooltip.mutation_formula": "突变概率：基础 5% + 每点基因差异 +1%",
   "jei.cybercultivator.tooltip.output_formula": "产出数量 = 2 + Yield/3",
   "jei.cybercultivator.tooltip.quality_tags": "原料品质继承自种子基因，影响突触活性",
   "jei.cybercultivator.tooltip.rate_formula": "生长速率 = 0.5 + Speed/10 × 1.5",

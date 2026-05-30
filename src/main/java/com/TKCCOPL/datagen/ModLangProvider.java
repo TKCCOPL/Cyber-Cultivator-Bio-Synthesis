@@ -191,7 +191,7 @@ public class ModLangProvider extends LanguageProvider {
         add("jei.cybercultivator.tooltip.serum_chain", "链路：神经莓 + 辅料 + 玻璃瓶 → 血清");
 
         // JEI Tooltip 公式说明
-        add("jei.cybercultivator.tooltip.mutation_formula", "突变概率：同类 5% / 跨类 9%");
+        add("jei.cybercultivator.tooltip.mutation_formula", "突变概率：基础 5% + 每点基因差异 +1%");
         add("jei.cybercultivator.tooltip.gene_formula", "子代基因 = (A+B)/2 ± 随机(-2,+2)，限制 1-10");
         add("jei.cybercultivator.tooltip.output_formula", "产出数量 = 2 + Yield/3");
         add("jei.cybercultivator.tooltip.rate_formula", "生长速率 = 0.5 + Speed/10 × 1.5");

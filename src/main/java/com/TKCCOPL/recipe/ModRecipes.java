@@ -1,5 +1,6 @@
 package com.TKCCOPL.recipe;
 
+import com.TKCCOPL.init.ModItems;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.util.RandomSource;
 
@@ -31,6 +32,10 @@ public final class ModRecipes {
         int[] getDefaultGenes();
         /** 基因对生长速率的倍率 */
         double getGrowthMultiplier(int geneSpeed);
+        /** 培养槽产出的物品（用于 JEI 输出槽） */
+        ItemStack getOutput();
+        /** 作物显示名称（用于 JEI 文字） */
+        String getDisplayName();
     }
 
     private static final List<IGeneSpliceRecipe> SPLICE_RECIPES = new ArrayList<>();
@@ -60,6 +65,31 @@ public final class ModRecipes {
 
     static {
         SPLICE_RECIPES.add(DEFAULT_SPLICE);
+
+        // 纤维草: Speed=4, Yield=7, Potency=3 → 植物纤维
+        INCUBATOR_OUTPUTS.add(new IIncubatorOutput() {
+            @Override public String getSeedType() { return "fiber_reed"; }
+            @Override public int[] getDefaultGenes() { return new int[]{4, 7, 3}; }
+            @Override public double getGrowthMultiplier(int geneSpeed) { return 0.5 + geneSpeed / 10.0 * 1.5; }
+            @Override public ItemStack getOutput() { return new ItemStack(ModItems.PLANT_FIBER.get()); }
+            @Override public String getDisplayName() { return "纤维草"; }
+        });
+        // 蛋白质豆: Speed=5, Yield=4, Potency=7 → 生化原液
+        INCUBATOR_OUTPUTS.add(new IIncubatorOutput() {
+            @Override public String getSeedType() { return "protein_soy"; }
+            @Override public int[] getDefaultGenes() { return new int[]{5, 4, 7}; }
+            @Override public double getGrowthMultiplier(int geneSpeed) { return 0.5 + geneSpeed / 10.0 * 1.5; }
+            @Override public ItemStack getOutput() { return new ItemStack(ModItems.BIOCHEMICAL_SOLUTION.get()); }
+            @Override public String getDisplayName() { return "蛋白质豆"; }
+        });
+        // 酒精花: Speed=6, Yield=3, Potency=5 → 工业乙醇
+        INCUBATOR_OUTPUTS.add(new IIncubatorOutput() {
+            @Override public String getSeedType() { return "alcohol_bloom"; }
+            @Override public int[] getDefaultGenes() { return new int[]{6, 3, 5}; }
+            @Override public double getGrowthMultiplier(int geneSpeed) { return 0.5 + geneSpeed / 10.0 * 1.5; }
+            @Override public ItemStack getOutput() { return new ItemStack(ModItems.INDUSTRIAL_ETHANOL.get()); }
+            @Override public String getDisplayName() { return "酒精花"; }
+        });
     }
 
     private ModRecipes() {
@@ -85,5 +115,18 @@ public final class ModRecipes {
     /** 注册培养槽产出（供其他 mod 调用） */
     public static void registerIncubatorOutput(IIncubatorOutput output) {
         INCUBATOR_OUTPUTS.add(output);
+    }
+
+    /**
+     * 根据种子类型标识查找对应的种子物品。
+     * 供 JEI 基因拼接展示使用。
+     */
+    public static ItemStack getSeedItemForType(String seedType) {
+        return switch (seedType) {
+            case "fiber_reed" -> new ItemStack(ModItems.FIBER_REED_SEEDS.get());
+            case "protein_soy" -> new ItemStack(ModItems.PROTEIN_SOY_SEEDS.get());
+            case "alcohol_bloom" -> new ItemStack(ModItems.ALCOHOL_BLOOM_SEEDS.get());
+            default -> ItemStack.EMPTY;
+        };
     }
 }

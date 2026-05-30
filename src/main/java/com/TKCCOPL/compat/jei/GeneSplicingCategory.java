@@ -2,6 +2,7 @@ package com.TKCCOPL.compat.jei;
 
 import com.TKCCOPL.cybercultivator;
 import com.TKCCOPL.init.ModItems;
+import com.TKCCOPL.recipe.ModRecipes;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
@@ -141,44 +142,50 @@ public class GeneSplicingCategory implements IRecipeCategory<GeneSplicingCategor
         return stack;
     }
 
-    /** 构建展示用配方列表 */
+    /** 从 ModRecipes 静态注册表自动构建同类+跨类拼接配方（第三方 mod 注册后自动显示） */
     public static List<DisplayRecipe> buildRecipes() {
         List<DisplayRecipe> recipes = new ArrayList<>();
+        var outputs = ModRecipes.getINCUBATOR_OUTPUTS();
+        var splice = ModRecipes.getDefaultSpliceRecipe();
 
-        // 同类拼接（默认基因值）
-        recipes.add(new DisplayRecipe(
-                seedWithGenes(new ItemStack(ModItems.FIBER_REED_SEEDS.get()), 4, 7, 3),
-                seedWithGenes(new ItemStack(ModItems.FIBER_REED_SEEDS.get()), 4, 7, 3),
-                4, 7, 3, 4, 7, 3, 0.05
-        ));
-        recipes.add(new DisplayRecipe(
-                seedWithGenes(new ItemStack(ModItems.PROTEIN_SOY_SEEDS.get()), 5, 4, 7),
-                seedWithGenes(new ItemStack(ModItems.PROTEIN_SOY_SEEDS.get()), 5, 4, 7),
-                5, 4, 7, 5, 4, 7, 0.05
-        ));
-        recipes.add(new DisplayRecipe(
-                seedWithGenes(new ItemStack(ModItems.ALCOHOL_BLOOM_SEEDS.get()), 6, 3, 5),
-                seedWithGenes(new ItemStack(ModItems.ALCOHOL_BLOOM_SEEDS.get()), 6, 3, 5),
-                6, 3, 5, 6, 3, 5, 0.05
-        ));
+        // 同类拼接
+        for (var output : outputs) {
+            ItemStack seed = ModRecipes.getSeedItemForType(output.getSeedType());
+            if (seed.isEmpty()) continue;
+            int[] genes = output.getDefaultGenes();
+            double mutation = splice.getMutationChance(0, 0);
+            recipes.add(new DisplayRecipe(
+                    seedWithGenes(seed.copy(), genes[0], genes[1], genes[2]),
+                    seedWithGenes(seed.copy(), genes[0], genes[1], genes[2]),
+                    genes[0], genes[1], genes[2],
+                    genes[0], genes[1], genes[2],
+                    mutation
+            ));
+        }
 
-        // 跨类型拼接（展示基因差异导致的突变概率变化）
-        recipes.add(new DisplayRecipe(
-                seedWithGenes(new ItemStack(ModItems.FIBER_REED_SEEDS.get()), 4, 7, 3),
-                seedWithGenes(new ItemStack(ModItems.PROTEIN_SOY_SEEDS.get()), 5, 4, 7),
-                4, 7, 3, 5, 4, 7, 0.09
-        ));
-        recipes.add(new DisplayRecipe(
-                seedWithGenes(new ItemStack(ModItems.FIBER_REED_SEEDS.get()), 4, 7, 3),
-                seedWithGenes(new ItemStack(ModItems.ALCOHOL_BLOOM_SEEDS.get()), 6, 3, 5),
-                4, 7, 3, 6, 3, 5, 0.09
-        ));
-        recipes.add(new DisplayRecipe(
-                seedWithGenes(new ItemStack(ModItems.PROTEIN_SOY_SEEDS.get()), 5, 4, 7),
-                seedWithGenes(new ItemStack(ModItems.ALCOHOL_BLOOM_SEEDS.get()), 6, 3, 5),
-                5, 4, 7, 6, 3, 5, 0.09
-        ));
-
+        // 跨类拼接（所有种子对组合）
+        for (int i = 0; i < outputs.size(); i++) {
+            for (int j = i + 1; j < outputs.size(); j++) {
+                var outA = outputs.get(i);
+                var outB = outputs.get(j);
+                ItemStack seedA = ModRecipes.getSeedItemForType(outA.getSeedType());
+                ItemStack seedB = ModRecipes.getSeedItemForType(outB.getSeedType());
+                if (seedA.isEmpty() || seedB.isEmpty()) continue;
+                int[] genesA = outA.getDefaultGenes();
+                int[] genesB = outB.getDefaultGenes();
+                int geneDiff = Math.abs(genesA[0] - genesB[0])
+                             + Math.abs(genesA[1] - genesB[1])
+                             + Math.abs(genesA[2] - genesB[2]);
+                double mutation = splice.getMutationChance(0, geneDiff);
+                recipes.add(new DisplayRecipe(
+                        seedWithGenes(seedA, genesA[0], genesA[1], genesA[2]),
+                        seedWithGenes(seedB, genesB[0], genesB[1], genesB[2]),
+                        genesA[0], genesA[1], genesA[2],
+                        genesB[0], genesB[1], genesB[2],
+                        mutation
+                ));
+            }
+        }
         return recipes;
     }
 }

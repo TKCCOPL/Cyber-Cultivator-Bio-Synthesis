@@ -145,7 +145,7 @@
   "jei.cybercultivator.tooltip.berry_chain_detail": "Chain: Incubator→Harvest materials→Bottler crafts Berry→Berry+Additive+Bottle→Serum",
   "jei.cybercultivator.tooltip.quality_tags": "Material quality inherited from seed genes, affects Activity",
   "jei.cybercultivator.tooltip.serum_chain": "Chain: Neural Berry + Additive + Glass Bottle → Serum",
-  "jei.cybercultivator.tooltip.mutation_formula": "Mutation chance: 5% (same type) / 9% (cross type)",
+  "jei.cybercultivator.tooltip.mutation_formula": "Mutation: 5% base + 1% per gene difference",
   "jei.cybercultivator.tooltip.gene_formula": "Child genes = (A+B)/2 ± random(-2,+2), clamped to 1-10",
   "jei.cybercultivator.tooltip.output_formula": "Output count = 2 + Yield/3",
   "jei.cybercultivator.tooltip.rate_formula": "Growth rate = 0.5 + Speed/10 × 1.5",
