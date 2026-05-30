@@ -26,11 +26,19 @@ public class BioIncubatorBlockEntity extends BlockEntity {
     private static final String TAG_GROWTH_PROGRESS = "GrowthProgress";
     private static final String TAG_SEED = "Seed";
 
+    private static final int SYNC_INTERVAL = 10;
+
     private int nutrition;
     private int purity;
     private int dataSignal;
     private int growthProgress;
     private ItemStack seed = ItemStack.EMPTY;
+
+    // 基因缓存（避免每 tick 解析 NBT）
+    private int cachedSpeed = 1;
+    private int cachedYield = 1;
+    private int cachedPotency = 1;
+    private int syncCounter = 0;
 
     public BioIncubatorBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.BIO_INCUBATOR.get(), pos, state);
@@ -63,7 +71,7 @@ public class BioIncubatorBlockEntity extends BlockEntity {
                 && blockEntity.dataSignal > 0) {
 
             // 计算生长速率：基础速率 * 基因倍率 * 环境倍率
-            int geneSpeed = GeneticSeedItem.getGene(blockEntity.seed, GeneticSeedItem.GENE_SPEED);
+            int geneSpeed = blockEntity.cachedSpeed;
             double geneMultiplier = 0.5 + (geneSpeed / 10.0) * 1.5; // 范围 0.5 - 2.0
             double envMultiplier = (blockEntity.nutrition + blockEntity.purity + blockEntity.dataSignal) / 300.0;
             int growthRate = Math.max(1, (int) Math.round(geneMultiplier * envMultiplier));
@@ -98,7 +106,11 @@ public class BioIncubatorBlockEntity extends BlockEntity {
         }
 
         if (changed) {
-            blockEntity.syncToClient();
+            blockEntity.syncCounter++;
+            if (blockEntity.syncCounter >= SYNC_INTERVAL) {
+                blockEntity.syncToClient();
+                blockEntity.syncCounter = 0;
+            }
         }
     }
 
@@ -136,7 +148,11 @@ public class BioIncubatorBlockEntity extends BlockEntity {
             geneticSeed.ensureGeneData(stack);
         }
         seed = stack;
+        cachedSpeed = GeneticSeedItem.getGene(stack, GeneticSeedItem.GENE_SPEED);
+        cachedYield = GeneticSeedItem.getGene(stack, GeneticSeedItem.GENE_YIELD);
+        cachedPotency = GeneticSeedItem.getGene(stack, GeneticSeedItem.GENE_POTENCY);
         growthProgress = 0;
+        syncCounter = 0;
         syncToClient();
         return true;
     }
@@ -147,7 +163,11 @@ public class BioIncubatorBlockEntity extends BlockEntity {
         }
         ItemStack out = seed;
         seed = ItemStack.EMPTY;
+        cachedSpeed = 1;
+        cachedYield = 1;
+        cachedPotency = 1;
         growthProgress = 0;
+        syncCounter = 0;
         syncToClient();
         return out;
     }
@@ -196,7 +216,7 @@ public class BioIncubatorBlockEntity extends BlockEntity {
     public int getCurrentGrowthRate() {
         if (seed.isEmpty()) return 0;
         if (nutrition <= Config.resourceThreshold || purity <= Config.resourceThreshold || dataSignal <= 0) return 0;
-        int geneSpeed = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_SPEED);
+        int geneSpeed = cachedSpeed;
         double geneMultiplier = 0.5 + (geneSpeed / 10.0) * 1.5;
         double envMultiplier = (nutrition + purity + dataSignal) / 300.0;
         return Math.max(1, (int) Math.round(geneMultiplier * envMultiplier));
@@ -220,6 +240,17 @@ public class BioIncubatorBlockEntity extends BlockEntity {
         dataSignal = clampStat(tag.getInt(TAG_DATA_SIGNAL));
         growthProgress = Math.max(0, tag.getInt(TAG_GROWTH_PROGRESS));
         seed = tag.contains(TAG_SEED) ? ItemStack.of(tag.getCompound(TAG_SEED)) : ItemStack.EMPTY;
+        // 初始化基因缓存
+        if (!seed.isEmpty()) {
+            cachedSpeed = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_SPEED);
+            cachedYield = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_YIELD);
+            cachedPotency = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_POTENCY);
+        } else {
+            cachedSpeed = 1;
+            cachedYield = 1;
+            cachedPotency = 1;
+        }
+        syncCounter = 0;
     }
 
     @Override
