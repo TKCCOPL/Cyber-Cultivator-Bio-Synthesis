@@ -5,6 +5,7 @@ import com.TKCCOPL.init.ModBlockEntities;
 import com.TKCCOPL.init.ModItems;
 import com.TKCCOPL.item.GeneticSeedItem;
 import com.TKCCOPL.event.CropMatureEvent;
+import com.TKCCOPL.recipe.ModRecipeTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
@@ -73,7 +74,7 @@ public class BioIncubatorBlockEntity extends BlockEntity {
             // 成熟判定
             if (blockEntity.growthProgress >= Config.maturationThreshold) {
                 // 产出作物物品
-                ItemStack cropOutput = getCropOutput(blockEntity.seed);
+                ItemStack cropOutput = getCropOutput(level, blockEntity.seed);
 
                 // 触发 CropMatureEvent，允许其他 mod 修改产出
                 CropMatureEvent cropEvent = new CropMatureEvent(level, pos, blockEntity.seed, cropOutput);
@@ -103,49 +104,19 @@ public class BioIncubatorBlockEntity extends BlockEntity {
 
     /**
      * 根据种子类型返回对应的作物产出物品。
-     * 基因 Yield 属性影响产出数量（基础 2 + yield/3 额外）。
+     * 从 RecipeManager 查询 IncubatorOutputRecipe，使用 JSON 数据驱动。
      * 未知种子类型返回种子本身作为保底产出。
      */
-    private static ItemStack getCropOutput(ItemStack seed) {
-        Item seedItem = seed.getItem();
-        int geneYield = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_YIELD);
-        int genePotency = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_POTENCY);
-        int generation = GeneticSeedItem.getGeneration(seed);
-        int geneSynergy = GeneticSeedItem.getSynergy(seed);
-        int count = 2 + geneYield / 3; // yield 1-10 → count 2-5
+    private static ItemStack getCropOutput(Level level, ItemStack seed) {
+        if (level == null || seed.isEmpty()) return seed.copy();
 
-        ItemStack output;
-        if (seedItem == ModItems.FIBER_REED_SEEDS.get()) {
-            output = new ItemStack(ModItems.PLANT_FIBER.get(), count);
-            output.getOrCreateTag().putInt("Potency", genePotency);
-            output.getOrCreateTag().putInt("Generation", generation);
-        } else if (seedItem == ModItems.PROTEIN_SOY_SEEDS.get()) {
-            output = new ItemStack(ModItems.BIOCHEMICAL_SOLUTION.get(), count);
-            output.getOrCreateTag().putInt("Concentration", genePotency);
-            output.getOrCreateTag().putInt("Generation", generation);
-        } else if (seedItem == ModItems.ALCOHOL_BLOOM_SEEDS.get()) {
-            output = new ItemStack(ModItems.INDUSTRIAL_ETHANOL.get(), count);
-            output.getOrCreateTag().putInt("Purity", genePotency);
-            output.getOrCreateTag().putInt("Generation", generation);
-        } else {
-            output = seed.copy();
-        }
-
-        // 将种子的 Gene_Synergy 传递到产出物，确保后续莓合成和血清合成能读取到该值
-        if (geneSynergy > 0) {
-            output.getOrCreateTag().putInt(GeneticSeedItem.GENE_SYNERGY, geneSynergy);
-        }
-
-        // 如果种子携带 Mutation 标签，传递到产出物（整数类型码 + 详情）
-        CompoundTag seedTag = seed.getTag();
-        if (seedTag != null && seedTag.contains("Mutation")) {
-            output.getOrCreateTag().putInt("Mutation", seedTag.getInt("Mutation"));
-            if (seedTag.contains("MutationDetail")) {
-                output.getOrCreateTag().putString("MutationDetail", seedTag.getString("MutationDetail"));
-            }
-        }
-
-        return output;
+        return level.getRecipeManager()
+                .getAllRecipesFor(ModRecipeTypes.INCUBATOR_OUTPUT.get())
+                .stream()
+                .filter(r -> r.matches(seed))
+                .findFirst()
+                .map(r -> r.assemble(seed))
+                .orElse(seed.copy()); // 未知种子保底产出种子本身
     }
 
     public boolean hasSeed() {
