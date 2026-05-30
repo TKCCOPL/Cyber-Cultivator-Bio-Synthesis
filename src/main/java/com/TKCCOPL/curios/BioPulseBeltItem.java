@@ -27,19 +27,19 @@ public class BioPulseBeltItem extends CurioAccessoryItem {
 
             if (incubator.getNutrition() < Config.beltNutritionThreshold) {
                 if (consumeFromInventory(player, ModItems.BIOCHEMICAL_SOLUTION.get())) {
-                    incubator.addNutrition(25);
+                    incubator.addNutrition(Config.nutritionInjectAmount);
                 }
             }
 
             if (incubator.getPurity() < Config.beltPurityThreshold) {
                 if (consumeFromInventory(player, ModItems.PURIFIED_WATER_BOTTLE.get())) {
-                    incubator.addPurity(20);
+                    incubator.addPurity(Config.purityInjectAmount);
                 }
             }
 
             if (incubator.getDataSignal() < Config.beltDataSignalThreshold) {
                 if (consumeFromInventory(player, ModItems.SILICON_SHARD.get())) {
-                    incubator.addDataSignal(15);
+                    incubator.addDataSignal(Config.dataSignalInjectAmount);
                 }
             }
         }
