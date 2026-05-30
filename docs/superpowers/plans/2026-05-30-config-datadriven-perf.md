@@ -36,8 +36,10 @@ public class Config {
     private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
 
     // === [genes] 基因参数 ===
+    static {
+        BUILDER.push("genes");
+    }
     private static final ForgeConfigSpec.IntValue MUTATION_RANGE = BUILDER
-            .push("genes")
             .comment("随机变异范围 ±N")
             .defineInRange("mutationRange", 2, 1, 5);
     private static final ForgeConfigSpec.DoubleValue MUTATION_CHANCE_BASE = BUILDER
@@ -55,11 +57,15 @@ public class Config {
     private static final ForgeConfigSpec.IntValue GENE_MAX = BUILDER
             .comment("基因上限")
             .defineInRange("geneMax", 10, 5, 10);
-    static { BUILDER.pop(); }
+    static {
+        BUILDER.pop();
+    }
 
     // === [serum] 血清参数 ===
+    static {
+        BUILDER.push("serum");
+    }
     private static final ForgeConfigSpec.IntValue S01_BASE_DURATION = BUILDER
-            .push("serum")
             .comment("S-01 基础持续时间 tick (25s = 500)")
             .defineInRange("s01BaseDuration", 500, 100, 12000);
     private static final ForgeConfigSpec.IntValue S02_BASE_DURATION = BUILDER
@@ -83,11 +89,15 @@ public class Config {
     private static final ForgeConfigSpec.DoubleValue DURATION_MULTIPLIER_PER_ACTIVITY = BUILDER
             .comment("每点活性增加倍率")
             .defineInRange("durationMultiplierPerActivity", 0.1, 0.01, 0.5);
-    static { BUILDER.pop(); }
+    static {
+        BUILDER.pop();
+    }
 
     // === [incubator] 培养槽参数 ===
+    static {
+        BUILDER.push("incubator");
+    }
     private static final ForgeConfigSpec.IntValue MATURATION_THRESHOLD = BUILDER
-            .push("incubator")
             .comment("成熟所需生长进度")
             .defineInRange("maturationThreshold", 200, 50, 1000);
     private static final ForgeConfigSpec.IntValue RESOURCE_THRESHOLD = BUILDER
@@ -117,11 +127,15 @@ public class Config {
     private static final ForgeConfigSpec.IntValue MATURE_PURITY_COST = BUILDER
             .comment("成熟时纯净消耗")
             .defineInRange("maturePurityCost", 5, 0, 50);
-    static { BUILDER.pop(); }
+    static {
+        BUILDER.pop();
+    }
 
     // === [curios] 饰品参数 ===
+    static {
+        BUILDER.push("curios");
+    }
     private static final ForgeConfigSpec.IntValue BELT_SCAN_RANGE = BUILDER
-            .push("curios")
             .comment("腰带扫描范围 (格)")
             .defineInRange("scanRange", 3, 1, 8);
     private static final ForgeConfigSpec.IntValue BELT_NUTRITION_THRESHOLD = BUILDER
@@ -145,7 +159,9 @@ public class Config {
     private static final ForgeConfigSpec.IntValue MONOCLE_HUD_RANGE = BUILDER
             .comment("单片镜 HUD 距离 (格)")
             .defineInRange("hudRange", 8, 3, 16);
-    static { BUILDER.pop(); }
+    static {
+        BUILDER.pop();
+    }
 
     static final ForgeConfigSpec SPEC = BUILDER.build();
 
@@ -439,15 +455,15 @@ int scaledDuration = getScaledDuration(durationSupplier.get(), activity);
 public static final RegistryObject<Item> SYNAPTIC_SERUM_S01 = ITEMS.register("synaptic_serum_s01",
         () -> new SynapticSerumItem(new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON)));
 
-// S-02: 改用 Supplier
+// S-02: 改用 Supplier（注意 RegistryObject 需要 .get()）
 public static final RegistryObject<Item> SYNAPTIC_SERUM_S02 = ITEMS.register("synaptic_serum_s02",
         () -> new SynapticSerumItem(new Item.Properties().stacksTo(16).rarity(Rarity.RARE),
-                ModEffects.VISUAL_ENHANCEMENT, () -> Config.s02BaseDuration, 0));
+                () -> ModEffects.VISUAL_ENHANCEMENT.get(), () -> Config.s02BaseDuration, 0));
 
 // S-03: 改用 Supplier
 public static final RegistryObject<Item> SYNAPTIC_SERUM_S03 = ITEMS.register("synaptic_serum_s03",
         () -> new SynapticSerumItem(new Item.Properties().stacksTo(16).rarity(Rarity.RARE),
-                ModEffects.METABOLIC_BOOST, () -> Config.s03BaseDuration, 0));
+                () -> ModEffects.METABOLIC_BOOST.get(), () -> Config.s03BaseDuration, 0));
 ```
 
 添加 import：
@@ -592,62 +608,56 @@ public class IncubatorOutputRecipe implements net.minecraft.world.item.crafting.
     public ItemStack assemble(ItemStack seedStack) {
         int yield = GeneticSeedItem.getGene(seedStack, GeneticSeedItem.GENE_YIELD);
         int potency = GeneticSeedItem.getGene(seedStack, GeneticSeedItem.GENE_POTENCY);
-        int synergy = GeneticSeedItem.getSynergy(seedStack);
-        int generation = GeneticSeedItem.getGeneration(seedStack);
         int count = evaluateCountFormula(yield);
 
         ItemStack result = new ItemStack(outputItem.getItem(), count);
         if (!qualityTag.isEmpty()) {
             result.getOrCreateTag().putInt(qualityTag, potency);
         }
-        if (synergy > 0) {
-            result.getOrCreateTag().putInt(GeneticSeedItem.GENE_SYNERGY, synergy);
-        }
-        result.getOrCreateTag().putInt("Generation", generation);
         return result;
     }
 
-    /** 简单公式求值: "2 + yield / 3" → 2 + yieldValue / 3 */
+    /**
+     * 简单公式求值: "2 + yield / 3" → 2 + yieldValue / 3
+     * 支持格式: "N", "N + yield / M", "N + yield * M"
+     * 整数除法，向下取整
+     */
     private int evaluateCountFormula(int yieldValue) {
-        // 支持格式: "2 + yield / 3" 或 "3" (常量)
-        String formula = countFormula.replace("yield", String.valueOf(yieldValue)).trim();
+        String formula = countFormula.trim();
+
+        // 纯常量
         try {
-            // 简单表达式求值: 按 + - * / 分割
-            return evaluateSimpleExpression(formula);
+            return Integer.parseInt(formula);
+        } catch (NumberFormatException ignored) {}
+
+        // 替换 yield 为实际值
+        formula = formula.replace("yield", String.valueOf(yieldValue));
+
+        // 解析 "A + B / C" 或 "A + B * C" 格式
+        try {
+            // 按 + 分割
+            String[] addParts = formula.split("\\+");
+            int result = 0;
+            for (String part : addParts) {
+                part = part.trim();
+                if (part.contains("/")) {
+                    String[] divParts = part.split("/");
+                    int dividend = Integer.parseInt(divParts[0].trim());
+                    int divisor = Integer.parseInt(divParts[1].trim());
+                    result += divisor == 0 ? 0 : dividend / divisor;
+                } else if (part.contains("*")) {
+                    String[] mulParts = part.split("\\*");
+                    int a = Integer.parseInt(mulParts[0].trim());
+                    int b = Integer.parseInt(mulParts[1].trim());
+                    result += a * b;
+                } else {
+                    result += Integer.parseInt(part);
+                }
+            }
+            return result;
         } catch (Exception e) {
             return 2; // 保底
         }
-    }
-
-    private int evaluateSimpleExpression(String expr) {
-        expr = expr.trim();
-        // 尝试直接解析为整数
-        try {
-            return Integer.parseInt(expr);
-        } catch (NumberFormatException ignored) {}
-        // 处理 + 运算
-        if (expr.contains("+")) {
-            String[] parts = expr.split("\\+", 2);
-            return evaluateSimpleExpression(parts[0]) + evaluateSimpleExpression(parts[1]);
-        }
-        // 处理 - 运算（注意负数）
-        int lastMinus = expr.lastIndexOf('-');
-        if (lastMinus > 0) {
-            return evaluateSimpleExpression(expr.substring(0, lastMinus))
-                 - evaluateSimpleExpression(expr.substring(lastMinus + 1));
-        }
-        // 处理 * 运算
-        if (expr.contains("*")) {
-            String[] parts = expr.split("\\*", 2);
-            return evaluateSimpleExpression(parts[0]) * evaluateSimpleExpression(parts[1]);
-        }
-        // 处理 / 运算（整数除法）
-        if (expr.contains("/")) {
-            String[] parts = expr.split("/", 2);
-            int divisor = evaluateSimpleExpression(parts[1]);
-            return divisor == 0 ? 0 : evaluateSimpleExpression(parts[0]) / divisor;
-        }
-        return 0;
     }
 
     @Override
