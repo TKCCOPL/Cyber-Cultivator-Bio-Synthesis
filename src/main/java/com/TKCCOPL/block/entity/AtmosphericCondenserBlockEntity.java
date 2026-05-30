@@ -130,7 +130,8 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
         int taken = Math.min(amount, output.getCount());
         ItemStack result = output.split(taken);
         if (output.isEmpty()) output = ItemStack.EMPTY;
-        setChanged();
+        progress = 0; // 与 extractOutput 行为一致
+        syncToClient();
         return result;
     }
 
@@ -171,7 +172,7 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
 
     @Override
     public boolean canTakeItemThroughFace(int slot, ItemStack stack, Direction side) {
-        return slot == 0 && !output.isEmpty();
+        return slot == 0 && !output.isEmpty() && side == Direction.DOWN;
     }
 
     @Override

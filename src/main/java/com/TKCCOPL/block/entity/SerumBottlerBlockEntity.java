@@ -355,8 +355,13 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
             int taken = Math.min(amount, inputs[slot].getCount());
             ItemStack result = inputs[slot].split(taken);
             if (inputs[slot].isEmpty()) inputs[slot] = ItemStack.EMPTY;
+            // 漏斗抽取输入槽时取消当前加工，防止无材料产出
+            if (maxProgress > 0) {
+                cancelProcessing();
+            } else {
+                setChanged();
+            }
             markInputsDirty();
-            setChanged();
             return result;
         }
         return ItemStack.EMPTY;
