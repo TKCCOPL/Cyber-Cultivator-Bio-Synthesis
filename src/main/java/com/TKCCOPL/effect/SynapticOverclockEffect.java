@@ -66,6 +66,7 @@ public class SynapticOverclockEffect extends MobEffect {
                 entity.level().getServer().tell(new TickTask(
                         entity.level().getServer().getTickCount() + 1,
                         () -> {
+                            if (entity.isRemoved() || !entity.isAlive()) return;
                             // 设置来源为 S-01，amplifier 保持实际效果等级
                             NeuralOverloadEffect.setSource(entity, 1);
                             entity.addEffect(new MobEffectInstance(

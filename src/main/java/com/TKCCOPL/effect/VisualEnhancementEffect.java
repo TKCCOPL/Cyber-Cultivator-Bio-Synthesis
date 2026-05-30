@@ -52,6 +52,7 @@ public class VisualEnhancementEffect extends MobEffect {
                 entity.level().getServer().tell(new net.minecraft.server.TickTask(
                     entity.level().getServer().getTickCount() + 1,
                     () -> {
+                        if (entity.isRemoved() || !entity.isAlive()) return;
                         // 设置来源为 S-02，amplifier 保持实际效果等级
                         NeuralOverloadEffect.setSource(entity, 2);
                         entity.addEffect(new MobEffectInstance(ModEffects.NEURAL_OVERLOAD.get(),
