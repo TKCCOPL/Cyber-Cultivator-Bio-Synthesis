@@ -179,6 +179,7 @@ public class Config {
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
+        if (event.getConfig().getSpec() != SPEC) return; // 只处理本模组配置
         // genes
         mutationRange = MUTATION_RANGE.get();
         mutationChanceBase = MUTATION_CHANCE_BASE.get();
