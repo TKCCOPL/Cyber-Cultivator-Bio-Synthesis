@@ -15,7 +15,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -31,7 +30,6 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     private static final int INPUT_SLOTS = 3;
     private static final int OUTPUT_SLOT = 3;
     private static final String TAG_ACTIVITY = "SynapticActivity";
-    private static final String TAG_ACTIVE_RECIPE = "ActiveRecipe";
     private static final String TAG_RECIPE_ID = "RecipeId";
 
     /**
@@ -82,7 +80,6 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     private ItemStack output = ItemStack.EMPTY;
     private int progress;
     private int maxProgress;
-    private int activeRecipe = -1;
     private SerumRecipe cachedRecipe;
     private String pendingRecipeId; // 用于 load() 后延迟恢复 cachedRecipe
     private final SimpleContainer recipeContainer = new SimpleContainer(INPUT_SLOTS);
@@ -149,7 +146,6 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
                     }
                 }
                 blockEntity.cachedRecipe = null;
-                blockEntity.activeRecipe = -1;
                 blockEntity.progress = 0;
                 blockEntity.maxProgress = 0;
                 changed = true;
@@ -309,7 +305,6 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
      */
     public void cancelProcessing() {
         cachedRecipe = null;
-        activeRecipe = -1;
         progress = 0;
         maxProgress = 0;
         syncToClient();
@@ -431,8 +426,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         super.load(tag);
         progress = Math.max(0, tag.getInt(TAG_PROGRESS));
         maxProgress = Math.max(0, tag.getInt(TAG_MAX_PROGRESS));
-        activeRecipe = tag.getInt(TAG_ACTIVE_RECIPE);
-        // Task 1: 加载配方 ID（延迟恢复，因为 load() 时 level 为 null）
+        // 加载配方 ID（延迟恢复，因为 load() 时 level 为 null）
         if (tag.contains(TAG_RECIPE_ID)) {
             pendingRecipeId = tag.getString(TAG_RECIPE_ID);
         }
@@ -449,8 +443,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         super.saveAdditional(tag);
         tag.putInt(TAG_PROGRESS, progress);
         tag.putInt(TAG_MAX_PROGRESS, maxProgress);
-        tag.putInt(TAG_ACTIVE_RECIPE, activeRecipe);
-        // Task 1: 持久化配方 ID，用于世界重载后恢复
+        // 持久化配方 ID，用于世界重载后恢复
         if (cachedRecipe != null) {
             tag.putString(TAG_RECIPE_ID, cachedRecipe.getId().toString());
         }
