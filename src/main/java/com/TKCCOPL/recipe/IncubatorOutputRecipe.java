@@ -80,7 +80,7 @@ public class IncubatorOutputRecipe implements net.minecraft.world.item.crafting.
 
     /**
      * 简单公式求值: "2 + yield / 3" → 2 + yieldValue / 3
-     * 支持格式: "N", "N + yield / M", "N + yield * M"
+     * 支持格式: "N", "N + yield / M", "N + yield * M", "N + yield / M - 1"
      * 整数除法，向下取整
      */
     private int evaluateCountFormula(int yieldValue) {
@@ -95,8 +95,8 @@ public class IncubatorOutputRecipe implements net.minecraft.world.item.crafting.
         formula = formula.replace("yield", String.valueOf(yieldValue));
 
         try {
-            // 先处理乘除（从左到右，支持操作数任意顺序）
-            java.util.regex.Pattern mulDiv = java.util.regex.Pattern.compile("(\\d+)\\s*([*/])\\s*(\\d+)");
+            // 先处理乘除（从左到右，保持优先级）
+            java.util.regex.Pattern mulDiv = java.util.regex.Pattern.compile("(-?\\d+)\\s*([*/])\\s*(-?\\d+)");
             java.util.regex.Matcher matcher;
             String current = formula;
             while ((matcher = mulDiv.matcher(current)).find()) {
@@ -107,13 +107,17 @@ public class IncubatorOutputRecipe implements net.minecraft.world.item.crafting.
                 current = current.substring(0, matcher.start()) + result + current.substring(matcher.end());
             }
 
-            // 再处理加法
-            String[] addParts = current.split("\\+");
-            int total = 0;
-            for (String part : addParts) {
-                total += Integer.parseInt(part.trim());
+            // 再处理加减法
+            java.util.regex.Pattern addSub = java.util.regex.Pattern.compile("(-?\\d+)\\s*([+-])\\s*(-?\\d+)");
+            while ((matcher = addSub.matcher(current)).find()) {
+                int a = Integer.parseInt(matcher.group(1));
+                String op = matcher.group(2);
+                int b = Integer.parseInt(matcher.group(3));
+                int result = "+".equals(op) ? a + b : a - b;
+                current = current.substring(0, matcher.start()) + result + current.substring(matcher.end());
             }
-            return total;
+
+            return Integer.parseInt(current.trim());
         } catch (Exception e) {
             LOGGER.error("[IncubatorOutputRecipe] Failed to evaluate count_formula '{}' (yield={}): {}",
                     countFormula, yieldValue, e.getMessage());

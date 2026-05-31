@@ -63,6 +63,9 @@ public class Config {
     private static final ForgeConfigSpec.DoubleValue DURATION_MULTIPLIER_PER_ACTIVITY = BUILDER
             .comment("每点活性增加倍率")
             .defineInRange("durationMultiplierPerActivity", 0.1, 0.01, 0.5);
+    private static final ForgeConfigSpec.IntValue GLOW_SCAN_RANGE_CAP = BUILDER
+            .comment("S-02 发光扫描范围上限 (格)")
+            .defineInRange("glowScanRangeCap", 48, 16, 64);
     static {
         BUILDER.pop();
     }
@@ -156,6 +159,7 @@ public class Config {
     public static volatile int activityThresholdForBonus;
     public static volatile double durationMultiplierBase;
     public static volatile double durationMultiplierPerActivity;
+    public static volatile int glowScanRangeCap;
     // incubator
     public static volatile int maturationThreshold;
     public static volatile int resourceThreshold;
@@ -196,6 +200,7 @@ public class Config {
         activityThresholdForBonus = ACTIVITY_THRESHOLD_FOR_BONUS.get();
         durationMultiplierBase = DURATION_MULTIPLIER_BASE.get();
         durationMultiplierPerActivity = DURATION_MULTIPLIER_PER_ACTIVITY.get();
+        glowScanRangeCap = GLOW_SCAN_RANGE_CAP.get();
         // incubator
         maturationThreshold = MATURATION_THRESHOLD.get();
         resourceThreshold = RESOURCE_THRESHOLD.get();

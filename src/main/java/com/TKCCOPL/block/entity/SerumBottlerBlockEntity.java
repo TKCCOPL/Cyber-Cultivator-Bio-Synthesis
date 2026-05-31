@@ -26,7 +26,6 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     private static final String TAG_INPUT = "Input";
     private static final String TAG_OUTPUT = "Output";
 
-    private static final int PROCESSING_TIME = 300; // 15 seconds
     private static final int INPUT_SLOTS = 3;
     private static final int OUTPUT_SLOT = 3;
     private static final String TAG_ACTIVITY = "SynapticActivity";
@@ -138,11 +137,13 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
                 SerumRecipe recipe = blockEntity.cachedRecipe;
                 if (recipe != null) {
                     ItemStack result = blockEntity.assembleRecipe(recipe);
-                    blockEntity.consumeRecipeInputs(recipe);
-                    if (blockEntity.output.isEmpty()) {
-                        blockEntity.output = result;
-                    } else {
-                        blockEntity.output.grow(result.getCount());
+                    if (!result.isEmpty()) {
+                        blockEntity.consumeRecipeInputs(recipe);
+                        if (blockEntity.output.isEmpty()) {
+                            blockEntity.output = result;
+                        } else {
+                            blockEntity.output.grow(result.getCount());
+                        }
                     }
                 }
                 blockEntity.cachedRecipe = null;
@@ -209,9 +210,9 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
             }
         }
 
-        // 血清配方（S-01/S-02/S-03）：从莓输入直接继承 Activity
+        // 血清配方（S-01/S-02/S-03）：从莓输入直接继承 Activity（仅当配方声明 inheritActivity）
         boolean isSerumOutput = !result.is(ModItems.SYNAPTIC_NEURAL_BERRY.get());
-        if (isSerumOutput) {
+        if (isSerumOutput && recipe.isInheritActivity()) {
             ItemStack berry = findInput(ModItems.SYNAPTIC_NEURAL_BERRY.get());
             if (!berry.isEmpty()) {
                 int activity = getActivity(berry);
@@ -259,6 +260,9 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
 
     public int getProgress() { return progress; }
     public int getMaxProgress() { return maxProgress; }
+
+    /** @deprecated 使用 {@link #getActiveRecipeId()} 替代，支持自定义配方 */
+    @Deprecated
     public int getActiveRecipe() {
         if (cachedRecipe == null) return -1;
         // 简化：根据输出物品判断配方类型
@@ -292,6 +296,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
             if (!inputs[i].isEmpty()) {
                 ItemStack out = inputs[i];
                 inputs[i] = ItemStack.EMPTY;
+                markInputsDirty();
                 syncToClient();
                 return out;
             }

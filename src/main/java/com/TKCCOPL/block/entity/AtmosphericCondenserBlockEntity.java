@@ -172,7 +172,7 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
 
     @Override
     public boolean canTakeItemThroughFace(int slot, ItemStack stack, Direction side) {
-        return slot == 0 && !output.isEmpty() && side == Direction.DOWN;
+        return slot == 0 && !output.isEmpty() && side != Direction.UP;
     }
 
     @Override

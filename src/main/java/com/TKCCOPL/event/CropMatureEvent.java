@@ -18,7 +18,7 @@ public class CropMatureEvent extends Event {
     public CropMatureEvent(Level level, BlockPos pos, ItemStack seed, ItemStack output) {
         this.level = level;
         this.pos = pos;
-        this.seed = seed;
+        this.seed = seed.copy(); // 防御性拷贝，防止监听器污染内部状态
         this.output = output;
     }
 
