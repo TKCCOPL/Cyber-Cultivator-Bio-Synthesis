@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <b>v1.1.2</b> · Forge 1.20.1 · Curios API 5.3.5<br>
+  <b>v1.1.3</b> · Forge 1.20.1 · Curios API 5.3.5<br>
   Genetic Breeding Algorithm + Bio-Enhancement Serum System
 </p>
 
@@ -137,6 +137,16 @@ Hopper connections: Condenser side extraction, Bottler top/side input, bottom ou
 ---
 
 ## Changelog
+
+<details>
+<summary><b>v1.1.3</b> — Code Review Fixes + Hopper Interaction Optimization + API Improvements</summary>
+
+- Fixed 12 issues found in third code review
+- Bottler hopper extraction cancels processing + Condenser hopper behavior unified + output direction restriction
+- tryInsertSeed copies ItemStack + cleanup dead code and unused imports
+- Added cybercultivator module icon
+
+</details>
 
 <details>
 <summary><b>v1.1.2</b> — Gene_Synergy Rename + Mutation Tag Upgrade + HUD Transparency</summary>

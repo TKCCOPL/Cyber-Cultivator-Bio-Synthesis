@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <b>v1.1.2</b> · Forge 1.20.1 · Curios API 5.3.5<br>
+  <b>v1.1.3</b> · Forge 1.20.1 · Curios API 5.3.5<br>
   遗传育种算法 + 生物强化血清系统
 </p>
 
@@ -137,6 +137,16 @@
 ---
 
 ## 更新日志
+
+<details>
+<summary><b>v1.1.3</b> — 代码审查修复 + 漏斗交互优化 + API 完善</summary>
+
+- 修复第三轮代码审查发现的 12 个问题
+- 灌装机漏斗抽取取消加工 + 冷凝器漏斗行为统一 + 输出方向限制
+- tryInsertSeed 复制 ItemStack + 清理 dead code 和未使用 import
+- 添加 cybercultivator 模组图标
+
+</details>
 
 <details>
 <summary><b>v1.1.2</b> — Gene_Synergy 重命名 + Mutation 标签升级 + HUD 透明化</summary>
