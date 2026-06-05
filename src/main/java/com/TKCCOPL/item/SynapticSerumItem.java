@@ -64,6 +64,18 @@ public class SynapticSerumItem extends Item {
         return Math.max(1, tag.getInt(TAG_ACTIVITY));
     }
 
+    /**
+     * 根据血清物品类型返回基础持续时间（tick）。
+     * 用于 API 查询，不依赖实例字段。
+     */
+    public static int getBaseDuration(ItemStack serum) {
+        if (serum.isEmpty()) return 0;
+        if (serum.is(com.TKCCOPL.init.ModItems.SYNAPTIC_SERUM_S01.get())) return Config.s01BaseDuration;
+        if (serum.is(com.TKCCOPL.init.ModItems.SYNAPTIC_SERUM_S02.get())) return Config.s02BaseDuration;
+        if (serum.is(com.TKCCOPL.init.ModItems.SYNAPTIC_SERUM_S03.get())) return Config.s03BaseDuration;
+        return 0;
+    }
+
     public static int getScaledDuration(int baseDuration, int activity) {
         double multiplier = Config.durationMultiplierBase + activity * Config.durationMultiplierPerActivity;
         return (int) Math.round(baseDuration * multiplier);
@@ -117,10 +129,11 @@ public class SynapticSerumItem extends Item {
             amp = consumeEvent.getAmplifier();
 
             entity.addEffect(new MobEffectInstance(effect.get(), scaledDuration, amp));
-        }
 
-        if (entity instanceof Player player && !player.getAbilities().instabuild) {
-            stack.shrink(1);
+            // 仅服务端消耗物品（客户端通过服务端同步获取正确状态）
+            if (entity instanceof Player player && !player.getAbilities().instabuild) {
+                stack.shrink(1);
+            }
         }
         return stack;
     }

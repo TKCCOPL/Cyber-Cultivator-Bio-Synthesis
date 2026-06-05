@@ -106,7 +106,7 @@ public final class IncubatorHudOverlay {
     private static void drawBottlerHud(GuiGraphics gui, Minecraft mc, SerumBottlerBlockEntity bottler) {
         int x = 10;
         int y = 10;
-        int activeRecipe = bottler.getActiveRecipe();
+        net.minecraft.resources.ResourceLocation activeRecipeId = bottler.getActiveRecipeId();
         boolean processing = bottler.getMaxProgress() > 0;
 
         // Background removed — fully transparent overlay
@@ -115,9 +115,9 @@ public final class IncubatorHudOverlay {
         gui.drawString(mc.font, Component.translatable("hud.cybercultivator.bottler"), x + 4, y + 2, 0x44F7FF);
 
         // Recipe status
-        Component recipeName = getRecipeName(activeRecipe);
+        Component recipeName = getRecipeName(activeRecipeId);
         int recipeColor;
-        if (activeRecipe >= 0 && processing) {
+        if (activeRecipeId != null && processing) {
             recipeColor = 0x44FF44; // green — active
         } else {
             recipeColor = 0x999999; // gray — idle
@@ -277,13 +277,14 @@ public final class IncubatorHudOverlay {
         }
     }
 
-    private static Component getRecipeName(int recipe) {
-        return switch (recipe) {
-            case 0 -> Component.translatable("hud.cybercultivator.recipe_berry");
-            case 1 -> Component.translatable("hud.cybercultivator.recipe_s01");
-            case 2 -> Component.translatable("hud.cybercultivator.recipe_s02");
-            case 3 -> Component.translatable("hud.cybercultivator.recipe_s03");
-            default -> Component.translatable("hud.cybercultivator.recipe_idle");
+    private static Component getRecipeName(net.minecraft.resources.ResourceLocation recipeId) {
+        if (recipeId == null) return Component.translatable("hud.cybercultivator.recipe_idle");
+        return switch (recipeId.getPath()) {
+            case "berry_synthesis" -> Component.translatable("hud.cybercultivator.recipe_berry");
+            case "s01_bottling" -> Component.translatable("hud.cybercultivator.recipe_s01");
+            case "s02_bottling" -> Component.translatable("hud.cybercultivator.recipe_s02");
+            case "s03_bottling" -> Component.translatable("hud.cybercultivator.recipe_s03");
+            default -> Component.literal(recipeId.toString());
         };
     }
 

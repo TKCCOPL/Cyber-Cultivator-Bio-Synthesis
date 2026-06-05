@@ -2,7 +2,6 @@ package com.TKCCOPL.block.entity;
 
 import com.TKCCOPL.Config;
 import com.TKCCOPL.init.ModBlockEntities;
-import com.TKCCOPL.init.ModItems;
 import com.TKCCOPL.item.GeneticSeedItem;
 import com.TKCCOPL.event.CropMatureEvent;
 import com.TKCCOPL.recipe.ModRecipeTypes;
@@ -12,7 +11,6 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.Containers;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -146,7 +144,7 @@ public class BioIncubatorBlockEntity extends BlockEntity {
         if (stack.getItem() instanceof GeneticSeedItem geneticSeed) {
             geneticSeed.ensureGeneData(stack);
         }
-        seed = stack;
+        seed = stack.copy();
         cachedSpeed = GeneticSeedItem.getGene(stack, GeneticSeedItem.GENE_SPEED);
         growthProgress = 0;
         syncCounter = 0;

@@ -83,7 +83,7 @@ public class SerumRecipe implements Recipe<Container> {
     }
 
     // Accessors
-    public Ingredient[] getInputs() { return inputs; }
+    public Ingredient[] getInputs() { return inputs.clone(); }
     public ItemStack getBaseOutput() { return baseOutput.copy(); }
     public int getProcessingTime() { return processingTime; }
     public boolean isInheritActivity() { return inheritActivity; }

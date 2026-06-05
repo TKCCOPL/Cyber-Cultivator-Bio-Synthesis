@@ -86,7 +86,9 @@ public class cybercultivator {
 
     @SubscribeEvent
     public static void onEntityLeaveLevel(net.minecraftforge.event.entity.EntityLeaveLevelEvent event) {
-        NeuralOverloadEffect.cleanupByUUID(event.getEntity().getUUID());
+        if (event.getEntity() instanceof net.minecraft.world.entity.LivingEntity) {
+            NeuralOverloadEffect.cleanupByUUID(event.getEntity().getUUID());
+        }
     }
 
     // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent

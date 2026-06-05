@@ -1,5 +1,6 @@
 package com.TKCCOPL.effect;
 
+import com.TKCCOPL.Config;
 import com.TKCCOPL.init.ModEffects;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
@@ -34,7 +35,7 @@ public class VisualEnhancementEffect extends MobEffect {
 
         // 发光范围随 amplifier 增长：16 + amp * 8
         if (!entity.level().isClientSide) {
-            double scanRange = Math.min(16.0 + amplifier * 8.0, 32.0);
+            double scanRange = Math.min(16.0 + amplifier * 8.0, (double) Config.glowScanRangeCap);
             AABB area = entity.getBoundingBox().inflate(scanRange);
             List<LivingEntity> nearby = entity.level().getEntitiesOfClass(LivingEntity.class, area, e -> e != entity);
             for (LivingEntity target : nearby) {

@@ -73,7 +73,7 @@ public final class CyberCultivatorAPI {
         return new BottlerInfo(
                 bottler.getProgress(),
                 bottler.getMaxProgress(),
-                bottler.getActiveRecipe(),
+                bottler.getActiveRecipeId(),
                 bottler.getOutput(),
                 SerumBottlerBlockEntity.getActivity(bottler.getOutput())
         );
@@ -127,9 +127,10 @@ public final class CyberCultivatorAPI {
         double multiplier = Config.durationMultiplierBase + activity * Config.durationMultiplierPerActivity;
         int baseAmp = Math.min(SynapticSerumItem.getBaseAmplifier(activity)
                 + SynapticSerumItem.getActivityBonusAmplifier(activity), Config.stackAmplifierCap);
+        int baseDuration = SynapticSerumItem.getBaseDuration(serum);
         return new SerumEffectInfo(
                 serum.getItem().getDescriptionId(),
-                0, // baseDuration 由具体血清类型决定
+                baseDuration,
                 baseAmp,
                 multiplier,
                 activity

@@ -15,7 +15,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -27,11 +26,9 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     private static final String TAG_INPUT = "Input";
     private static final String TAG_OUTPUT = "Output";
 
-    private static final int PROCESSING_TIME = 300; // 15 seconds
     private static final int INPUT_SLOTS = 3;
     private static final int OUTPUT_SLOT = 3;
     private static final String TAG_ACTIVITY = "SynapticActivity";
-    private static final String TAG_ACTIVE_RECIPE = "ActiveRecipe";
     private static final String TAG_RECIPE_ID = "RecipeId";
 
     /**
@@ -82,7 +79,6 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     private ItemStack output = ItemStack.EMPTY;
     private int progress;
     private int maxProgress;
-    private int activeRecipe = -1;
     private SerumRecipe cachedRecipe;
     private String pendingRecipeId; // 用于 load() 后延迟恢复 cachedRecipe
     private final SimpleContainer recipeContainer = new SimpleContainer(INPUT_SLOTS);
@@ -141,15 +137,16 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
                 SerumRecipe recipe = blockEntity.cachedRecipe;
                 if (recipe != null) {
                     ItemStack result = blockEntity.assembleRecipe(recipe);
-                    blockEntity.consumeRecipeInputs(recipe);
-                    if (blockEntity.output.isEmpty()) {
-                        blockEntity.output = result;
-                    } else {
-                        blockEntity.output.grow(result.getCount());
+                    if (!result.isEmpty()) {
+                        blockEntity.consumeRecipeInputs(recipe);
+                        if (blockEntity.output.isEmpty()) {
+                            blockEntity.output = result;
+                        } else {
+                            blockEntity.output.grow(result.getCount());
+                        }
                     }
                 }
                 blockEntity.cachedRecipe = null;
-                blockEntity.activeRecipe = -1;
                 blockEntity.progress = 0;
                 blockEntity.maxProgress = 0;
                 changed = true;
@@ -213,9 +210,9 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
             }
         }
 
-        // 血清配方（S-01/S-02/S-03）：从莓输入直接继承 Activity
+        // 血清配方（S-01/S-02/S-03）：从莓输入直接继承 Activity（仅当配方声明 inheritActivity）
         boolean isSerumOutput = !result.is(ModItems.SYNAPTIC_NEURAL_BERRY.get());
-        if (isSerumOutput) {
+        if (isSerumOutput && recipe.isInheritActivity()) {
             ItemStack berry = findInput(ModItems.SYNAPTIC_NEURAL_BERRY.get());
             if (!berry.isEmpty()) {
                 int activity = getActivity(berry);
@@ -263,6 +260,9 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
 
     public int getProgress() { return progress; }
     public int getMaxProgress() { return maxProgress; }
+
+    /** @deprecated 使用 {@link #getActiveRecipeId()} 替代，支持自定义配方 */
+    @Deprecated
     public int getActiveRecipe() {
         if (cachedRecipe == null) return -1;
         // 简化：根据输出物品判断配方类型
@@ -296,6 +296,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
             if (!inputs[i].isEmpty()) {
                 ItemStack out = inputs[i];
                 inputs[i] = ItemStack.EMPTY;
+                markInputsDirty();
                 syncToClient();
                 return out;
             }
@@ -309,7 +310,6 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
      */
     public void cancelProcessing() {
         cachedRecipe = null;
-        activeRecipe = -1;
         progress = 0;
         maxProgress = 0;
         syncToClient();
@@ -360,8 +360,13 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
             int taken = Math.min(amount, inputs[slot].getCount());
             ItemStack result = inputs[slot].split(taken);
             if (inputs[slot].isEmpty()) inputs[slot] = ItemStack.EMPTY;
+            // 漏斗抽取输入槽时取消当前加工，防止无材料产出
+            if (maxProgress > 0) {
+                cancelProcessing();
+            } else {
+                setChanged();
+            }
             markInputsDirty();
-            setChanged();
             return result;
         }
         return ItemStack.EMPTY;
@@ -431,8 +436,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         super.load(tag);
         progress = Math.max(0, tag.getInt(TAG_PROGRESS));
         maxProgress = Math.max(0, tag.getInt(TAG_MAX_PROGRESS));
-        activeRecipe = tag.getInt(TAG_ACTIVE_RECIPE);
-        // Task 1: 加载配方 ID（延迟恢复，因为 load() 时 level 为 null）
+        // 加载配方 ID（延迟恢复，因为 load() 时 level 为 null）
         if (tag.contains(TAG_RECIPE_ID)) {
             pendingRecipeId = tag.getString(TAG_RECIPE_ID);
         }
@@ -449,8 +453,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         super.saveAdditional(tag);
         tag.putInt(TAG_PROGRESS, progress);
         tag.putInt(TAG_MAX_PROGRESS, maxProgress);
-        tag.putInt(TAG_ACTIVE_RECIPE, activeRecipe);
-        // Task 1: 持久化配方 ID，用于世界重载后恢复
+        // 持久化配方 ID，用于世界重载后恢复
         if (cachedRecipe != null) {
             tag.putString(TAG_RECIPE_ID, cachedRecipe.getId().toString());
         }
