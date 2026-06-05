@@ -201,3 +201,38 @@ datagen 覆盖范围：
 - 每完成一个阶段都要做一次完整的测试验证，确保基础功能稳定后再迭代复杂度。
 - 平衡调整（如突变概率、数值范围）先走离线模拟（如 Python 脚本），再落地游戏实测，避免频繁改代码调参。
 - 每完成一个阶段后，必须在 `README.md` 的 Roadmap 中打勾，并更新相关文档说明（如新增基因算法细节时同步更新算法描述）。
+
+## 版本发布流程（强制）
+
+每次版本更新必须按以下顺序执行：
+
+### 1. 更新版本号
+- `gradle.properties` → `mod_version=X.Y.Z`
+- `README.md` → 头部版本号 + 更新日志
+- `README_EN.md` → 头部版本号 + 更新日志
+- 检查 `CLAUDE.md` 是否需要更新（如有核心机制变更）
+
+### 2. 构建验证
+```bash
+./gradlew build
+```
+
+### 3. 提交（按格式）
+```bash
+git add README.md README_EN.md gradle.properties
+git commit -m "release: vX.Y.Z 更新说明
+
+- 变更点1
+- 变更点2
+- ..."
+```
+
+### 4. 推送 + Tag + Release
+```bash
+git push origin main
+git tag vX.Y.Z
+git push origin vX.Y.Z
+gh release create vX.Y.Z build/libs/cybercultivator-X.Y.Z.jar \
+  --title "vX.Y.Z 更新说明" \
+  --notes "## 更新内容\n\n- ...\n\n## 下载\n\n- \`cybercultivator-X.Y.Z.jar\` (Forge 1.20.1)"
+```
