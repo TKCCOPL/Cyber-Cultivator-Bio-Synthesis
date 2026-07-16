@@ -175,9 +175,10 @@ public class GeneSplicingCategory implements IRecipeCategory<GeneSplicingCategor
                 if (seedA.isEmpty() || seedB.isEmpty()) continue;
                 int[] genesA = outA.getDefaultGenes();
                 int[] genesB = outB.getDefaultGenes();
-                int geneDiff = Math.abs(genesA[0] - genesB[0])
-                             + Math.abs(genesA[1] - genesB[1])
-                             + Math.abs(genesA[2] - genesB[2]);
+                int geneDiff = Math.max(
+                        Math.abs(genesA[0] - genesB[0]),
+                        Math.max(Math.abs(genesA[1] - genesB[1]),
+                                Math.abs(genesA[2] - genesB[2])));
                 double mutation = splice.getMutationChance(0, geneDiff);
                 recipes.add(new DisplayRecipe(
                         seedWithGenes(seedA, genesA[0], genesA[1], genesA[2]),

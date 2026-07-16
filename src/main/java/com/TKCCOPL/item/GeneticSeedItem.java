@@ -23,9 +23,11 @@ public class GeneticSeedItem extends ItemNameBlockItem {
 
     public GeneticSeedItem(Block block, Properties properties, int defaultSpeed, int defaultYield, int defaultPotency) {
         super(block, properties);
-        this.defaultSpeed = clampGene(defaultSpeed);
-        this.defaultYield = clampGene(defaultYield);
-        this.defaultPotency = clampGene(defaultPotency);
+        // Items are constructed during RegisterEvent, before Forge loads mod configs.
+        // Keep the built-in defaults independent from Config's runtime values.
+        this.defaultSpeed = clampSupportedGene(defaultSpeed);
+        this.defaultYield = clampSupportedGene(defaultYield);
+        this.defaultPotency = clampSupportedGene(defaultPotency);
     }
 
     @Override
@@ -54,16 +56,17 @@ public class GeneticSeedItem extends ItemNameBlockItem {
     }
 
     public void ensureGeneData(ItemStack stack) {
-        CompoundTag existing = stack.getTag();
-        if (existing != null && existing.contains(GENE_SPEED) && existing.contains(GENE_GENERATION)) return;
         CompoundTag tag = stack.getOrCreateTag();
-        if (!tag.contains(GENE_SPEED)) {
+        // Values outside the format's permanent 1..10 range are invalid. In
+        // particular, v1.1.3 could persist zeroes because config values were not
+        // initialized during item registration; replace those with item defaults.
+        if (!hasValidStoredGene(tag, GENE_SPEED)) {
             tag.putInt(GENE_SPEED, defaultSpeed);
         }
-        if (!tag.contains(GENE_YIELD)) {
+        if (!hasValidStoredGene(tag, GENE_YIELD)) {
             tag.putInt(GENE_YIELD, defaultYield);
         }
-        if (!tag.contains(GENE_POTENCY)) {
+        if (!hasValidStoredGene(tag, GENE_POTENCY)) {
             tag.putInt(GENE_POTENCY, defaultPotency);
         }
         if (!tag.contains(GENE_GENERATION)) {
@@ -90,13 +93,27 @@ public class GeneticSeedItem extends ItemNameBlockItem {
     }
 
     public static int clampGene(int value) {
-        return Math.max(Config.geneMin, Math.min(Config.geneMax, value));
+        // Config runtime fields are populated after registry events. Fall back to
+        // the data format bounds if this method is reached during early loading.
+        int min = Config.geneMin >= 1 && Config.geneMin <= 10 ? Config.geneMin : 1;
+        int max = Config.geneMax >= min && Config.geneMax <= 10 ? Config.geneMax : 10;
+        return Math.max(min, Math.min(max, value));
+    }
+
+    private static boolean hasValidStoredGene(CompoundTag tag, String key) {
+        if (!tag.contains(key)) return false;
+        int value = tag.getInt(key);
+        return value >= 1 && value <= 10;
+    }
+
+    private static int clampSupportedGene(int value) {
+        return Math.max(1, Math.min(10, value));
     }
 
     public static int getGeneration(ItemStack stack) {
         CompoundTag tag = stack.getTag();
         if (tag == null || !tag.contains(GENE_GENERATION)) return 0;
-        return tag.getInt(GENE_GENERATION);
+        return Math.max(0, tag.getInt(GENE_GENERATION));
     }
 
     public static int getSynergy(ItemStack stack) {

@@ -20,7 +20,7 @@ public class SerumConsumeEvent extends Event {
     public SerumConsumeEvent(LivingEntity entity, ItemStack serum, MobEffect effect,
                              int activity, int duration, int amplifier) {
         this.entity = entity;
-        this.serum = serum;
+        this.serum = serum.copy();
         this.effect = effect;
         this.activity = activity;
         this.duration = duration;

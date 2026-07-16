@@ -20,6 +20,9 @@ public class SerumRecipeSerializer implements RecipeSerializer<SerumRecipe> {
     @Override
     public SerumRecipe fromJson(ResourceLocation id, JsonObject json) {
         JsonArray ingredientsJson = GsonHelper.getAsJsonArray(json, "ingredients");
+        if (ingredientsJson.isEmpty() || ingredientsJson.size() > 3) {
+            throw new com.google.gson.JsonSyntaxException("Serum bottling recipes require 1 to 3 ingredients");
+        }
         Ingredient[] inputs = new Ingredient[ingredientsJson.size()];
         for (int i = 0; i < ingredientsJson.size(); i++) {
             inputs[i] = Ingredient.fromJson(ingredientsJson.get(i));
@@ -29,6 +32,9 @@ public class SerumRecipeSerializer implements RecipeSerializer<SerumRecipe> {
         ItemStack output = CraftingHelper.getItemStack(resultJson, true);
 
         int processingTime = GsonHelper.getAsInt(json, "processing_time", 300);
+        if (processingTime < 1) {
+            throw new com.google.gson.JsonSyntaxException("processing_time must be at least 1 tick");
+        }
         boolean inheritActivity = GsonHelper.getAsBoolean(json, "inherit_activity", false);
         boolean inheritMutation = GsonHelper.getAsBoolean(json, "inherit_mutation", false);
 
@@ -39,12 +45,15 @@ public class SerumRecipeSerializer implements RecipeSerializer<SerumRecipe> {
     @Override
     public SerumRecipe fromNetwork(ResourceLocation id, FriendlyByteBuf buf) {
         int inputCount = buf.readVarInt();
+        if (inputCount < 1 || inputCount > 3) {
+            throw new IllegalArgumentException("Invalid serum bottling ingredient count: " + inputCount);
+        }
         Ingredient[] inputs = new Ingredient[inputCount];
         for (int i = 0; i < inputCount; i++) {
             inputs[i] = Ingredient.fromNetwork(buf);
         }
         ItemStack output = buf.readItem();
-        int processingTime = buf.readVarInt();
+        int processingTime = Math.max(1, buf.readVarInt());
         boolean inheritActivity = buf.readBoolean();
         boolean inheritMutation = buf.readBoolean();
         return new SerumRecipe(id, inputs, output, processingTime, inheritActivity, inheritMutation);

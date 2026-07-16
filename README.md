@@ -8,6 +8,12 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/TKCCOPL/Cyber-Cultivator-Bio-Synthesis/actions/workflows/ci.yml">
+    <img src="https://github.com/TKCCOPL/Cyber-Cultivator-Bio-Synthesis/actions/workflows/ci.yml/badge.svg" alt="CI">
+  </a>
+</p>
+
+<p align="center">
   <a href="#核心循环">玩法</a> ·
   <a href="#设施与机器">设施</a> ·
   <a href="#强化血清">血清</a> ·

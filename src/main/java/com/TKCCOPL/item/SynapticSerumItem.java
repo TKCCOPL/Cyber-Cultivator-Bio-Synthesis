@@ -125,8 +125,8 @@ public class SynapticSerumItem extends Item {
                 // 事件被取消，不施加效果，不消耗物品
                 return stack;
             }
-            scaledDuration = consumeEvent.getDuration();
-            amp = consumeEvent.getAmplifier();
+            scaledDuration = Math.max(1, consumeEvent.getDuration());
+            amp = Math.max(0, consumeEvent.getAmplifier());
 
             entity.addEffect(new MobEffectInstance(effect.get(), scaledDuration, amp));
 

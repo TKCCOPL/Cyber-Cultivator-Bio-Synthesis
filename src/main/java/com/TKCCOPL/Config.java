@@ -113,8 +113,8 @@ public class Config {
         BUILDER.push("curios");
     }
     private static final ForgeConfigSpec.IntValue BELT_SCAN_RANGE = BUILDER
-            .comment("腰带扫描范围 (格)")
-            .defineInRange("scanRange", 3, 1, 8);
+            .comment("腰带扫描范围 (格，上限 5 以控制方块实体扫描开销)")
+            .defineInRange("scanRange", 3, 1, 5);
     private static final ForgeConfigSpec.IntValue BELT_NUTRITION_THRESHOLD = BUILDER
             .comment("营养度注入阈值")
             .defineInRange("nutritionThreshold", 50, 0, 100);

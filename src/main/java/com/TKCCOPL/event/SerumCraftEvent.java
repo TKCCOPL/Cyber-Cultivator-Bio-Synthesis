@@ -16,7 +16,7 @@ public class SerumCraftEvent extends Event {
 
     public SerumCraftEvent(ItemStack[] inputs, ItemStack output, int activity, ResourceLocation recipeId) {
         this.inputs = inputs;
-        this.output = output;
+        this.output = output == null ? ItemStack.EMPTY : output;
         this.activity = activity;
         this.recipeId = recipeId;
     }
@@ -24,7 +24,7 @@ public class SerumCraftEvent extends Event {
     public ItemStack[] getInputs() { return inputs; }
 
     public ItemStack getOutput() { return output; }
-    public void setOutput(ItemStack output) { this.output = output; }
+    public void setOutput(ItemStack output) { this.output = output == null ? ItemStack.EMPTY : output; }
 
     public int getActivity() { return activity; }
     public void setActivity(int activity) { this.activity = activity; }

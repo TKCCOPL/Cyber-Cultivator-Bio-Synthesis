@@ -46,6 +46,7 @@ public class BioIncubatorBlockEntity extends BlockEntity {
         }
 
         boolean changed = false;
+        boolean forceSync = false;
 
         // 资源自然衰减
         if (level.getGameTime() % (long) Config.nutritionDecayInterval == 0L && blockEntity.nutrition > 0) {
@@ -88,6 +89,7 @@ public class BioIncubatorBlockEntity extends BlockEntity {
                 blockEntity.growthProgress = 0;
                 blockEntity.seed = ItemStack.EMPTY;
                 changed = true;
+                forceSync = true;
 
                 if (!cancelled) {
                     // 事件未取消，正常产出
@@ -104,7 +106,7 @@ public class BioIncubatorBlockEntity extends BlockEntity {
 
         if (changed) {
             blockEntity.syncCounter++;
-            if (blockEntity.syncCounter >= SYNC_INTERVAL) {
+            if (forceSync || blockEntity.syncCounter >= SYNC_INTERVAL) {
                 blockEntity.syncToClient();
                 blockEntity.syncCounter = 0;
             }
