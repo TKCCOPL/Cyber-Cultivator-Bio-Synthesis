@@ -22,9 +22,9 @@ public class SerumRecipe implements Recipe<Container> {
     public SerumRecipe(ResourceLocation id, Ingredient[] inputs, ItemStack baseOutput,
                        int processingTime, boolean inheritActivity, boolean inheritMutation) {
         this.id = id;
-        this.inputs = inputs;
-        this.baseOutput = baseOutput;
-        this.processingTime = processingTime;
+        this.inputs = inputs.clone();
+        this.baseOutput = baseOutput.copy();
+        this.processingTime = Math.max(1, processingTime);
         this.inheritActivity = inheritActivity;
         this.inheritMutation = inheritMutation;
     }

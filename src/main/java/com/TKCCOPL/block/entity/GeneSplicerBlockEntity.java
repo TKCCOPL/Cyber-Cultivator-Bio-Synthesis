@@ -181,6 +181,15 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         ItemStack result = new ItemStack(seedA.getItem());
         GeneticSeedItem.setGenes(result, newSpeed, newYield, newPotency);
 
+        // Preserve the stronger inherited synergy so the documented cumulative
+        // 0..10 progression is reachable through continued breeding.
+        int inheritedSynergy = Math.max(
+                GeneticSeedItem.getSynergy(seedA),
+                GeneticSeedItem.getSynergy(seedB));
+        if (inheritedSynergy > 0) {
+            result.getOrCreateTag().putInt(GeneticSeedItem.GENE_SYNERGY, inheritedSynergy);
+        }
+
         // 6. 如果是 Synergy 突变，写入 Gene_Synergy（累加，上限 10）
         if (mutationType == 2) {
             int currentSynergy = GeneticSeedItem.getSynergy(result);
@@ -197,7 +206,7 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         }
 
         // 8. 设置 Generation
-        int childGen = maxGen + 1;
+        int childGen = maxGen == Integer.MAX_VALUE ? Integer.MAX_VALUE : maxGen + 1;
         result.getOrCreateTag().putInt(GeneticSeedItem.GENE_GENERATION, childGen);
 
         // 9. 触发 GeneSpliceEvent，允许其他 mod 修改结果
@@ -216,12 +225,14 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         GeneticSeedItem.setGenes(result, newSpeed, newYield, newPotency);
 
         // 回读 synergy（无条件写入，支持清零）
-        result.getOrCreateTag().putInt(GeneticSeedItem.GENE_SYNERGY, event.getSynergy());
+        result.getOrCreateTag().putInt(GeneticSeedItem.GENE_SYNERGY,
+                Math.max(0, Math.min(10, event.getSynergy())));
 
         // 回读 mutation 信息
         if (event.isMutation()) {
             result.getOrCreateTag().putInt("Mutation", event.getMutationType());
-            result.getOrCreateTag().putString("MutationDetail", event.getMutationDetail());
+            String eventDetail = event.getMutationDetail();
+            result.getOrCreateTag().putString("MutationDetail", eventDetail == null ? "" : eventDetail);
         } else {
             // 事件监听器清除了突变，移除标签
             result.getOrCreateTag().remove("Mutation");
@@ -229,7 +240,7 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         }
 
         // 回读 generation
-        result.getOrCreateTag().putInt(GeneticSeedItem.GENE_GENERATION, event.getGeneration());
+        result.getOrCreateTag().putInt(GeneticSeedItem.GENE_GENERATION, Math.max(0, event.getGeneration()));
 
         output = result;
 

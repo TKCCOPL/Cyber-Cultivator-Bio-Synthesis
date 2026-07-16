@@ -31,11 +31,11 @@ public class IncubatorOutputRecipe implements net.minecraft.world.item.crafting.
                                   String countFormula, String qualityTag, int[] defaultGenes,
                                   String cropName) {
         this.id = id;
-        this.seedItem = seedItem;
-        this.outputItem = outputItem;
+        this.seedItem = seedItem.copy();
+        this.outputItem = outputItem.copy();
         this.countFormula = countFormula;
         this.qualityTag = qualityTag;
-        this.defaultGenes = defaultGenes;
+        this.defaultGenes = defaultGenes.clone();
         this.cropName = cropName;
     }
 
@@ -55,7 +55,7 @@ public class IncubatorOutputRecipe implements net.minecraft.world.item.crafting.
         int potency = GeneticSeedItem.getGene(seedStack, GeneticSeedItem.GENE_POTENCY);
         int generation = GeneticSeedItem.getGeneration(seedStack);
         int synergy = GeneticSeedItem.getSynergy(seedStack);
-        int count = evaluateCountFormula(yield);
+        int count = Math.max(1, Math.min(outputItem.getMaxStackSize(), evaluateCountFormula(yield)));
 
         ItemStack result = new ItemStack(outputItem.getItem(), count);
         if (!qualityTag.isEmpty()) {
@@ -160,6 +160,6 @@ public class IncubatorOutputRecipe implements net.minecraft.world.item.crafting.
     public ItemStack getOutputItem() { return outputItem.copy(); }
     public String getCountFormula() { return countFormula; }
     public String getQualityTag() { return qualityTag; }
-    public int[] getDefaultGenes() { return defaultGenes; }
+    public int[] getDefaultGenes() { return defaultGenes.clone(); }
     public String getCropName() { return cropName; }
 }

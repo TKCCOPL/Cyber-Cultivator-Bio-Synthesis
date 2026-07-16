@@ -1,5 +1,6 @@
 package com.TKCCOPL.block.entity;
 
+import com.TKCCOPL.Config;
 import com.TKCCOPL.init.ModBlockEntities;
 import com.TKCCOPL.init.ModItems;
 import net.minecraft.core.BlockPos;
@@ -56,7 +57,7 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
             BlockPos below = pos.below();
             if (level.getBlockEntity(below) instanceof BioIncubatorBlockEntity incubator) {
                 if (blockEntity.output.getCount() > 0 && incubator.getPurity() < 80) {
-                    incubator.addPurity(20);
+                    incubator.addPurity(Config.purityInjectAmount);
                     blockEntity.output.shrink(1);
                     changed = true;
                 }

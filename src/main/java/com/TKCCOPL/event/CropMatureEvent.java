@@ -19,7 +19,7 @@ public class CropMatureEvent extends Event {
         this.level = level;
         this.pos = pos;
         this.seed = seed.copy(); // 防御性拷贝，防止监听器污染内部状态
-        this.output = output;
+        this.output = output == null ? ItemStack.EMPTY : output;
     }
 
     public Level getLevel() { return level; }
@@ -27,7 +27,7 @@ public class CropMatureEvent extends Event {
     public ItemStack getSeed() { return seed; }
 
     public ItemStack getOutput() { return output; }
-    public void setOutput(ItemStack output) { this.output = output; }
+    public void setOutput(ItemStack output) { this.output = output == null ? ItemStack.EMPTY : output; }
 
     @Override
     public boolean isCancelable() { return true; }
