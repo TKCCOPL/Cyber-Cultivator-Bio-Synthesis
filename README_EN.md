@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <b>v1.1.3</b> · Forge 1.20.1 · Curios API 5.3.5<br>
+  <b>v1.1.4</b> · Forge 1.20.1 · Curios API 5.3.5<br>
   Genetic Breeding Algorithm + Bio-Enhancement Serum System
 </p>
 
@@ -137,6 +137,17 @@ Hopper connections: Condenser side extraction, Bottler top/side input, bottom ou
 ---
 
 ## Changelog
+
+<details open>
+<summary><b>v1.1.4</b> — Core Production Stability Fixes + Automated Releases</summary>
+
+- Fixed default seed gene initialization, legacy NBT migration, and cross-generation Synergy inheritance
+- Fixed Serum Bottler mixed outputs, consumed inputs, lost NBT, and illegal stacking
+- Fixed Incubator maturity sync, Bottler HUD recipe identifiers, and JEI mutation probability display
+- Hardened custom recipes, event parameters, and output boundary validation
+- Added Curios/JEI runtime matrices, downloadable JAR artifacts, and automatic Tag/Release after merge
+
+</details>
 
 <details>
 <summary><b>v1.1.3</b> — Code Review Fixes + Hopper Interaction Optimization + API Improvements</summary>

@@ -227,12 +227,11 @@ git commit -m "release: vX.Y.Z 更新说明
 - ..."
 ```
 
-### 4. 推送 + Tag + Release
-```bash
-git push origin main
-git tag vX.Y.Z
-git push origin vX.Y.Z
-gh release create vX.Y.Z build/libs/cybercultivator-X.Y.Z.jar \
-  --title "vX.Y.Z 更新说明" \
-  --notes "## 更新内容\n\n- ...\n\n## 下载\n\n- \`cybercultivator-X.Y.Z.jar\` (Forge 1.20.1)"
-```
+### 4. PR 合并 + 自动发布
+- 推送版本分支并创建 PR，不直接推送 `main`。
+- PR 标题和正文必须明确列出本版本的更新内容与修复内容；CI 会将其写入 annotated tag 注释和 GitHub Release notes。
+- PR 合并到 `main` 后，CI 在构建、datagen 和 Curios/JEI 运行时矩阵全部通过后自动：
+  1. 上传 `cybercultivator-X.Y.Z.jar` 为 workflow artifact（保留 30 天）。
+  2. 创建 annotated tag `vX.Y.Z`。
+  3. 创建同版本 GitHub Release 并附加 JAR。
+- 若 `vX.Y.Z` Release 已存在，CI 只保留 workflow artifact；发布新版本前必须提升 `mod_version`。
