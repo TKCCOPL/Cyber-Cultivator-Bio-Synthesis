@@ -7,6 +7,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
@@ -16,32 +17,40 @@ import org.slf4j.Logger;
  * 培养槽产出配方（JSON 数据驱动）。
  * 定义种子类型 → 作物产出的映射关系。
  */
-public class IncubatorOutputRecipe implements net.minecraft.world.item.crafting.Recipe<Container> {
+public class IncubatorOutputRecipe implements net.minecraft.world.item.crafting.Recipe<Container>, PrioritizedRecipe {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private final ResourceLocation id;
-    private final ItemStack seedItem;      // 匹配用的种子物品
+    private final Ingredient seed;         // 匹配用的种子物品或标签
     private final ItemStack outputItem;    // 输出物品模板
     private final String countFormula;     // "2 + yield / 3"
     private final String qualityTag;       // "Potency" / "Purity" / "Concentration"
     private final int[] defaultGenes;      // [speed, yield, potency] — JEI 展示用
     private final String cropName;         // 作物显示名称 — JEI 展示用
+    private final int priority;
 
     public IncubatorOutputRecipe(ResourceLocation id, ItemStack seedItem, ItemStack outputItem,
                                   String countFormula, String qualityTag, int[] defaultGenes,
                                   String cropName) {
+        this(id, Ingredient.of(seedItem), outputItem, countFormula, qualityTag, defaultGenes, cropName, 0);
+    }
+
+    public IncubatorOutputRecipe(ResourceLocation id, Ingredient seed, ItemStack outputItem,
+                                  String countFormula, String qualityTag, int[] defaultGenes,
+                                  String cropName, int priority) {
         this.id = id;
-        this.seedItem = seedItem.copy();
+        this.seed = seed == null ? Ingredient.EMPTY : seed;
         this.outputItem = outputItem.copy();
         this.countFormula = countFormula;
         this.qualityTag = qualityTag;
         this.defaultGenes = defaultGenes.clone();
         this.cropName = cropName;
+        this.priority = priority;
     }
 
     /** 匹配种子物品（基于 Item 类型，不比较 NBT） */
     public boolean matches(ItemStack seed) {
-        return seed.getItem() == seedItem.getItem();
+        return this.seed.test(seed);
     }
 
     @Override
@@ -156,10 +165,18 @@ public class IncubatorOutputRecipe implements net.minecraft.world.item.crafting.
     }
 
     // Accessors
-    public ItemStack getSeedItem() { return seedItem.copy(); }
+    public Ingredient getSeedIngredient() { return seed; }
+    /** @deprecated Use {@link #getSeedIngredient()} to preserve tag-based inputs. */
+    @Deprecated
+    public ItemStack getSeedItem() {
+        ItemStack[] items = seed.getItems();
+        return items.length == 0 ? ItemStack.EMPTY : items[0].copy();
+    }
     public ItemStack getOutputItem() { return outputItem.copy(); }
     public String getCountFormula() { return countFormula; }
     public String getQualityTag() { return qualityTag; }
     public int[] getDefaultGenes() { return defaultGenes.clone(); }
     public String getCropName() { return cropName; }
+    @Override
+    public int getPriority() { return priority; }
 }

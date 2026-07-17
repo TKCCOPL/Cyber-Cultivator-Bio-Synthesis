@@ -6,6 +6,7 @@ import com.TKCCOPL.item.SynapticSerumItem;
 import com.TKCCOPL.recipe.ModRecipeTypes;
 import com.TKCCOPL.recipe.SerumRecipe;
 import com.TKCCOPL.recipe.SerumRecipeIds;
+import com.TKCCOPL.recipe.RecipeOrdering;
 import com.TKCCOPL.event.SerumCraftEvent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -103,27 +104,39 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         if (level.isClientSide) return;
 
         boolean changed = false;
+        boolean processingCancelled = false;
+
+        // RecipeManager replaces recipe objects on datapack/KubeJS reload.
+        // Cancel stale work without consuming inputs.
+        if (blockEntity.cachedRecipe != null) {
+            var currentRecipe = level.getRecipeManager().byKey(blockEntity.cachedRecipe.getId()).orElse(null);
+            if (currentRecipe != blockEntity.cachedRecipe) {
+                blockEntity.cachedRecipe = null;
+                blockEntity.pendingRecipeId = null;
+                blockEntity.progress = 0;
+                blockEntity.maxProgress = 0;
+                changed = true;
+                processingCancelled = true;
+            }
+        }
 
         // Task 1: 延迟恢复 cachedRecipe（load() 时 level 为 null）
         if (blockEntity.maxProgress > 0 && blockEntity.cachedRecipe == null && blockEntity.pendingRecipeId != null) {
             ResourceLocation recipeId = ResourceLocation.tryParse(blockEntity.pendingRecipeId);
-            blockEntity.cachedRecipe = recipeId == null ? null : level.getRecipeManager()
-                    .getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get())
-                    .stream()
-                    .filter(r -> r.getId().equals(recipeId))
-                    .findFirst()
-                    .orElse(null);
+            var loadedRecipe = recipeId == null ? null : level.getRecipeManager().byKey(recipeId).orElse(null);
+            blockEntity.cachedRecipe = loadedRecipe instanceof SerumRecipe serumRecipe ? serumRecipe : null;
             blockEntity.pendingRecipeId = null;
             if (blockEntity.cachedRecipe == null) {
                 // 配方已被移除（数据包变更），重置加工状态
                 blockEntity.progress = 0;
                 blockEntity.maxProgress = 0;
                 changed = true;
+                processingCancelled = true;
             }
         }
 
         // Try to start a recipe
-        if (blockEntity.maxProgress == 0) {
+        if (!processingCancelled && blockEntity.maxProgress == 0) {
             SerumRecipe recipe = blockEntity.findRecipe();
             if (recipe != null) {
                 blockEntity.cachedRecipe = recipe;
@@ -134,7 +147,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         }
 
         // Process current recipe
-        if (blockEntity.maxProgress > 0) {
+        if (!processingCancelled && blockEntity.maxProgress > 0) {
             blockEntity.progress++;
             // 每秒同步一次进度到客户端，驱动 HUD 进度条动画
             if (blockEntity.progress % 20 == 0) {
@@ -172,13 +185,14 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     private SerumRecipe findRecipe() {
         if (level == null) return null;
         refreshRecipeContainer();
-        return level.getRecipeManager()
-                .getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get())
+        SerumRecipe recipe = RecipeOrdering.sorted(level.getRecipeManager()
+                .getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get()))
                 .stream()
                 .filter(r -> r.matches(recipeContainer, level))
-                .filter(r -> canAcceptOutput(createRecipeResult(r)))
                 .findFirst()
                 .orElse(null);
+        if (recipe == null) return null;
+        return canAcceptOutput(createRecipeResult(recipe)) ? recipe : null;
     }
 
     private boolean matchesCurrentInputs(SerumRecipe recipe) {

@@ -4,7 +4,7 @@
 
 赛博农夫 (Cyber-Cultivator) 是一个中型 Minecraft Forge 模组，用精密的实验室设备取代传统农业，融合遗传育种算法与生物强化血清系统。你需要通过挖掘矿物、种植生化作物、培育基因、合成血清来强化自身能力。
 
-**可选依赖：** Curios API（安装后启用饰品槽与三件饰品功能）。未安装 Curios 时，机器、培养、血清和基因系统仍可正常使用。本模组兼容 JEI。
+**可选依赖：** Curios API（安装后启用饰品槽与三件饰品功能）与 KubeJS（安装后启用配方 DSL 和玩法事件脚本）。未安装任何可选依赖时，机器、培养、血清和基因系统仍可正常使用。本模组兼容 JEI。
 
 ---
 
@@ -353,6 +353,130 @@ Activity = round(Potency × 0.25 + Purity × 0.375 + Concentration × 0.375)
 ```
 
 漏斗可连接在冷凝器侧面抽取纯净水，灌装机顶部/侧面注入材料、底部抽取输出。
+
+---
+
+## KubeJS 可选兼容
+
+安装 KubeJS `2001.6.5-build.16` 至 `2001.6.5-build.26` 及其 Rhino、Architectury 前置后，可以在 `kubejs/server_scripts/` 中添加培养槽和灌装机配方，并监听四类玩法事件。KubeJS、JEI、Curios 均为可选依赖，发布 JAR 不捆绑它们。
+
+### 专用配方 DSL
+
+```javascript
+ServerEvents.recipes(event => {
+    event.recipes.cybercultivator.serum_bottling(
+        'cybercultivator:synaptic_serum_s01',
+        [
+            'cybercultivator:synaptic_neural_berry',
+            'cybercultivator:biochemical_solution',
+            'minecraft:glass_bottle'
+        ]
+    )
+        .processingTime(200)
+        .inheritActivity(true)
+        .inheritMutation(false)
+        .priority(20)
+        .id('kubejs:fast_s01')
+
+    event.recipes.cybercultivator.incubator_output(
+        'minecraft:apple',
+        '#minecraft:saplings'
+    )
+        .countFormula('1 + yield / 2')
+        .qualityTag('Potency')
+        .defaultGenes({ speed: 5, yield: 5, potency: 5 })
+        .cropName('实验树苗')
+        .priority(10)
+        .id('kubejs:experimental_sapling')
+})
+```
+
+培养槽 `seed` 同时接受单个物品和物品标签。灌装配方必须有 1 至 3 项输入，`processingTime` 至少为 1 tick。所有可选字段省略时沿用原生默认值，`priority` 默认为 `0`。
+
+### 原始 JSON / `event.custom()`
+
+专用 DSL 最终生成原生数据包配方。也可以直接使用 `event.custom()`：
+
+```javascript
+ServerEvents.recipes(event => {
+    event.custom({
+        type: 'cybercultivator:serum_bottling',
+        ingredients: [
+            { item: 'cybercultivator:synaptic_neural_berry' },
+            { item: 'minecraft:glass_bottle' }
+        ],
+        result: { item: 'cybercultivator:synaptic_serum_s02' },
+        processing_time: 300,
+        inherit_activity: true,
+        inherit_mutation: false,
+        priority: 5
+    }).id('kubejs:custom_s02')
+
+    event.custom({
+        type: 'cybercultivator:incubator_output',
+        seed: { tag: 'minecraft:saplings' },
+        output: { item: 'minecraft:apple' },
+        count_formula: '1 + yield / 2',
+        quality_tag: 'Potency',
+        default_genes: { speed: 5, yield: 5, potency: 5 },
+        crop_name: '实验树苗',
+        priority: 5
+    }).id('kubejs:custom_sapling')
+})
+```
+
+删除和替换遵循 KubeJS 的标准配方规则：
+
+```javascript
+ServerEvents.recipes(event => {
+    event.remove({ id: 'cybercultivator:serum/s01_bottling' })
+
+    // 使用相同 ID 会替换原配方。
+    event.recipes.cybercultivator.serum_bottling(
+        'cybercultivator:synaptic_serum_s01',
+        ['minecraft:glass_bottle']
+    ).id('cybercultivator:serum/s01_bottling')
+})
+```
+
+不同 ID 的配方同时匹配时，固定按 `priority` 降序、配方 ID 升序选择。灌装机若已选中的最高优先级配方输出受阻，会等待输出槽腾空，不会降级执行另一条配方。Java 查询 API、机器和 JEI 使用相同排序。
+
+### 可热重载玩法事件
+
+四个专用事件均可放在 `server_scripts`，执行 `/reload` 后更新，无需重启游戏：
+
+```javascript
+CyberCultivatorEvents.geneSplice(event => {
+    event.setSpeed(Math.min(10, event.getSpeed() + 1))
+    if (event.getGeneration() > 20) event.cancel()
+})
+
+CyberCultivatorEvents.cropMature(event => {
+    if (`${event.getOutput().id}` === 'cybercultivator:plant_fiber') {
+        event.setOutput(Item.of('cybercultivator:plant_fiber', 2))
+    }
+})
+
+CyberCultivatorEvents.serumCraft(event => {
+    if (`${event.getRecipeId()}` === 'kubejs:fast_s01') {
+        event.setActivity(12)
+        event.setOutput('cybercultivator:synaptic_serum_s01')
+    }
+})
+
+CyberCultivatorEvents.serumConsume(event => {
+    if (event.getActivity() >= 10) {
+        event.setDuration(event.getDuration() * 2)
+        event.setAmplifier(event.getAmplifier() + 1)
+    }
+})
+```
+
+每个事件都支持 `event.cancel()`。`CropMatureEvent` 和 `SerumCraftEvent` 的 `getOutput()` 返回防御性副本，修改产出必须调用 `setOutput()`。Activity 的有效范围为 `1..15`。
+
+低级入口 `ForgeEvents.onEvent(...)` 仍可使用，但只能从 `startup_scripts` 注册，脚本修改后必须重启；新脚本应优先使用上述 `CyberCultivatorEvents`。
+
+执行 `/reload` 时配方和专用事件监听器会一起重载。如果灌装机正在执行的配方对象被替换或删除，本次进度会清零且不会消耗输入；随后机器会按新配方重新匹配。
 
 ---
 

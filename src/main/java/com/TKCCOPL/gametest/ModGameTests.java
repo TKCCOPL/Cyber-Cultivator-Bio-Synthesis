@@ -4,17 +4,27 @@ import com.TKCCOPL.Config;
 import com.TKCCOPL.api.BottlerInfo;
 import com.TKCCOPL.api.CyberCultivatorAPI;
 import com.TKCCOPL.block.entity.BioIncubatorBlockEntity;
+import com.TKCCOPL.block.entity.SerumBottlerBlockEntity;
 import com.TKCCOPL.cybercultivator;
 import com.TKCCOPL.event.CropMatureEvent;
+import com.TKCCOPL.event.GeneSpliceEvent;
 import com.TKCCOPL.event.SerumConsumeEvent;
 import com.TKCCOPL.event.SerumCraftEvent;
 import com.TKCCOPL.init.ModBlocks;
 import com.TKCCOPL.init.ModItems;
 import com.TKCCOPL.item.GeneticSeedItem;
 import com.TKCCOPL.item.SynapticSerumItem;
+import com.TKCCOPL.recipe.IncubatorOutputRecipe;
+import com.TKCCOPL.recipe.IncubatorOutputSerializer;
+import com.TKCCOPL.recipe.RecipeOrdering;
 import com.TKCCOPL.recipe.SerumRecipe;
+import com.TKCCOPL.recipe.SerumRecipeSerializer;
 import com.TKCCOPL.recipe.SerumRecipeIds;
+import com.google.gson.JsonParser;
+import io.netty.buffer.Unpooled;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
@@ -22,12 +32,14 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.minecraftforge.fml.ModList;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -106,6 +118,21 @@ public final class ModGameTests {
         helper.assertTrue(craftEvent.getInputs()[0].getCount() == 2, "Event getter must return deep copies");
         helper.assertTrue(craftEvent.getInputs()[1].isEmpty(), "Null event inputs must normalize to empty stacks");
 
+        ItemStack mutableOutput = new ItemStack(Items.DIAMOND, 2);
+        CropMatureEvent cropEvent = new CropMatureEvent(helper.getLevel(), BlockPos.ZERO, ItemStack.EMPTY, mutableOutput);
+        mutableOutput.shrink(1);
+        helper.assertTrue(cropEvent.getOutput().getCount() == 2, "Crop event constructor must copy output");
+        ItemStack returnedCropOutput = cropEvent.getOutput();
+        returnedCropOutput.shrink(1);
+        helper.assertTrue(cropEvent.getOutput().getCount() == 2, "Crop event getter must copy output");
+
+        ItemStack replacement = new ItemStack(Items.EMERALD, 2);
+        craftEvent.setOutput(replacement);
+        replacement.shrink(1);
+        helper.assertTrue(craftEvent.getOutput().getCount() == 2, "Craft event setter must copy output");
+        craftEvent.setActivity(100);
+        helper.assertTrue(craftEvent.getActivity() == 15, "Craft event Activity must clamp to 15");
+
         helper.assertTrue(CyberCultivatorAPI.getGene(null, null) == 1, "Null seed reads must use gene default");
         helper.assertTrue(CyberCultivatorAPI.getGeneration(null) == 0, "Null seed generation must be zero");
         helper.assertTrue(CyberCultivatorAPI.getSynergy(null) == 0, "Null seed synergy must be zero");
@@ -119,6 +146,114 @@ public final class ModGameTests {
             immutable = true;
         }
         helper.assertTrue(immutable, "Recipe API must return an immutable snapshot");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void recipePriorityIngredientsAndNetworkRoundTrip(GameTestHelper helper) {
+        SerumRecipe low = new SerumRecipe(
+                ResourceLocation.fromNamespaceAndPath("test", "z_low"),
+                new Ingredient[]{Ingredient.of(Items.DIRT)}, new ItemStack(Items.IRON_INGOT),
+                20, false, false, 0);
+        SerumRecipe highB = new SerumRecipe(
+                ResourceLocation.fromNamespaceAndPath("test", "b_high"),
+                new Ingredient[]{Ingredient.of(Items.DIRT)}, new ItemStack(Items.GOLD_INGOT),
+                20, false, false, 10);
+        SerumRecipe highA = new SerumRecipe(
+                ResourceLocation.fromNamespaceAndPath("test", "a_high"),
+                new Ingredient[]{Ingredient.of(Items.DIRT)}, new ItemStack(Items.DIAMOND),
+                20, false, false, 10);
+        List<SerumRecipe> ordered = RecipeOrdering.sorted(List.of(low, highB, highA));
+        helper.assertTrue(ordered.get(0) == highA && ordered.get(1) == highB && ordered.get(2) == low,
+                "Recipes must sort by descending priority and ascending ID");
+
+        Ingredient saplings = Ingredient.of(net.minecraft.tags.ItemTags.SAPLINGS);
+        IncubatorOutputRecipe tagged = new IncubatorOutputRecipe(
+                ResourceLocation.fromNamespaceAndPath("test", "tagged_seed"), saplings,
+                new ItemStack(Items.APPLE), "1", "Potency", new int[]{5, 5, 5}, "Tagged", 7);
+        helper.assertTrue(tagged.matches(new ItemStack(Items.OAK_SAPLING)), "Incubator seed tags must match");
+        helper.assertFalse(tagged.matches(new ItemStack(Items.WHEAT_SEEDS)), "Unrelated seeds must not match tag");
+
+        SerumRecipeSerializer serumSerializer = new SerumRecipeSerializer();
+        var legacySerumJson = JsonParser.parseString("""
+                {"ingredients":[{"item":"minecraft:dirt"}],
+                 "result":{"item":"minecraft:diamond"},"processing_time":20}
+                """).getAsJsonObject();
+        SerumRecipe legacySerum = serumSerializer.fromJson(
+                ResourceLocation.fromNamespaceAndPath("test", "legacy_serum"), legacySerumJson);
+        helper.assertTrue(legacySerum.getPriority() == 0, "Missing serum priority must default to zero");
+
+        FriendlyByteBuf serumBuffer = new FriendlyByteBuf(Unpooled.buffer());
+        serumSerializer.toNetwork(serumBuffer, highA);
+        serumBuffer.readerIndex(0);
+        SerumRecipe serumRoundTrip = serumSerializer.fromNetwork(highA.getId(), serumBuffer);
+        helper.assertTrue(serumRoundTrip != null && serumRoundTrip.getPriority() == 10,
+                "Serum priority must survive network serialization");
+
+        IncubatorOutputSerializer incubatorSerializer = new IncubatorOutputSerializer();
+        var legacyIncubatorJson = JsonParser.parseString("""
+                {"seed":{"tag":"minecraft:saplings"},
+                 "output":{"item":"minecraft:apple"},"count_formula":"1"}
+                """).getAsJsonObject();
+        IncubatorOutputRecipe legacyIncubator = incubatorSerializer.fromJson(
+                ResourceLocation.fromNamespaceAndPath("test", "legacy_incubator"), legacyIncubatorJson);
+        helper.assertTrue(legacyIncubator.getPriority() == 0,
+                "Missing incubator priority must default to zero");
+        helper.assertTrue(legacyIncubator.matches(new ItemStack(Items.OAK_SAPLING)),
+                "Serialized incubator tag must match");
+
+        FriendlyByteBuf incubatorBuffer = new FriendlyByteBuf(Unpooled.buffer());
+        incubatorSerializer.toNetwork(incubatorBuffer, tagged);
+        incubatorBuffer.readerIndex(0);
+        IncubatorOutputRecipe incubatorRoundTrip = incubatorSerializer.fromNetwork(tagged.getId(), incubatorBuffer);
+        helper.assertTrue(incubatorRoundTrip != null && incubatorRoundTrip.getPriority() == 7,
+                "Incubator priority must survive network serialization");
+        helper.assertTrue(incubatorRoundTrip.matches(new ItemStack(Items.OAK_SAPLING)),
+                "Incubator Ingredient must survive network serialization");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void kubeJsSchemasAndEvents(GameTestHelper helper) {
+        if (!ModList.get().isLoaded("kubejs")) {
+            helper.succeed();
+            return;
+        }
+
+        ResourceLocation serumId = ResourceLocation.fromNamespaceAndPath("kubejs", "cybercultivator_serum_smoke");
+        ResourceLocation incubatorId = ResourceLocation.fromNamespaceAndPath("kubejs", "cybercultivator_incubator_smoke");
+        Recipe<?> serumLoaded = helper.getLevel().getRecipeManager().byKey(serumId).orElse(null);
+        Recipe<?> incubatorLoaded = helper.getLevel().getRecipeManager().byKey(incubatorId).orElse(null);
+        helper.assertTrue(serumLoaded instanceof SerumRecipe serum && serum.getPriority() == 100,
+                "KubeJS serum DSL recipe must load with priority");
+        helper.assertTrue(incubatorLoaded instanceof IncubatorOutputRecipe incubator
+                        && incubator.getPriority() == 100
+                        && incubator.matches(new ItemStack(Items.WHEAT_SEEDS)),
+                "KubeJS incubator DSL recipe must load and match");
+
+        GeneSpliceEvent splice = new GeneSpliceEvent(ItemStack.EMPTY, ItemStack.EMPTY,
+                1, 1, 1, 0, 777, false, 0, "");
+        MinecraftForge.EVENT_BUS.post(splice);
+        helper.assertTrue(splice.getSpeed() == 9, "KubeJS geneSplice listener must modify the Forge event");
+
+        CropMatureEvent crop = new CropMatureEvent(helper.getLevel(), new BlockPos(0, 77, 0),
+                ItemStack.EMPTY, new ItemStack(Items.WHEAT));
+        helper.assertTrue(MinecraftForge.EVENT_BUS.post(crop),
+                "KubeJS cropMature cancel() must cancel the Forge event");
+
+        SerumCraftEvent craft = new SerumCraftEvent(new ItemStack[]{new ItemStack(Items.DIRT)},
+                new ItemStack(Items.DIAMOND), 5, serumId);
+        MinecraftForge.EVENT_BUS.post(craft);
+        helper.assertTrue(craft.getActivity() == 12 && craft.getOutput().is(Items.GOLD_INGOT),
+                "KubeJS serumCraft listener must modify output and Activity");
+
+        Player player = helper.makeMockSurvivalPlayer();
+        SerumConsumeEvent consume = new SerumConsumeEvent(player,
+                new ItemStack(ModItems.SYNAPTIC_SERUM_S01.get()),
+                ((SynapticSerumItem) ModItems.SYNAPTIC_SERUM_S01.get()).getSerumEffect(), 5, 777, 0);
+        MinecraftForge.EVENT_BUS.post(consume);
+        helper.assertTrue(consume.getDuration() == 42,
+                "KubeJS serumConsume listener must modify duration");
         helper.succeed();
     }
 
@@ -178,6 +313,38 @@ public final class ModGameTests {
         bounds.setAmplifier(-1);
         helper.assertTrue(bounds.getActivity() == 15 && bounds.getDuration() == 1 && bounds.getAmplifier() == 0,
                 "Event setters must enforce their public bounds");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void bottlerReloadAndBlockedPriorityBehavior(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.SERUM_BOTTLER.get());
+        SerumBottlerBlockEntity bottler = (SerumBottlerBlockEntity) helper.getBlockEntity(pos);
+
+        CompoundTag removedRecipeState = new CompoundTag();
+        removedRecipeState.putInt("Progress", 7);
+        removedRecipeState.putInt("MaxProgress", 20);
+        removedRecipeState.putString("RecipeId", "kubejs:removed_during_reload");
+        removedRecipeState.put("Input0", new ItemStack(Items.STONE).save(new CompoundTag()));
+        bottler.load(removedRecipeState);
+        SerumBottlerBlockEntity.tick(helper.getLevel(), bottler.getBlockPos(), bottler.getBlockState(), bottler);
+        helper.assertTrue(bottler.getProgress() == 0 && bottler.getMaxProgress() == 0,
+                "Removed recipes must cancel in-progress bottling after reload");
+        helper.assertTrue(bottler.getItem(0).is(Items.STONE),
+                "Cancelling a removed recipe must not consume its input");
+
+        if (ModList.get().isLoaded("kubejs")) {
+            CompoundTag blockedOutputState = new CompoundTag();
+            blockedOutputState.put("Input0", new ItemStack(Items.DIRT).save(new CompoundTag()));
+            blockedOutputState.put("Output", new ItemStack(Items.GOLD_INGOT).save(new CompoundTag()));
+            bottler.load(blockedOutputState);
+            SerumBottlerBlockEntity.tick(helper.getLevel(), bottler.getBlockPos(), bottler.getBlockState(), bottler);
+            helper.assertTrue(bottler.getMaxProgress() == 0,
+                    "A blocked highest-priority output must not fall back to a lower-priority recipe");
+            helper.assertTrue(bottler.getItem(0).is(Items.DIRT) && bottler.getOutput().is(Items.GOLD_INGOT),
+                    "Blocked priority selection must preserve both input and existing output");
+        }
         helper.succeed();
     }
 

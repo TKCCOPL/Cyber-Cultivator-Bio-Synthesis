@@ -1,6 +1,6 @@
 # Config 扩展 + 数据驱动 + KubeJS + 性能优化 设计规范
 
-> **当前状态（2026-07-17）：** Config、JSON 配方和 tick 优化已实现；KubeJS 集成延期，本轮不恢复依赖或修改 `mods.toml`。下文 KubeJS 内容保留为历史设计目标，不代表当前可用功能。
+> **当前状态（2026-07-17）：** Config、JSON 配方和 tick 优化为既有实现；KubeJS 分层兼容已在 v1.1.6 实现。KubeJS、JEI、Curios 均保持可选，核心代码不依赖 KubeJS 类型。
 
 **日期：** 2026-05-30
 **模组：** Cyber-Cultivator: Bio-Synthesis v1.1.2
@@ -143,9 +143,9 @@ BUILDER.pop();
 ```json
 {
   "type": "cybercultivator:incubator_output",
-  "seed": "cybercultivator:fiber_reed_seeds",
-  "output": "cybercultivator:plant_fiber",
-  "count_formula": "2 + yield / 3",  // 整数除法，yield=10 → count=5
+  "seed": { "item": "cybercultivator:fiber_reed_seeds" },
+  "output": { "item": "cybercultivator:plant_fiber" },
+  "count_formula": "2 + yield / 3",
   "quality_tag": "Potency",
   "default_genes": {
     "speed": 4,
@@ -215,54 +215,86 @@ private static ItemStack getCropOutput(Level level, ItemStack seed) {
 
 ### 2.4 KubeJS 集成
 
-**build.gradle 新增：**
+采用“核心零耦合 + 可选 KubeJS 插件”结构。所有 KubeJS 类型隔离在 `compat/kubejs/`，通过 `kubejs.plugins.txt` 发现；`api/`、配方核心与机器逻辑不得引用 KubeJS 类。
+
+**依赖与元数据：**
+
 ```groovy
-compileOnly fg.deobf("dev.latvian.mods:kubejs-forge-${kubejs_version}:api")
-runtimeOnly fg.deobf("dev.latvian.mods:kubejs-forge-${kubejs_version}")
+compileOnly fg.deobf("dev.latvian.mods:kubejs-forge:${kubejs_version}")
+compileOnly fg.deobf("dev.latvian.mods:rhino-forge:${rhino_version}")
+compileOnly fg.deobf("dev.architectury:architectury-forge:${architectury_version}")
+
+if (enableKubeJSRuntime) {
+    runtimeOnly fg.deobf("dev.latvian.mods:kubejs-forge:${kubejs_version}")
+    runtimeOnly fg.deobf("dev.latvian.mods:rhino-forge:${rhino_version}")
+    runtimeOnly fg.deobf("dev.architectury:architectury-forge:${architectury_version}")
+}
 ```
 
-**gradle.properties 新增：**
-```properties
-kubejs_version=2001.6.5-build.16
-```
-
-**mods.toml 新增：**
 ```toml
 [[dependencies.cybercultivator]]
 modId = "kubejs"
 mandatory = false
+versionRange = "[2001.6.5-build.16,2001.6.6)"
 ordering = "AFTER"
 side = "BOTH"
 ```
 
-**KubeJS 使用方式：**
+默认构建、datagen 和无可选依赖 profile 均不加载 KubeJS。只有传入 `-PenableKubeJSRuntime=true` 时，KubeJS、Rhino、Architectury 才进入开发运行时。验证端点为 `build.16` 与 `build.26`。
 
-KubeJS 通过 Forge 事件总线监听自定义事件。4 个事件类需添加 KubeJS 兼容注解：
+**Recipe Schema：**
 
 ```javascript
-// kubejs/server_scripts/cybercultivator.js
-// 监听基因拼接
-ForgeEvents.onEvent('com.TKCCOPL.event.GeneSpliceEvent', event => {
-    event.setSpeed(event.getSpeed() + 2);
-})
+ServerEvents.recipes(event => {
+    event.recipes.cybercultivator.serum_bottling(
+        'cybercultivator:synaptic_serum_s01',
+        ['cybercultivator:synaptic_neural_berry', 'minecraft:glass_bottle']
+    )
+        .processingTime(200)
+        .inheritActivity(true)
+        .inheritMutation(false)
+        .priority(10)
+        .id('kubejs:fast_s01')
 
-// 监听血清饮用
-ForgeEvents.onEvent('com.TKCCOPL.event.SerumConsumeEvent', event => {
-    if (event.getActivity() >= 8) {
-        event.setDuration(event.getDuration() * 2);
-    }
-})
-
-// 监听作物成熟
-ForgeEvents.onEvent('com.TKCCOPL.event.CropMatureEvent', event => {
-    // 修改产出
-})
-
-// 监听血清灌装
-ForgeEvents.onEvent('com.TKCCOPL.event.SerumCraftEvent', event => {
-    // 修改活性/输出
+    event.recipes.cybercultivator.incubator_output(
+        'minecraft:apple', '#minecraft:saplings'
+    )
+        .countFormula('1 + yield / 2')
+        .qualityTag('Potency')
+        .defaultGenes({ speed: 5, yield: 5, potency: 5 })
+        .cropName('实验树苗')
+        .priority(10)
+        .id('kubejs:experimental_sapling')
 })
 ```
+
+`event.custom({...})` 继续受支持并生成相同原生 JSON。培养槽 `seed` 使用 `Ingredient`，可匹配 `item` 或 `tag`；旧 Java 访问方法保留并标记弃用。
+
+两类配方都支持可选整数 `priority`，缺省为 `0`。机器、公开 API 与 JEI 统一按 `priority` 降序、配方 ID 升序排序。灌装机最高优先级输出受阻时等待，不降级；数据包重载替换或移除当前配方对象时清零进度且不消耗输入。
+
+**可热重载事件组：**
+
+四个事件可直接从 `server_scripts` 注册并随 `/reload` 重载：
+
+```javascript
+CyberCultivatorEvents.geneSplice(event => {
+    event.setSpeed(Math.min(10, event.getSpeed() + 1))
+})
+
+CyberCultivatorEvents.cropMature(event => {
+    event.setOutput('minecraft:apple')
+})
+
+CyberCultivatorEvents.serumCraft(event => {
+    event.setActivity(12)
+})
+
+CyberCultivatorEvents.serumConsume(event => {
+    event.setDuration(event.getDuration() * 2)
+})
+```
+
+包装器委托原 Forge 事件的 getter/setter，`event.cancel()` 回传 Forge 取消状态，仅在事件存在脚本监听器时创建包装对象。`ForgeEvents.onEvent(...)` 保留为低级入口，但只能从 `startup_scripts` 注册且修改后需重启。`CropMatureEvent` 与 `SerumCraftEvent` 的输出边界使用防御性复制，脚本必须通过 `setOutput()` 写回。
 
 ### 2.5 改动范围
 
@@ -274,9 +306,12 @@ ForgeEvents.onEvent('com.TKCCOPL.event.SerumCraftEvent', event => {
 | `BioIncubatorBlockEntity.java` | `getCropOutput()` 改用 RecipeManager |
 | `IncubatorOutputCategory.java` | 改用 RecipeManager 自动发现 |
 | `ModRecipes.java` | 保留接口，注册逻辑迁移到 JSON |
-| `build.gradle` | +KubeJS compileOnly 依赖 |
-| `gradle.properties` | +kubejs_version |
-| `mods.toml` | +kubejs 可选依赖 |
+| `build.gradle` | KubeJS/Rhino/Architectury compileOnly + 显式运行时开关 |
+| `gradle.properties` | KubeJS 最低/最新验证版本与前置版本 |
+| `mods.toml` | KubeJS 可选范围 `[2001.6.5-build.16,2001.6.6)` |
+| `compat/kubejs/` | 插件发现、两个 Recipe Schema、四个事件桥 |
+| `recipe/RecipeOrdering.java` | 共享确定性优先级排序 |
+| `.github/workflows/ci.yml` | Curios、无可选依赖、KubeJS 最低/最新四 profile |
 | JSON 文件 × 3 | 种子配方 |
 | `ModRecipeProvider.java` | datagen 生成配方 JSON |
 

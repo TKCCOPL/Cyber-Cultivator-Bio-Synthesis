@@ -92,6 +92,8 @@ jobs:
         profile:
           - curios
           - no-optional-dependencies
+          - kubejs-min
+          - kubejs-latest
 
     steps:
       - name: Check out repository
@@ -123,6 +125,39 @@ jobs:
           runGameTestServer
           --no-daemon
           --stacktrace
+
+      - name: Start GameTest server with minimum KubeJS
+        if: matrix.profile == 'kubejs-min'
+        run: >-
+          ./gradlew
+          -I .github/gradle/exclude-non-kubejs-runtime.init.gradle
+          -PenableKubeJSRuntime=true
+          runGameTestServer
+          --no-daemon
+          --stacktrace
+
+      - name: Start GameTest server with latest verified KubeJS
+        if: matrix.profile == 'kubejs-latest'
+        run: >-
+          ./gradlew
+          -I .github/gradle/exclude-non-kubejs-runtime.init.gradle
+          -PenableKubeJSRuntime=true
+          -Pkubejs_version=2001.6.5-build.26
+          runGameTestServer
+          --no-daemon
+          --stacktrace
+
+      - name: Require executed and passing GameTests
+        shell: bash
+        run: |
+          set -euo pipefail
+          log_path="run/logs/latest.log"
+          if [[ "${{ matrix.profile }}" == kubejs-* ]]; then
+            log_path="build/kubejs-smoke/logs/latest.log"
+          fi
+          test -f "$log_path"
+          ! grep -F "Failed to start the minecraft server" "$log_path"
+          grep -E "All [1-9][0-9]* required tests passed" "$log_path"
 
   release:
     name: Publish versioned release

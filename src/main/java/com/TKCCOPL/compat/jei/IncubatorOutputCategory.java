@@ -3,6 +3,7 @@ package com.TKCCOPL.compat.jei;
 import com.TKCCOPL.cybercultivator;
 import com.TKCCOPL.init.ModItems;
 import com.TKCCOPL.recipe.ModRecipeTypes;
+import com.TKCCOPL.recipe.RecipeOrdering;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
@@ -18,6 +19,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class IncubatorOutputCategory implements IRecipeCategory<IncubatorOutputCategory.DisplayRecipe> {
@@ -32,7 +34,7 @@ public class IncubatorOutputCategory implements IRecipeCategory<IncubatorOutputC
 
     /** JEI 展示用配方数据 */
     public record DisplayRecipe(
-            ItemStack seed, ItemStack output,
+            List<ItemStack> seeds, ItemStack output,
             String cropName,
             int defaultSpeed, int defaultYield, int defaultPotency
     ) {}
@@ -65,7 +67,7 @@ public class IncubatorOutputCategory implements IRecipeCategory<IncubatorOutputC
     @Override
     public void setRecipe(IRecipeLayoutBuilder builder, DisplayRecipe recipe, IFocusGroup focuses) {
         builder.addSlot(RecipeIngredientRole.INPUT, 1, 11)
-                .addItemStack(recipe.seed());
+                .addItemStacks(recipe.seeds());
         builder.addSlot(RecipeIngredientRole.OUTPUT, 113, 11)
                 .addItemStack(recipe.output());
     }
@@ -161,10 +163,14 @@ public class IncubatorOutputCategory implements IRecipeCategory<IncubatorOutputC
         if (level == null) return java.util.Collections.emptyList();
 
         List<DisplayRecipe> recipes = new ArrayList<>();
-        for (var recipe : level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.INCUBATOR_OUTPUT.get())) {
+        for (var recipe : RecipeOrdering.sorted(
+                level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.INCUBATOR_OUTPUT.get()))) {
             int[] genes = recipe.getDefaultGenes();
+            List<ItemStack> seeds = Arrays.stream(recipe.getSeedIngredient().getItems())
+                    .map(seed -> seedWithGenes(seed, genes[0], genes[1], genes[2]))
+                    .toList();
             recipes.add(new DisplayRecipe(
-                    seedWithGenes(recipe.getSeedItem(), genes[0], genes[1], genes[2]),
+                    seeds,
                     recipe.getOutputItem(),
                     recipe.getCropName(),
                     genes[0], genes[1], genes[2]));

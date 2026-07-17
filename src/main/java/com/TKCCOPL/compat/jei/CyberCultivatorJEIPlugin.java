@@ -3,6 +3,7 @@ package com.TKCCOPL.compat.jei;
 import com.TKCCOPL.cybercultivator;
 import com.TKCCOPL.init.ModItems;
 import com.TKCCOPL.recipe.ModRecipeTypes;
+import com.TKCCOPL.recipe.RecipeOrdering;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.VanillaTypes;
@@ -41,7 +42,7 @@ public class CyberCultivatorJEIPlugin implements IModPlugin {
         // 血清灌装配方
         registration.addRecipes(
                 SerumBottlingCategory.RECIPE_TYPE,
-                level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get())
+                RecipeOrdering.sorted(level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get()))
         );
 
         // 基因拼接配方

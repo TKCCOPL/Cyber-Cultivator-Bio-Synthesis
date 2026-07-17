@@ -5,6 +5,7 @@ import com.TKCCOPL.init.ModBlockEntities;
 import com.TKCCOPL.item.GeneticSeedItem;
 import com.TKCCOPL.event.CropMatureEvent;
 import com.TKCCOPL.recipe.ModRecipeTypes;
+import com.TKCCOPL.recipe.RecipeOrdering;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
@@ -123,8 +124,8 @@ public class BioIncubatorBlockEntity extends BlockEntity {
     private static ItemStack getCropOutput(Level level, ItemStack seed) {
         if (level == null || seed.isEmpty()) return seed.copy();
 
-        return level.getRecipeManager()
-                .getAllRecipesFor(ModRecipeTypes.INCUBATOR_OUTPUT.get())
+        return RecipeOrdering.sorted(level.getRecipeManager()
+                .getAllRecipesFor(ModRecipeTypes.INCUBATOR_OUTPUT.get()))
                 .stream()
                 .filter(r -> r.matches(seed))
                 .findFirst()

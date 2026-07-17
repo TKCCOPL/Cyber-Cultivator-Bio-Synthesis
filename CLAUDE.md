@@ -9,8 +9,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Mod ID:** `cybercultivator`
 - **包名:** `com.TKCCOPL`
 - **Forge:** 47.4.18 | **Java:** 17
-- **前置依赖:** Curios API 5.3.5 (饰品系统，compileOnly API + runtimeOnly 完整模组)
-- **兼容性:** 兼容 JEI
+- **可选依赖:** Curios API 5.3.5+（饰品系统）、KubeJS 2001.6.5-build.16 至 build.26（脚本配方/事件）
+- **兼容性:** 兼容 JEI；Curios、JEI、KubeJS 均非必需
 - **Mappings:** Parchment 2023.09.03-1.20.1
 
 ## 常用构建命令
@@ -30,6 +30,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # 启动服务端开发环境
 ./gradlew runServer
+
+# KubeJS 最低/最新验证端点（独立 build/kubejs-smoke 运行目录）
+./gradlew -I .github/gradle/exclude-non-kubejs-runtime.init.gradle -PenableKubeJSRuntime=true runGameTestServer
+./gradlew -I .github/gradle/exclude-non-kubejs-runtime.init.gradle -PenableKubeJSRuntime=true -Pkubejs_version=2001.6.5-build.26 runGameTestServer
 
 # 重新混淆 jar（build 已自动包含）
 ./gradlew reobfJar
@@ -58,6 +62,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `api/` | `CyberCultivatorAPI` (门面类), 5 个只读 DTO record：`IncubatorInfo`, `BottlerInfo`, `CondenserInfo`, `SplicerInfo`, `SerumEffectInfo` |
 | `event/` | 自定义 Forge 事件：`GeneSpliceEvent`, `CropMatureEvent`, `SerumCraftEvent`, `SerumConsumeEvent`（均支持取消+字段修改） |
 | `curios/` | `CuriosCompat` — Curios API 饰品集成（compileOnly），`CurioAccessoryItem` 基类，`BioPulseBeltItem`（腰带），`LifeSupportPackItem`（支持箱），`CurioEventHandler`（事件驱动 tick） |
+| `compat/kubejs/` | 可选 KubeJS 插件、两类 Recipe Schema 与四类可热重载事件包装；核心代码不得引用 KubeJS 类型 |
 | `datagen/` | 数据生成器：配方、战利品表、方块状态、物品模型、语言文件、标签、进度引导 |
 | `client/` | `ClientTooltipEvents` — 客户端渲染/Tooltip 逻辑，`IncubatorHudOverlay` — 单片镜 HUD 浮窗 |
 
@@ -155,6 +160,9 @@ datagen 覆盖范围：
 - Curios 依赖为 `compileOnly`（API jar）+ `runtimeOnly`（完整模组），通过 `mixin.env.remapRefMap` 属性解决 mixin refmap 重映射问题。代码中需做兼容检查（`CuriosCompat.isCuriosLoaded()`）
 - Curios 物品→槽位映射通过 `data/curios/tags/items/{slot}.json` 实现（数据驱动，无需运行时 Curios 类）
 - Curios 槽位定义在 `data/cybercultivator/curios/slots/`，实体槽位绑定在 `data/cybercultivator/curios/entities/player.json`
+- KubeJS、Rhino、Architectury 默认仅 `compileOnly`；只有显式传入 `-PenableKubeJSRuntime=true` 才进入开发运行时，发布 JAR 不捆绑这些依赖
+- 自定义配方统一按 `priority` 降序、配方 ID 升序选择；机器、公开 API 与 JEI 必须复用 `RecipeOrdering`
+- KubeJS 专用类型只允许位于 `compat/kubejs/`，通过 `kubejs.plugins.txt` 发现；`api/`、配方核心和机器逻辑保持零耦合
 - 运行目录为 `run/`（客户端）和 `run-data/`（数据生成）
 - `Config.java` 含 6 项可配置参数（腰带扫描范围、注入阈值、支持箱效果消减速率、治疗阈值/冷却、单片镜 HUD 距离）
 - 贴图规范见 `docs/texture_generation_spec.md`（16x16 像素，扁平化高对比度，霓虹高光风格）
@@ -238,7 +246,7 @@ git commit -m "release: vX.Y.Z 更新与修复
   - 用户可见的问题修复
   ```
 - PR 正文不要写版本号提升、README 或其他文档同步，也不要加入审计过程、测试过程、内部计划或延期事项。CI 只接受上述格式，并将其写入 annotated tag 注释和 GitHub Release notes。
-- PR 合并到 `main` 后，CI 在构建、datagen、Curios 运行时测试和无可选依赖测试全部通过后自动：
+- PR 合并到 `main` 后，CI 在构建、datagen、Curios、无可选依赖、KubeJS 最低版和 KubeJS 最新版运行时测试全部通过后自动：
   1. 上传 `cybercultivator-X.Y.Z.jar` 为 workflow artifact（保留 30 天）。
   2. 创建 annotated tag `vX.Y.Z`。
   3. 创建同版本 GitHub Release 并附加 JAR。

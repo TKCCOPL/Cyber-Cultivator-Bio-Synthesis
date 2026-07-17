@@ -17,18 +17,18 @@ public class SerumCraftEvent extends Event {
 
     public SerumCraftEvent(ItemStack[] inputs, ItemStack output, int activity, ResourceLocation recipeId) {
         this.inputs = copyStacks(inputs);
-        this.output = output == null ? ItemStack.EMPTY : output;
-        this.activity = activity;
+        this.output = output == null ? ItemStack.EMPTY : output.copy();
+        this.activity = Math.max(1, Math.min(15, activity));
         this.recipeId = recipeId;
     }
 
     public ItemStack[] getInputs() { return copyStacks(inputs); }
 
-    public ItemStack getOutput() { return output; }
-    public void setOutput(ItemStack output) { this.output = output == null ? ItemStack.EMPTY : output; }
+    public ItemStack getOutput() { return output.copy(); }
+    public void setOutput(ItemStack output) { this.output = output == null ? ItemStack.EMPTY : output.copy(); }
 
     public int getActivity() { return activity; }
-    public void setActivity(int activity) { this.activity = activity; }
+    public void setActivity(int activity) { this.activity = Math.max(1, Math.min(15, activity)); }
 
     public ResourceLocation getRecipeId() { return recipeId; }
 

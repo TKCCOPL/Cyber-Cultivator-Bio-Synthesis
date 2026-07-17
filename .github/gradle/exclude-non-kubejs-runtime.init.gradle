@@ -1,0 +1,8 @@
+allprojects {
+    configurations.configureEach {
+        if (name == "runtimeClasspath") {
+            exclude group: "top.theillusivec4.curios"
+            exclude group: "mezz.jei"
+        }
+    }
+}

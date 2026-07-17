@@ -37,8 +37,9 @@ public class SerumRecipeSerializer implements RecipeSerializer<SerumRecipe> {
         }
         boolean inheritActivity = GsonHelper.getAsBoolean(json, "inherit_activity", false);
         boolean inheritMutation = GsonHelper.getAsBoolean(json, "inherit_mutation", false);
+        int priority = GsonHelper.getAsInt(json, "priority", 0);
 
-        return new SerumRecipe(id, inputs, output, processingTime, inheritActivity, inheritMutation);
+        return new SerumRecipe(id, inputs, output, processingTime, inheritActivity, inheritMutation, priority);
     }
 
     @Nullable
@@ -56,7 +57,8 @@ public class SerumRecipeSerializer implements RecipeSerializer<SerumRecipe> {
         int processingTime = Math.max(1, buf.readVarInt());
         boolean inheritActivity = buf.readBoolean();
         boolean inheritMutation = buf.readBoolean();
-        return new SerumRecipe(id, inputs, output, processingTime, inheritActivity, inheritMutation);
+        int priority = buf.readVarInt();
+        return new SerumRecipe(id, inputs, output, processingTime, inheritActivity, inheritMutation, priority);
     }
 
     @Override
@@ -69,5 +71,6 @@ public class SerumRecipeSerializer implements RecipeSerializer<SerumRecipe> {
         buf.writeVarInt(recipe.getProcessingTime());
         buf.writeBoolean(recipe.isInheritActivity());
         buf.writeBoolean(recipe.isInheritMutation());
+        buf.writeVarInt(recipe.getPriority());
     }
 }
