@@ -100,7 +100,7 @@ Use Conventional Commit-style prefixes consistent with repository history, for e
 
 Normal PRs should explain behavior changes, compatibility impact, and relevant manual evidence. Commit regenerated resources with their provider changes. Include screenshots for visual HUD, texture, or UI work when available.
 
-Do not push implementation or release commits directly to `main`; use a branch and PR. Never merge while required checks are pending or failing.
+Small, low-risk documentation, image, or maintenance changes may be committed and pushed directly to `main` without a PR when requested. Use a branch and PR for releases, gameplay or API changes, dependency changes, and other high-risk work. Never merge while required checks are pending or failing.
 
 ## Version Release Process
 
