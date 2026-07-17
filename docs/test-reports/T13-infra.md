@@ -1,5 +1,7 @@
 # T13 基础设施测试报告 — 大气冷凝器 + 基因拼接机 HUD
 
+> **后续状态：** 本报告保留当时的 FAIL 结论。冷凝器进度周期同步和提取后立即同步已由提交 `8031502` 修复。
+
 **测试日期**: 2026-05-03
 **待测文件**:
 - `src/main/java/com/TKCCOPL/client/IncubatorHudOverlay.java`

@@ -23,8 +23,8 @@ public class GeneSpliceEvent extends Event {
                            int speed, int yield, int potency,
                            int synergy, int generation,
                            boolean isMutation, int mutationType, String mutationDetail) {
-        this.seedA = seedA.copy();  // 防御性拷贝，防止污染拼接机内部状态
-        this.seedB = seedB.copy();
+        this.seedA = seedA == null ? ItemStack.EMPTY : seedA.copy();
+        this.seedB = seedB == null ? ItemStack.EMPTY : seedB.copy();
         this.speed = speed;
         this.yield = yield;
         this.potency = potency;
@@ -35,8 +35,8 @@ public class GeneSpliceEvent extends Event {
         this.mutationDetail = mutationDetail;
     }
 
-    public ItemStack getSeedA() { return seedA; }
-    public ItemStack getSeedB() { return seedB; }
+    public ItemStack getSeedA() { return seedA.copy(); }
+    public ItemStack getSeedB() { return seedB.copy(); }
 
     public int getSpeed() { return speed; }
     public void setSpeed(int speed) { this.speed = speed; }

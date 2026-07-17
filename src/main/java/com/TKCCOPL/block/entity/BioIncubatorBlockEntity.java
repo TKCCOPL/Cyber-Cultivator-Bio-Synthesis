@@ -85,13 +85,15 @@ public class BioIncubatorBlockEntity extends BlockEntity {
                 CropMatureEvent cropEvent = new CropMatureEvent(level, pos, blockEntity.seed, cropOutput);
                 boolean cancelled = net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(cropEvent);
 
-                // 无论是否取消，都重置生长进度和清除种子（避免无限循环）
+                // A cancelled maturity attempt starts a fresh growth cycle while
+                // preserving the seed and resources. Resetting progress prevents
+                // the event from firing again every tick.
                 blockEntity.growthProgress = 0;
-                blockEntity.seed = ItemStack.EMPTY;
                 changed = true;
                 forceSync = true;
 
                 if (!cancelled) {
+                    blockEntity.seed = ItemStack.EMPTY;
                     // 事件未取消，正常产出
                     cropOutput = cropEvent.getOutput();
                     if (!cropOutput.isEmpty()) {

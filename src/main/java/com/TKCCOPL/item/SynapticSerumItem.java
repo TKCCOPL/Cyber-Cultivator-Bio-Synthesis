@@ -20,7 +20,9 @@ import java.util.function.Supplier;
 
 public class SynapticSerumItem extends Item {
     private static final String TAG_ACTIVITY = "SynapticActivity";
-    private static final int MAX_AMPLIFIER = 7;
+    public static final int MIN_ACTIVITY = 1;
+    public static final int MAX_ACTIVITY = 15;
+    public static final int DEFAULT_ACTIVITY = 5;
 
     private final Supplier<MobEffect> effect;
     private final Supplier<Integer> durationSupplier;
@@ -59,9 +61,14 @@ public class SynapticSerumItem extends Item {
     }
 
     public static int getActivity(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return DEFAULT_ACTIVITY;
         net.minecraft.nbt.CompoundTag tag = stack.getTag();
-        if (tag == null || !tag.contains(TAG_ACTIVITY)) return 5;
-        return Math.max(1, tag.getInt(TAG_ACTIVITY));
+        if (tag == null || !tag.contains(TAG_ACTIVITY)) return DEFAULT_ACTIVITY;
+        return clampActivity(tag.getInt(TAG_ACTIVITY));
+    }
+
+    public static int clampActivity(int activity) {
+        return Math.max(MIN_ACTIVITY, Math.min(MAX_ACTIVITY, activity));
     }
 
     /**
@@ -69,7 +76,7 @@ public class SynapticSerumItem extends Item {
      * 用于 API 查询，不依赖实例字段。
      */
     public static int getBaseDuration(ItemStack serum) {
-        if (serum.isEmpty()) return 0;
+        if (serum == null || serum.isEmpty()) return 0;
         if (serum.is(com.TKCCOPL.init.ModItems.SYNAPTIC_SERUM_S01.get())) return Config.s01BaseDuration;
         if (serum.is(com.TKCCOPL.init.ModItems.SYNAPTIC_SERUM_S02.get())) return Config.s02BaseDuration;
         if (serum.is(com.TKCCOPL.init.ModItems.SYNAPTIC_SERUM_S03.get())) return Config.s03BaseDuration;
@@ -92,6 +99,10 @@ public class SynapticSerumItem extends Item {
     public static int getActivityBonusAmplifier(int activity) {
         if (activity <= 10) return 0;
         return (activity - 10) / 2;
+    }
+
+    public MobEffect getSerumEffect() {
+        return effect.get();
     }
 
     private static final String[] ROMAN = {"I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"};
@@ -125,8 +136,27 @@ public class SynapticSerumItem extends Item {
                 // 事件被取消，不施加效果，不消耗物品
                 return stack;
             }
-            scaledDuration = Math.max(1, consumeEvent.getDuration());
-            amp = Math.max(0, consumeEvent.getAmplifier());
+
+            if (consumeEvent.isActivityModified()) {
+                activity = clampActivity(consumeEvent.getActivity());
+                if (!consumeEvent.isDurationModified()) {
+                    scaledDuration = getScaledDuration(durationSupplier.get(), activity);
+                    if (existing != null) {
+                        scaledDuration = Math.min(scaledDuration + existing.getDuration(), Config.stackDurationCap);
+                    }
+                }
+                if (!consumeEvent.isAmplifierModified() && existing == null) {
+                    amp = Math.min(getBaseAmplifier(activity) + getActivityBonusAmplifier(activity), Config.stackAmplifierCap);
+                }
+            }
+            if (consumeEvent.isDurationModified()) {
+                scaledDuration = consumeEvent.getDuration();
+            }
+            if (consumeEvent.isAmplifierModified()) {
+                amp = consumeEvent.getAmplifier();
+            }
+            scaledDuration = Math.max(1, scaledDuration);
+            amp = Math.max(0, amp);
 
             entity.addEffect(new MobEffectInstance(effect.get(), scaledDuration, amp));
 

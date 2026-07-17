@@ -1,5 +1,7 @@
 # Config 扩展 + 数据驱动 + KubeJS + 性能优化 实施计划
 
+> **当前状态（2026-07-17）：** Config、JSON 数据驱动和性能优化已落地。KubeJS 依赖与事件桥接明确延期到独立集成任务；当前不恢复 `build.gradle` 中已注释的依赖，不调整 `mods.toml`。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 将硬编码数值提取为 Config TOML、种子产出改为 JSON RecipeType、集成 KubeJS、优化培养槽 tick 性能。

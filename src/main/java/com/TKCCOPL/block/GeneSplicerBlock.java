@@ -45,13 +45,13 @@ public class GeneSplicerBlock extends MachineBlock {
             ItemStack out = blockEntity.extractOutput();
             if (!out.isEmpty()) {
                 giveToPlayer(player, out);
-                sendStatus(player, "已取出拼接种子", blockEntity);
+                sendStatus(player, Component.translatable("message.cybercultivator.splicer.output_extracted"), blockEntity);
                 return InteractionResult.CONSUME;
             }
             ItemStack inputOut = blockEntity.extractLastInput();
             if (!inputOut.isEmpty()) {
                 giveToPlayer(player, inputOut);
-                sendStatus(player, "已取回输入种子", blockEntity);
+                sendStatus(player, Component.translatable("message.cybercultivator.splicer.input_retrieved"), blockEntity);
                 return InteractionResult.CONSUME;
             }
             return InteractionResult.PASS;
@@ -64,7 +64,7 @@ public class GeneSplicerBlock extends MachineBlock {
                 if (!player.getAbilities().instabuild) {
                     held.shrink(1);
                 }
-                sendStatus(player, "已放入种子", blockEntity);
+                sendStatus(player, Component.translatable("message.cybercultivator.splicer.seed_inserted"), blockEntity);
                 return InteractionResult.CONSUME;
             }
         }
@@ -73,12 +73,12 @@ public class GeneSplicerBlock extends MachineBlock {
             ItemStack out = blockEntity.extractOutput();
             if (!out.isEmpty()) {
                 giveToPlayer(player, out);
-                sendStatus(player, "已取出拼接种子", blockEntity);
+                sendStatus(player, Component.translatable("message.cybercultivator.splicer.output_extracted"), blockEntity);
                 return InteractionResult.CONSUME;
             }
         }
 
-        sendStatus(player, "状态查看", blockEntity);
+        sendStatus(player, Component.translatable("message.cybercultivator.splicer.inspect"), blockEntity);
         return InteractionResult.CONSUME;
     }
 
@@ -115,8 +115,11 @@ public class GeneSplicerBlock extends MachineBlock {
         }
     }
 
-    private static void sendStatus(Player player, String action, GeneSplicerBlockEntity blockEntity) {
-        String msg = String.format("[Gene-Splicer] %s | 输入:%d 输出:%s", action, blockEntity.getInputCount(), blockEntity.hasOutput() ? "有" : "无");
-        player.displayClientMessage(Component.literal(msg).withStyle(ChatFormatting.GRAY), true);
+    private static void sendStatus(Player player, Component action, GeneSplicerBlockEntity blockEntity) {
+        Component output = Component.translatable(blockEntity.hasOutput()
+                ? "message.cybercultivator.state.yes"
+                : "message.cybercultivator.state.no");
+        player.displayClientMessage(Component.translatable("message.cybercultivator.splicer.status",
+                action, blockEntity.getInputCount(), output).withStyle(ChatFormatting.GRAY), true);
     }
 }

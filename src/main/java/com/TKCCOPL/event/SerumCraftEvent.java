@@ -1,5 +1,6 @@
 package com.TKCCOPL.event;
 
+import com.TKCCOPL.recipe.SerumRecipeIds;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.eventbus.api.Event;
@@ -15,13 +16,13 @@ public class SerumCraftEvent extends Event {
     private final ResourceLocation recipeId;
 
     public SerumCraftEvent(ItemStack[] inputs, ItemStack output, int activity, ResourceLocation recipeId) {
-        this.inputs = inputs;
+        this.inputs = copyStacks(inputs);
         this.output = output == null ? ItemStack.EMPTY : output;
         this.activity = activity;
         this.recipeId = recipeId;
     }
 
-    public ItemStack[] getInputs() { return inputs; }
+    public ItemStack[] getInputs() { return copyStacks(inputs); }
 
     public ItemStack getOutput() { return output; }
     public void setOutput(ItemStack output) { this.output = output == null ? ItemStack.EMPTY : output; }
@@ -33,7 +34,16 @@ public class SerumCraftEvent extends Event {
 
     /** @deprecated 使用 {@link #getRecipeId()} 替代 */
     @Deprecated
-    public int getRecipeIndex() { return -1; }
+    public int getRecipeIndex() { return SerumRecipeIds.legacyIndex(recipeId); }
+
+    private static ItemStack[] copyStacks(ItemStack[] stacks) {
+        if (stacks == null) return new ItemStack[0];
+        ItemStack[] copy = new ItemStack[stacks.length];
+        for (int i = 0; i < stacks.length; i++) {
+            copy[i] = stacks[i] == null ? ItemStack.EMPTY : stacks[i].copy();
+        }
+        return copy;
+    }
 
     @Override
     public boolean isCancelable() { return true; }

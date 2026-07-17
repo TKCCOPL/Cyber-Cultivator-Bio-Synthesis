@@ -1,5 +1,6 @@
 package com.TKCCOPL.api;
 
+import com.TKCCOPL.recipe.SerumRecipeIds;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
@@ -10,10 +11,13 @@ public record BottlerInfo(
     int activity
 ) {
     public BottlerInfo {
-        if (output != null) output = output.copy();
+        output = output == null ? ItemStack.EMPTY : output.copy();
     }
+
+    @Override
+    public ItemStack output() { return output.copy(); }
 
     /** @deprecated 使用 {@link #activeRecipeId()} 替代 */
     @Deprecated
-    public int activeRecipe() { return -1; }
+    public int activeRecipe() { return SerumRecipeIds.legacyIndex(activeRecipeId); }
 }

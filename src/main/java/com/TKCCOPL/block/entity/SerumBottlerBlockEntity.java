@@ -2,8 +2,10 @@ package com.TKCCOPL.block.entity;
 
 import com.TKCCOPL.init.ModBlockEntities;
 import com.TKCCOPL.init.ModItems;
+import com.TKCCOPL.item.SynapticSerumItem;
 import com.TKCCOPL.recipe.ModRecipeTypes;
 import com.TKCCOPL.recipe.SerumRecipe;
+import com.TKCCOPL.recipe.SerumRecipeIds;
 import com.TKCCOPL.event.SerumCraftEvent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -40,8 +42,9 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     public static int calculateActivity(ItemStack[] inputs) {
         int potency = 5, purity = 5, concentration = 5;
         int geneSynergy = 0;
+        if (inputs == null) return SynapticSerumItem.DEFAULT_ACTIVITY;
         for (ItemStack input : inputs) {
-            if (input.isEmpty()) continue;
+            if (input == null || input.isEmpty()) continue;
             CompoundTag tag = input.getTag();
             if (tag == null) continue;
             if (input.is(ModItems.PLANT_FIBER.get()) && tag.contains("Potency")) {
@@ -70,9 +73,10 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
      * Gene_Synergy 可突破上限，此处不额外 clamp（上限由 calculateActivity 计算）
      */
     public static int getActivity(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return SynapticSerumItem.DEFAULT_ACTIVITY;
         CompoundTag tag = stack.getTag();
-        if (tag == null || !tag.contains(TAG_ACTIVITY)) return 5;
-        return Math.max(1, Math.min(15, tag.getInt(TAG_ACTIVITY)));
+        if (tag == null || !tag.contains(TAG_ACTIVITY)) return SynapticSerumItem.DEFAULT_ACTIVITY;
+        return SynapticSerumItem.clampActivity(tag.getInt(TAG_ACTIVITY));
     }
 
     private static int clampQuality(int value) {
@@ -212,7 +216,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         result = craftEvent.getOutput();
         if (result == null || result.isEmpty()) return ItemStack.EMPTY;
         if (craftEvent.getActivity() > 0) {
-            result.getOrCreateTag().putInt(TAG_ACTIVITY, Math.min(15, craftEvent.getActivity()));
+            result.getOrCreateTag().putInt(TAG_ACTIVITY, SynapticSerumItem.clampActivity(craftEvent.getActivity()));
         }
 
         return result;
@@ -297,14 +301,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     /** @deprecated 使用 {@link #getActiveRecipeId()} 替代，支持自定义配方 */
     @Deprecated
     public int getActiveRecipe() {
-        if (cachedRecipe == null) return -1;
-        // 简化：根据输出物品判断配方类型
-        ItemStack out = cachedRecipe.getBaseOutput();
-        if (out.is(ModItems.SYNAPTIC_NEURAL_BERRY.get())) return 0;
-        if (out.is(ModItems.SYNAPTIC_SERUM_S01.get())) return 1;
-        if (out.is(ModItems.SYNAPTIC_SERUM_S02.get())) return 2;
-        if (out.is(ModItems.SYNAPTIC_SERUM_S03.get())) return 3;
-        return -1;
+        return SerumRecipeIds.legacyIndex(getActiveRecipeId());
     }
     /** Task 7: 返回当前配方的 ResourceLocation ID */
     public ResourceLocation getActiveRecipeId() {

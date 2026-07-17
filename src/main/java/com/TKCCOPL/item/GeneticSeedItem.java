@@ -56,6 +56,7 @@ public class GeneticSeedItem extends ItemNameBlockItem {
     }
 
     public void ensureGeneData(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return;
         CompoundTag tag = stack.getOrCreateTag();
         // Values outside the format's permanent 1..10 range are invalid. In
         // particular, v1.1.3 could persist zeroes because config values were not
@@ -75,6 +76,7 @@ public class GeneticSeedItem extends ItemNameBlockItem {
     }
 
     public static int getGene(ItemStack stack, String key) {
+        if (stack == null || stack.isEmpty() || key == null) return 1;
         CompoundTag tag = stack.getTag();
         if (tag == null || !tag.contains(key)) {
             return 1;
@@ -83,6 +85,7 @@ public class GeneticSeedItem extends ItemNameBlockItem {
     }
 
     public static void setGene(ItemStack stack, String key, int value) {
+        if (stack == null || stack.isEmpty() || key == null) return;
         stack.getOrCreateTag().putInt(key, clampGene(value));
     }
 
@@ -111,12 +114,14 @@ public class GeneticSeedItem extends ItemNameBlockItem {
     }
 
     public static int getGeneration(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return 0;
         CompoundTag tag = stack.getTag();
         if (tag == null || !tag.contains(GENE_GENERATION)) return 0;
         return Math.max(0, tag.getInt(GENE_GENERATION));
     }
 
     public static int getSynergy(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return 0;
         CompoundTag tag = stack.getTag();
         if (tag == null || !tag.contains(GENE_SYNERGY)) return 0;
         return Math.max(0, Math.min(10, tag.getInt(GENE_SYNERGY)));

@@ -9,13 +9,12 @@ import com.TKCCOPL.item.SynapticSerumItem;
 import com.TKCCOPL.recipe.ModRecipeTypes;
 import com.TKCCOPL.recipe.SerumRecipe;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.registries.ForgeRegistries;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -111,8 +110,8 @@ public final class CyberCultivatorAPI {
 
     /** 查询所有血清配方 */
     public static List<SerumRecipe> getSerumRecipes(Level level) {
-        if (level == null) return Collections.emptyList();
-        return level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get());
+        if (level == null) return List.of();
+        return List.copyOf(level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get()));
     }
 
     /** 计算 Activity 值 */
@@ -122,14 +121,16 @@ public final class CyberCultivatorAPI {
 
     /** 查询血清效果参数 */
     public static SerumEffectInfo getSerumEffectInfo(ItemStack serum) {
-        if (serum == null) return null;
+        if (serum == null || serum.isEmpty() || !(serum.getItem() instanceof SynapticSerumItem serumItem)) return null;
         int activity = SynapticSerumItem.getActivity(serum);
         double multiplier = Config.durationMultiplierBase + activity * Config.durationMultiplierPerActivity;
         int baseAmp = Math.min(SynapticSerumItem.getBaseAmplifier(activity)
                 + SynapticSerumItem.getActivityBonusAmplifier(activity), Config.stackAmplifierCap);
         int baseDuration = SynapticSerumItem.getBaseDuration(serum);
+        var effectId = ForgeRegistries.MOB_EFFECTS.getKey(serumItem.getSerumEffect());
+        if (effectId == null) return null;
         return new SerumEffectInfo(
-                serum.getItem().getDescriptionId(),
+                effectId.toString(),
                 baseDuration,
                 baseAmp,
                 multiplier,

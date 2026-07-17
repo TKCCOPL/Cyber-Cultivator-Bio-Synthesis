@@ -55,10 +55,11 @@ public class ModRecipeProvider extends RecipeProvider {
 
         ShapedRecipeBuilder.shaped(RecipeCategory.DECORATIONS, ModItems.SERUM_BOTTLER_ITEM.get())
                 .pattern("IRI")
-                .pattern("SRS")
+                .pattern("SCS")
                 .pattern("IBI")
                 .define('I', Items.IRON_INGOT)
                 .define('R', Items.REDSTONE)
+                .define('C', ModItems.RARE_EARTH_DUST.get())
                 .define('S', ModItems.SILICON_SHARD.get())
                 .define('B', Items.GLASS_BOTTLE)
                 .unlockedBy(getHasName(ModItems.RARE_EARTH_DUST.get()), has(ModItems.RARE_EARTH_DUST.get()))

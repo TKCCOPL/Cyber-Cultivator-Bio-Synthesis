@@ -45,10 +45,10 @@ public class SerumBottlerBlock extends MachineBlock {
             ItemStack out = blockEntity.extractOutput();
             if (!out.isEmpty()) {
                 giveToPlayer(player, out);
-                sendStatus(player, blockEntity, "已取出血清");
+                sendStatus(player, blockEntity, Component.translatable("message.cybercultivator.bottler.serum_extracted"));
                 return InteractionResult.CONSUME;
             }
-            sendStatus(player, blockEntity, "状态查看");
+            sendStatus(player, blockEntity, Component.translatable("message.cybercultivator.bottler.inspect"));
             return InteractionResult.CONSUME;
         }
 
@@ -62,11 +62,11 @@ public class SerumBottlerBlock extends MachineBlock {
                     if (!player.getAbilities().instabuild) {
                         held.shrink(1);
                     }
-                    sendStatus(player, blockEntity, "已放入材料");
+                    sendStatus(player, blockEntity, Component.translatable("message.cybercultivator.bottler.input_inserted"));
                     return InteractionResult.CONSUME;
                 }
             }
-            sendStatus(player, blockEntity, "输入槽已满");
+            sendStatus(player, blockEntity, Component.translatable("message.cybercultivator.bottler.input_full"));
             return InteractionResult.CONSUME;
         }
 
@@ -74,7 +74,7 @@ public class SerumBottlerBlock extends MachineBlock {
         ItemStack out = blockEntity.extractOutput();
         if (!out.isEmpty()) {
             giveToPlayer(player, out);
-            sendStatus(player, blockEntity, "已取出血清");
+            sendStatus(player, blockEntity, Component.translatable("message.cybercultivator.bottler.serum_extracted"));
             return InteractionResult.CONSUME;
         }
 
@@ -82,11 +82,11 @@ public class SerumBottlerBlock extends MachineBlock {
         if (!input.isEmpty()) {
             blockEntity.cancelProcessing();
             giveToPlayer(player, input);
-            sendStatus(player, blockEntity, "已取回材料");
+            sendStatus(player, blockEntity, Component.translatable("message.cybercultivator.bottler.input_retrieved"));
             return InteractionResult.CONSUME;
         }
 
-        sendStatus(player, blockEntity, "状态查看");
+        sendStatus(player, blockEntity, Component.translatable("message.cybercultivator.bottler.inspect"));
         return InteractionResult.CONSUME;
     }
 
@@ -141,11 +141,15 @@ public class SerumBottlerBlock extends MachineBlock {
         }
     }
 
-    private static void sendStatus(Player player, SerumBottlerBlockEntity blockEntity, String action) {
-        String progress = blockEntity.getMaxProgress() > 0
-                ? String.format("加工中 %d%%", (int) (100.0 * blockEntity.getProgress() / blockEntity.getMaxProgress()))
-                : "待机";
-        String msg = String.format("[Bottler] %s | %s | 输出:%s", action, progress, blockEntity.getOutput().isEmpty() ? "无" : "有");
-        player.displayClientMessage(Component.literal(msg).withStyle(ChatFormatting.GRAY), true);
+    private static void sendStatus(Player player, SerumBottlerBlockEntity blockEntity, Component action) {
+        Component progress = blockEntity.getMaxProgress() > 0
+                ? Component.translatable("message.cybercultivator.bottler.processing",
+                (int) (100.0 * blockEntity.getProgress() / blockEntity.getMaxProgress()))
+                : Component.translatable("message.cybercultivator.bottler.idle");
+        Component output = Component.translatable(blockEntity.getOutput().isEmpty()
+                ? "message.cybercultivator.state.no"
+                : "message.cybercultivator.state.yes");
+        player.displayClientMessage(Component.translatable("message.cybercultivator.bottler.status", action, progress, output)
+                .withStyle(ChatFormatting.GRAY), true);
     }
 }
