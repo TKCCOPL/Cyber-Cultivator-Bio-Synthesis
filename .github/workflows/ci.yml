@@ -43,7 +43,13 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Build JAR and regenerate data resources
-        run: ./gradlew build runData --no-daemon --stacktrace
+        run: >-
+          ./gradlew
+          -I .github/gradle/exclude-jei-runtime.init.gradle
+          build
+          runData
+          --no-daemon
+          --stacktrace
 
       - name: Check generated resources are current
         run: git diff --exit-code -- src/generated/resources
@@ -84,7 +90,7 @@ jobs:
       fail-fast: false
       matrix:
         profile:
-          - curios-and-jei
+          - curios
           - no-optional-dependencies
 
     steps:
@@ -100,9 +106,14 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Start GameTest server with Curios and JEI
-        if: matrix.profile == 'curios-and-jei'
-        run: ./gradlew runGameTestServer --no-daemon --stacktrace
+      - name: Start GameTest server with Curios
+        if: matrix.profile == 'curios'
+        run: >-
+          ./gradlew
+          -I .github/gradle/exclude-jei-runtime.init.gradle
+          runGameTestServer
+          --no-daemon
+          --stacktrace
 
       - name: Start GameTest server without optional dependencies
         if: matrix.profile == 'no-optional-dependencies'

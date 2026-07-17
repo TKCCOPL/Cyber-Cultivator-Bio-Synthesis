@@ -1,0 +1,7 @@
+allprojects {
+    configurations.configureEach {
+        if (name == "runtimeClasspath") {
+            exclude group: "mezz.jei"
+        }
+    }
+}

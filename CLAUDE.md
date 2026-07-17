@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **包名:** `com.TKCCOPL`
 - **Forge:** 47.4.18 | **Java:** 17
 - **前置依赖:** Curios API 5.3.5 (饰品系统，compileOnly API + runtimeOnly 完整模组)
-- **可选依赖:** JEI 15.0.0+ (配方查看器，compileOnly API + runtimeOnly 完整模组)
+- **兼容性:** 兼容 JEI
 - **Mappings:** Parchment 2023.09.03-1.20.1
 
 ## 常用构建命令
@@ -54,11 +54,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `block/entity/` | TileEntity：`BioIncubatorBlockEntity` (培养槽状态机), `GeneSplicerBlockEntity` (遗传算法), `AtmosphericCondenserBlockEntity` (纯净水生产+相邻传输), `SerumBottlerBlockEntity` (RecipeType 驱动加工+漏斗兼容) |
 | `item/` | `GeneticSeedItem` (NBT基因标签), `SynapticSerumItem` (血清效果触发，支持构造函数注入不同效果) |
 | `effect/` | `SynapticOverclockEffect` (突触超频), `NeuralOverloadEffect` (神经过载副作用), `VisualEnhancementEffect` (S-02 视觉强化), `MetabolicBoostEffect` (S-03 代谢加速) |
-| `recipe/` | `ModRecipeTypes` (RecipeType 注册), `SerumRecipe` (JSON 配方), `SerumRecipeSerializer` (序列化器), `ModRecipes` (静态注册表：拼接机/培养槽配方，供 JEI 和第三方 mod 查询) |
+| `recipe/` | `ModRecipeTypes` (RecipeType 注册), `SerumRecipe` (JSON 配方), `SerumRecipeSerializer` (序列化器), `ModRecipes` (静态注册表：拼接机/培养槽配方，供第三方 mod 查询) |
 | `api/` | `CyberCultivatorAPI` (门面类), 5 个只读 DTO record：`IncubatorInfo`, `BottlerInfo`, `CondenserInfo`, `SplicerInfo`, `SerumEffectInfo` |
 | `event/` | 自定义 Forge 事件：`GeneSpliceEvent`, `CropMatureEvent`, `SerumCraftEvent`, `SerumConsumeEvent`（均支持取消+字段修改） |
 | `curios/` | `CuriosCompat` — Curios API 饰品集成（compileOnly），`CurioAccessoryItem` 基类，`BioPulseBeltItem`（腰带），`LifeSupportPackItem`（支持箱），`CurioEventHandler`（事件驱动 tick） |
-| `compat/jei/` | JEI 集成（compileOnly）：`CyberCultivatorJEIPlugin` (入口), `SerumBottlingCategory` (灌装), `GeneSplicingCategory` (拼接), `IncubatorOutputCategory` (培养槽产出) |
 | `datagen/` | 数据生成器：配方、战利品表、方块状态、物品模型、语言文件、标签、进度引导 |
 | `client/` | `ClientTooltipEvents` — 客户端渲染/Tooltip 逻辑，`IncubatorHudOverlay` — 单片镜 HUD 浮窗 |
 
@@ -119,7 +118,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **配方系统 (recipe/):**
 - `ModRecipeTypes`：注册 `RecipeType<SerumRecipe>` + `RecipeSerializer`，DeferredRegister 模式
 - `SerumRecipe`：JSON 数据驱动配方，支持 `inheritActivity` / `inheritMutation` 标签
-- `ModRecipes`：静态注册表，暴露 `IGeneSpliceRecipe`（拼接算法）和 `IIncubatorOutput`（培养槽产出）接口，供 JEI 和第三方 mod 查询
+- `ModRecipes`：静态注册表，暴露 `IGeneSpliceRecipe`（拼接算法）和 `IIncubatorOutput`（培养槽产出）接口，供第三方 mod 查询
 - `getSeedItemForType(String)`：根据种子类型标识查找对应种子物品
 
 **自定义事件 (event/):**
@@ -132,11 +131,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `CyberCultivatorAPI`：门面类，提供基因读写、机器状态查询、血清配方查询
 - DTO record：`IncubatorInfo`, `BottlerInfo`, `CondenserInfo`, `SplicerInfo`, `SerumEffectInfo`（ItemStack 字段 defensive copy）
 - 所有方法 null 安全，API 包不依赖任何 compileOnly 依赖
-
-**JEI 集成 (compat/jei/):**
-- `@JeiPlugin` 注解发现，compileOnly 隔离
-- 4 个配方类别：血清灌装（RecipeType 自动发现）、基因拼接（ModRecipes 静态注册表）、培养槽产出（ModRecipes 静态注册表）、机器合成（标准 CraftingRecipe）
-- 背景统一 140×60，预留扩展空间
 
 ### 数据生成
 
@@ -206,10 +200,12 @@ datagen 覆盖范围：
 
 每次版本更新必须按以下顺序执行：
 
+> 仅修改说明文档时不提升版本号，也不触发版本发布；只有代码、资源或用户可见行为发生变化时才发布新版本。
+
 ### 1. 更新版本号
 - `gradle.properties` → `mod_version=X.Y.Z`
-- `README.md` → 头部版本号 + 更新日志
-- `README_EN.md` → 头部版本号 + 更新日志
+- `README.md` → 头部版本号；保持为当前功能说明，不维护历史更新日志
+- `README_EN.md` → 头部版本号；保持与中文说明一致，不维护历史更新日志
 - 检查 `CLAUDE.md` 是否需要更新（如有核心机制变更）
 
 ### 2. 构建验证
@@ -220,17 +216,17 @@ datagen 覆盖范围：
 ### 3. 提交（按格式）
 ```bash
 git add README.md README_EN.md gradle.properties
-git commit -m "release: vX.Y.Z 更新说明
+git commit -m "release: vX.Y.Z 更新与修复
 
-- 变更点1
-- 变更点2
+- 更新：用户可见的更新内容
+- 修复：用户可见的问题修复
 - ..."
 ```
 
 ### 4. PR 合并 + 自动发布
 - 推送版本分支并创建 PR，不直接推送 `main`。
-- PR 标题和正文必须明确列出本版本的更新内容与修复内容；CI 会将其写入 annotated tag 注释和 GitHub Release notes。
-- PR 合并到 `main` 后，CI 在构建、datagen 和 Curios/JEI 运行时矩阵全部通过后自动：
+- PR 标题和正文只列出本版本面向用户的更新内容与问题修复；不要加入审计过程、测试过程、内部计划或延期事项。CI 会将其写入 annotated tag 注释和 GitHub Release notes。
+- PR 合并到 `main` 后，CI 在构建、datagen、Curios 运行时测试和无可选依赖测试全部通过后自动：
   1. 上传 `cybercultivator-X.Y.Z.jar` 为 workflow artifact（保留 30 天）。
   2. 创建 annotated tag `vX.Y.Z`。
   3. 创建同版本 GitHub Release 并附加 JAR。
