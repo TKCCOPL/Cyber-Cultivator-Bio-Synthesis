@@ -60,6 +60,7 @@ minecraft {
 
 sourceSets.main.resources {
     srcDir 'src/generated/resources'
+    exclude '.cache/**' // Forge datagen 的本地缓存，不属于模组资源
     exclude 'cybercultivator-github.png' // 仅用于 GitHub 展示，不打包进 JAR
 }
 
@@ -100,14 +101,16 @@ tasks.named('processResources', ProcessResources).configure {
 }
 
 tasks.named('jar', Jar).configure {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+
     manifest {
         attributes(["Specification-Title"     : mod_id,
                     "Specification-Vendor"    : mod_authors,
                     "Specification-Version"   : "1",
                     "Implementation-Title"    : project.name,
                     "Implementation-Version"  : project.jar.archiveVersion,
-                    "Implementation-Vendor"   : mod_authors,
-                    "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")])
+                    "Implementation-Vendor"   : mod_authors])
     }
     finalizedBy 'reobfJar'
 }

@@ -3,7 +3,13 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
   pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
   workflow_dispatch:
 
 permissions:
@@ -18,6 +24,10 @@ jobs:
     name: Build and verify generated data
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      artifact_name: ${{ steps.metadata.outputs.artifact_name }}
+      jar_name: ${{ steps.metadata.outputs.jar_name }}
+      mod_version: ${{ steps.metadata.outputs.mod_version }}
 
     steps:
       - name: Check out repository
@@ -32,14 +42,38 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Build reobfuscated JAR
-        run: ./gradlew build --no-daemon --stacktrace
-
-      - name: Regenerate data resources
-        run: ./gradlew runData --no-daemon --stacktrace
+      - name: Build JAR and regenerate data resources
+        run: ./gradlew build runData --no-daemon --stacktrace
 
       - name: Check generated resources are current
         run: git diff --exit-code -- src/generated/resources
+
+      - name: Resolve build metadata
+        id: metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          mod_id="$(sed -n 's/^mod_id=//p' gradle.properties)"
+          mod_version="$(sed -n 's/^mod_version=//p' gradle.properties)"
+
+          if [[ ! "$mod_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid mod_version: $mod_version" >&2
+            exit 1
+          fi
+
+          jar_name="${mod_id}-${mod_version}.jar"
+          test -f "build/libs/${jar_name}"
+          echo "artifact_name=${mod_id}-v${mod_version}" >> "$GITHUB_OUTPUT"
+          echo "jar_name=${jar_name}" >> "$GITHUB_OUTPUT"
+          echo "mod_version=${mod_version}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload reobfuscated JAR
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.metadata.outputs.artifact_name }}
+          path: build/libs/${{ steps.metadata.outputs.jar_name }}
+          if-no-files-found: error
+          retention-days: 30
 
   runtime-smoke:
     name: Runtime smoke (${{ matrix.profile }})
@@ -78,3 +112,94 @@ jobs:
           runGameTestServer
           --no-daemon
           --stacktrace
+
+  release:
+    name: Publish versioned release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build, runtime-smoke]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository and tags
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download validated JAR
+        uses: actions/download-artifact@v5
+        with:
+          name: ${{ needs.build.outputs.artifact_name }}
+          path: release-artifact
+
+      - name: Create annotated tag and GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JAR_NAME: ${{ needs.build.outputs.jar_name }}
+          MOD_VERSION: ${{ needs.build.outputs.mod_version }}
+        run: |
+          set -euo pipefail
+          tag="v${MOD_VERSION}"
+          jar_path="release-artifact/${JAR_NAME}"
+          test -f "$jar_path"
+
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $tag already exists; keeping the workflow artifact only."
+            exit 0
+          fi
+
+          git fetch --force --tags origin
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" \
+            > associated-prs.json
+
+          release_title="$(jq -r '.[0].title // empty' associated-prs.json)"
+          release_body="$(jq -r '.[0].body // empty' associated-prs.json)"
+          if [[ -z "$release_title" ]]; then
+            release_title="$(git log -1 --pretty=%s "$GITHUB_SHA")"
+          fi
+          if [[ -z "$release_body" ]]; then
+            previous_tag="$(git describe --tags --abbrev=0 "$GITHUB_SHA^" 2>/dev/null || true)"
+            if [[ -n "$previous_tag" ]]; then
+              release_body="$(git log --pretty='- %s' "${previous_tag}..${GITHUB_SHA}")"
+            else
+              release_body="$(git log --pretty='- %s' "$GITHUB_SHA")"
+            fi
+          fi
+
+          {
+            printf '%s: %s\n\n' "$tag" "$release_title"
+            printf '%s\n' "$release_body"
+          } > tag-message.md
+
+          {
+            printf '## 更新内容 / Changes\n\n'
+            printf '%s\n' "$release_body"
+            printf '\n## 下载 / Download\n\n'
+            printf -- '- `%s` — Minecraft 1.20.1 / Forge 47.4.18\n' "$JAR_NAME"
+          } > release-notes.md
+
+          if git rev-parse --verify --quiet "refs/tags/${tag}" >/dev/null; then
+            tag_commit="$(git rev-list -n 1 "$tag")"
+            if [[ "$tag_commit" != "$GITHUB_SHA" ]]; then
+              echo "Tag $tag already points to $tag_commit; bump mod_version before release." >&2
+              exit 1
+            fi
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag --annotate "$tag" "$GITHUB_SHA" --file tag-message.md
+            git push origin "refs/tags/${tag}"
+          fi
+
+          gh release create "$tag" \
+            "${jar_path}#${JAR_NAME}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "$tag — $release_title" \
+            --notes-file release-notes.md \
+            --latest

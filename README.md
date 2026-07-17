@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <b>v1.1.3</b> · Forge 1.20.1 · Curios API 5.3.5<br>
+  <b>v1.1.4</b> · Forge 1.20.1 · Curios API 5.3.5<br>
   遗传育种算法 + 生物强化血清系统
 </p>
 
@@ -143,6 +143,17 @@
 ---
 
 ## 更新日志
+
+<details open>
+<summary><b>v1.1.4</b> — 核心生产链稳定性修复 + 自动发布</summary>
+
+- 修复种子默认基因初始化、旧 NBT 迁移及 Synergy 跨代继承
+- 修复血清灌装机混合输出、吞料、NBT 丢失和非法堆叠
+- 修复培养槽成熟同步、灌装机 HUD 配方标识及 JEI 突变概率显示
+- 加强自定义配方、事件参数和输出边界校验
+- 新增 Curios/JEI 运行时矩阵、JAR artifact 与合并后自动 Tag/Release
+
+</details>
 
 <details>
 <summary><b>v1.1.3</b> — 代码审查修复 + 漏斗交互优化 + API 完善</summary>

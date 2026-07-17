@@ -30,3 +30,5 @@ Use four-space indentation, UTF-8, braces on the same line, and standard Java na
 History follows Conventional Commit-style prefixes, often with scopes: `feat(recipe): ...`, `fix(blockentity): ...`, `perf(curios): ...`, `docs: ...`, and `release: vX.Y.Z ...`. Keep subjects imperative, specific, and consistent with the repository's Chinese-language history.
 
 Pull requests should explain behavior changes, list validation commands and manual scenarios, link related issues/design documents, and include screenshots for HUD, texture, or UI changes. Commit regenerated resources with their provider changes, and call out compatibility impacts involving Forge, Curios, or JEI.
+
+For a version release, bump `mod_version` in `gradle.properties` and update both README changelogs. After the PR is merged, CI uses the PR title and body as the annotated tag message and Release notes, so describe user-visible updates and fixes explicitly.
