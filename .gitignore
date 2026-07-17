@@ -20,6 +20,8 @@ out/
 !.claude/agents/
 
 docs/*
+!docs/assets/
+!docs/assets/cybercultivator-logo.png
 !docs/superpowers/
 !docs/dev-plan.md
 !docs/lessons-learned.md

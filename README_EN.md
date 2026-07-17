@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="src/main/resources/cybercultivator-logo.png" alt="Cyber-Cultivator: Bio-Synthesis" width="100%">
+  <img src="docs/assets/cybercultivator-logo.png" alt="Cyber-Cultivator: Bio-Synthesis" width="100%">
 </p>
 
 <p align="center">
