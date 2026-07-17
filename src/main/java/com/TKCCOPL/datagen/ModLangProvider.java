@@ -63,6 +63,36 @@ public class ModLangProvider extends LanguageProvider {
         add("effect.cybercultivator.visual_enhancement", "视觉强化");
         add("effect.cybercultivator.metabolic_boost", "代谢加速");
 
+        // Machine action-bar messages
+        add("message.cybercultivator.state.yes", "有");
+        add("message.cybercultivator.state.no", "无");
+        add("message.cybercultivator.incubator.seed_extracted", "已取出种子");
+        add("message.cybercultivator.incubator.inject_purity", "注入纯净水 +%s");
+        add("message.cybercultivator.incubator.inject_nutrition", "注入营养液 +%s");
+        add("message.cybercultivator.incubator.inject_signal", "注入数据信号 +%s");
+        add("message.cybercultivator.incubator.seed_inserted", "已放入种子");
+        add("message.cybercultivator.incubator.inspect", "状态查看");
+        add("message.cybercultivator.incubator.status", "[生物培养槽] %s | N:%s P:%s D:%s");
+        add("message.cybercultivator.incubator.growth", " | 生长: %s%%");
+        add("message.cybercultivator.incubator.eta", " (约%ss)");
+        add("message.cybercultivator.incubator.insufficient", " (资源不足)");
+        add("message.cybercultivator.bottler.serum_extracted", "已取出血清");
+        add("message.cybercultivator.bottler.inspect", "状态查看");
+        add("message.cybercultivator.bottler.input_inserted", "已放入材料");
+        add("message.cybercultivator.bottler.input_full", "输入槽已满");
+        add("message.cybercultivator.bottler.input_retrieved", "已取回材料");
+        add("message.cybercultivator.bottler.processing", "加工中 %s%%");
+        add("message.cybercultivator.bottler.idle", "待机");
+        add("message.cybercultivator.bottler.status", "[血清灌装机] %s | %s | 输出:%s");
+        add("message.cybercultivator.splicer.output_extracted", "已取出拼接种子");
+        add("message.cybercultivator.splicer.input_retrieved", "已取回输入种子");
+        add("message.cybercultivator.splicer.seed_inserted", "已放入种子");
+        add("message.cybercultivator.splicer.inspect", "状态查看");
+        add("message.cybercultivator.splicer.status", "[基因拼接机] %s | 输入:%s 输出:%s");
+        add("message.cybercultivator.condenser.inspect", "状态查看");
+        add("message.cybercultivator.condenser.output_extracted", "已取出纯净水");
+        add("message.cybercultivator.condenser.status", "[大气冷凝器] %s | 库存:%s");
+
         // Advancements
         add("advancement.cybercultivator.root.title", "赛博农夫");
         add("advancement.cybercultivator.root.description", "欢迎来到赛博农业的世界");

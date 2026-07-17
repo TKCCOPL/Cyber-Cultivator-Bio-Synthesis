@@ -1,5 +1,7 @@
 # Config 扩展 + 数据驱动 + KubeJS + 性能优化 设计规范
 
+> **当前状态（2026-07-17）：** Config、JSON 配方和 tick 优化已实现；KubeJS 集成延期，本轮不恢复依赖或修改 `mods.toml`。下文 KubeJS 内容保留为历史设计目标，不代表当前可用功能。
+
 **日期：** 2026-05-30
 **模组：** Cyber-Cultivator: Bio-Synthesis v1.1.2
 **目标版本：** Forge 1.20.1

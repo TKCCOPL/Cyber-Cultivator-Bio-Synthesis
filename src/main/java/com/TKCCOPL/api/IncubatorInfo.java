@@ -9,6 +9,9 @@ public record IncubatorInfo(
     boolean hasSeed, ItemStack seed
 ) {
     public IncubatorInfo {
-        if (seed != null) seed = seed.copy(); // defensive copy
+        seed = seed == null ? ItemStack.EMPTY : seed.copy();
     }
+
+    @Override
+    public ItemStack seed() { return seed.copy(); }
 }

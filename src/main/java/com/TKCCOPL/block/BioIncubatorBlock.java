@@ -50,7 +50,7 @@ public class BioIncubatorBlock extends MachineBlock {
                 if (!player.addItem(seedOut)) {
                     player.drop(seedOut, false);
                 }
-                player.displayClientMessage(Component.literal("[Bio-Incubator] 已取出种子").withStyle(ChatFormatting.GRAY), true);
+                sendMachineStatus(player, blockEntity, Component.translatable("message.cybercultivator.incubator.seed_extracted"));
                 return InteractionResult.CONSUME;
             }
             return InteractionResult.PASS;
@@ -69,7 +69,7 @@ public class BioIncubatorBlock extends MachineBlock {
                     player.drop(bottle, false);
                 }
             }
-            sendMachineStatus(player, blockEntity, "注入纯净水 +" + Config.purityInjectAmount);
+            sendMachineStatus(player, blockEntity, Component.translatable("message.cybercultivator.incubator.inject_purity", Config.purityInjectAmount));
             return InteractionResult.CONSUME;
         }
 
@@ -78,7 +78,7 @@ public class BioIncubatorBlock extends MachineBlock {
             if (!player.getAbilities().instabuild) {
                 held.shrink(1);
             }
-            sendMachineStatus(player, blockEntity, "注入营养液 +" + Config.nutritionInjectAmount);
+            sendMachineStatus(player, blockEntity, Component.translatable("message.cybercultivator.incubator.inject_nutrition", Config.nutritionInjectAmount));
             return InteractionResult.CONSUME;
         }
 
@@ -87,7 +87,7 @@ public class BioIncubatorBlock extends MachineBlock {
             if (!player.getAbilities().instabuild) {
                 held.shrink(1);
             }
-            sendMachineStatus(player, blockEntity, "注入数据信号 +" + Config.dataSignalInjectAmount);
+            sendMachineStatus(player, blockEntity, Component.translatable("message.cybercultivator.incubator.inject_signal", Config.dataSignalInjectAmount));
             return InteractionResult.CONSUME;
         }
 
@@ -98,12 +98,12 @@ public class BioIncubatorBlock extends MachineBlock {
                 if (!player.getAbilities().instabuild) {
                     held.shrink(1);
                 }
-                sendMachineStatus(player, blockEntity, "已放入种子");
+                sendMachineStatus(player, blockEntity, Component.translatable("message.cybercultivator.incubator.seed_inserted"));
                 return InteractionResult.CONSUME;
             }
         }
 
-        sendMachineStatus(player, blockEntity, "状态查看");
+        sendMachineStatus(player, blockEntity, Component.translatable("message.cybercultivator.incubator.inspect"));
         return InteractionResult.CONSUME;
     }
 
@@ -148,21 +148,21 @@ public class BioIncubatorBlock extends MachineBlock {
         return 2;
     }
 
-    private static void sendMachineStatus(Player player, BioIncubatorBlockEntity blockEntity, String action) {
-        StringBuilder msg = new StringBuilder();
-        msg.append(String.format("[Bio-Incubator] %s | N:%d P:%d D:%d", action, blockEntity.getNutrition(), blockEntity.getPurity(), blockEntity.getDataSignal()));
+    private static void sendMachineStatus(Player player, BioIncubatorBlockEntity blockEntity, Component action) {
+        Component message = Component.translatable("message.cybercultivator.incubator.status", action,
+                blockEntity.getNutrition(), blockEntity.getPurity(), blockEntity.getDataSignal());
 
         if (blockEntity.hasSeed()) {
             int percent = blockEntity.getGrowthPercent();
             int eta = blockEntity.getEstimatedSecondsRemaining();
-            msg.append(String.format(" | 生长: %d%%", percent));
+            message = message.copy().append(Component.translatable("message.cybercultivator.incubator.growth", percent));
             if (eta >= 0) {
-                msg.append(String.format(" (约%ds)", eta));
+                message = message.copy().append(Component.translatable("message.cybercultivator.incubator.eta", eta));
             } else {
-                msg.append(" (资源不足)");
+                message = message.copy().append(Component.translatable("message.cybercultivator.incubator.insufficient"));
             }
         }
 
-        player.displayClientMessage(Component.literal(msg.toString()).withStyle(ChatFormatting.GRAY), true);
+        player.displayClientMessage(message.copy().withStyle(ChatFormatting.GRAY), true);
     }
 }

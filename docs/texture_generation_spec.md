@@ -6,7 +6,7 @@
 - 风格：Minecraft 原生风格兼容的 16x16 像素风，赛博实验室气质（高对比、轻霓虹点缀）。
 - 分辨率：16x16（默认）。
 - 放大稿：可让 AI 先出 512x512 或 1024x1024，再手工缩放到 16x16 并做像素修正。
-- 文件格式：PNG（RGBA，非索引色）。
+- 文件格式：PNG。物品和作物使用 RGBA；完全不透明的机器面可使用 RGB 或索引色 PNG。
 - 透明通道：
   - 物品与作物：必须支持透明背景。
   - 方块实心面：可不透明，但建议保留 RGBA 以便后续调整。
@@ -58,25 +58,25 @@
 
 | 资源名 | 中文名 | 目标文件 | 状态 | 尺寸 |
 |--------|--------|----------|------|------|
-| fiber_reed_stage0 | 纤维草 | textures/block/fiber_reed_stage0.png | ⚠ 占位 | 16x16 |
-| protein_soy_stage0 | 蛋白质豆 | textures/block/protein_soy_stage0.png | ⚠ 占位 | 16x16 |
-| alcohol_bloom_stage0 | 酒精花 | textures/block/alcohol_bloom_stage0.png | ⚠ 占位 | 16x16 |
+| fiber_reed_stage0-stage3 | 纤维草 | textures/block/fiber_reed_stage0.png … stage3.png | 四阶段已有；stage0 仍列入占位替换 | 16x16 |
+| protein_soy_stage0-stage3 | 蛋白质豆 | textures/block/protein_soy_stage0.png … stage3.png | 四阶段已有；stage0 仍列入占位替换 | 16x16 |
+| alcohol_bloom_stage0-stage3 | 酒精花 | textures/block/alcohol_bloom_stage0.png … stage3.png | 四阶段已有；stage0 仍列入占位替换 | 16x16 |
 
-> 注：作物方块所有生长阶段（age 0-7）共用 stage0 贴图，由 datagen 生成 blockstate 映射。
+> 注：作物 age 0-7 映射到四张贴图：0-1 → stage0、2-3 → stage1、4-5 → stage2、6-7 → stage3。
 
 ### 2.2 物品贴图
 
 | 资源名 | 中文名 | 目标文件 | 状态 | 尺寸 |
 |--------|--------|----------|------|------|
-| silicon_shard | 硅碎片 | textures/item/silicon_shard.png | ✓ 已有 | 32x32 |
-| rare_earth_dust | 稀土粉末 | textures/item/rare_earth_dust.png | ✓ 已有 | 32x32 |
-| plant_fiber | 植物纤维 | textures/item/plant_fiber.png | ✓ 已有 | 32x32 |
-| biochemical_solution | 生化原液 | textures/item/biochemical_solution.png | ✓ 已有 | 32x32 |
-| industrial_ethanol | 工业乙醇 | textures/item/industrial_ethanol.png | ✓ 已有 | 32x32 |
-| purified_water_bottle | 纯净水瓶 | textures/item/purified_water_bottle.png | ✓ 已有 | 32x32 |
+| silicon_shard | 硅碎片 | textures/item/silicon_shard.png | ✓ 已有 | 16x16 |
+| rare_earth_dust | 稀土粉末 | textures/item/rare_earth_dust.png | ✓ 已有 | 16x16 |
+| plant_fiber | 植物纤维 | textures/item/plant_fiber.png | ✓ 已有 | 16x16 |
+| biochemical_solution | 生化原液 | textures/item/biochemical_solution.png | ✓ 已有 | 16x16 |
+| industrial_ethanol | 工业乙醇 | textures/item/industrial_ethanol.png | ✓ 已有 | 16x16 |
+| purified_water_bottle | 纯净水瓶 | textures/item/purified_water_bottle.png | ✓ 已有 | 16x16 |
 | fiber_reed_seeds | 纤维草种子 | textures/item/fiber_reed_seeds.png | ✓ 已有 | 16x16 |
 | protein_soy_seeds | 蛋白质豆种子 | textures/item/protein_soy_seeds.png | ✓ 已有 | 16x16 |
-| alcohol_bloom_seeds | 酒精花种子 | textures/item/alcohol_bloom_seeds.png | ✓ 已有 | 32x32 |
+| alcohol_bloom_seeds | 酒精花种子 | textures/item/alcohol_bloom_seeds.png | ✓ 已有 | 16x16 |
 | spectrum_monocle | 光谱单片镜 | textures/item/spectrum_monocle.png | ✓ 已有 | 16x16 |
 | synaptic_neural_berry | 突触神经莓 | textures/item/synaptic_neural_berry.png | ✓ 已有 | 16x16 |
 | synaptic_serum_s01 | S-01 突触超频血清 | textures/item/synaptic_serum_s01.png | ✓ 已有 | 16x16 |
@@ -123,35 +123,35 @@
 | P1 | `item/bio_pulse_belt.png` | 生化脉冲腰带 | 模块化金属腰带、蓝色能量匣、脉冲灯点、赛博朋克风格、cyberpunk belt with energy cell |
 | P1 | `item/life_support_pack.png` | 生命支持箱 | 背部医疗包、管路接口、应急药剂仓、绿色十字标识、military medical backpack with tubes |
 
-### 3.2 尺寸不一致（7 张）
+### 3.2 尺寸不一致（7 张，已完成）
 
-以下物品贴图为 32x32，规范要求 16x16。Minecraft 会自动缩放但可能导致模糊：
+以下物品贴图历史上为 32x32，现已全部转换为 16x16：
 
 | 文件 | 中文名 | 当前 → 目标 |
 |------|--------|-------------|
-| `item/silicon_shard.png` | 硅碎片 | 32x32 → 16x16 |
-| `item/rare_earth_dust.png` | 稀土粉末 | 32x32 → 16x16 |
-| `item/plant_fiber.png` | 植物纤维 | 32x32 → 16x16 |
-| `item/biochemical_solution.png` | 生化原液 | 32x32 → 16x16 |
-| `item/industrial_ethanol.png` | 工业乙醇 | 32x32 → 16x16 |
-| `item/purified_water_bottle.png` | 纯净水瓶 | 32x32 → 16x16 |
-| `item/alcohol_bloom_seeds.png` | 酒精花种子 | 32x32 → 16x16 |
+| `item/silicon_shard.png` | 硅碎片 | 16x16 ✓ |
+| `item/rare_earth_dust.png` | 稀土粉末 | 16x16 ✓ |
+| `item/plant_fiber.png` | 植物纤维 | 16x16 ✓ |
+| `item/biochemical_solution.png` | 生化原液 | 16x16 ✓ |
+| `item/industrial_ethanol.png` | 工业乙醇 | 16x16 ✓ |
+| `item/purified_water_bottle.png` | 纯净水瓶 | 16x16 ✓ |
+| `item/alcohol_bloom_seeds.png` | 酒精花种子 | 16x16 ✓ |
 
 ---
 
 ## 4. 交付检查清单（生成后逐项验收）
 - [ ] 尺寸是否为 16x16
 - [ ] 文件名是否与模型引用一致
-- [ ] 透明背景是否正确（RGBA 格式，非索引色）
+- [ ] 透明背景是否正确（物品/作物需 RGBA；不透明机器面可使用索引色）
 - [ ] 在创造栏中缩略图是否可辨识（不糊、不脏、不撞色）
 - [ ] 与同类原版物品并列时，亮度和对比是否不过分突兀
-- [ ] 作物贴图 stage0 是否为透明背景（crop 模型需要）
+- [ ] 作物四阶段 stage0-stage3 是否均为透明背景（crop 模型需要）
 
 ---
 
 ## 5. 建议工作流
 1. 优先替换 15 张占位贴图（P1，影响视觉品质）
-2. 将 7 张 32x32 物品贴图缩放到 16x16
+2. 7 张历史 32x32 物品贴图已完成 16x16 转换，无需重复处理
 3. 放入对应目录后 `./gradlew runData && ./gradlew runClient` 实机查看
 4. 最后做第二轮微调（轮廓、对比、色相统一）
 

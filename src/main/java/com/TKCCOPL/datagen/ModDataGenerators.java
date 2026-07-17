@@ -2,11 +2,14 @@ package com.TKCCOPL.datagen;
 
 import com.TKCCOPL.cybercultivator;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.data.structures.SnbtToNbt;
 import net.minecraftforge.data.event.GatherDataEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 import java.util.concurrent.CompletableFuture;
+import java.nio.file.Path;
+import java.util.List;
 
 @Mod.EventBusSubscriber(modid = cybercultivator.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class ModDataGenerators {
@@ -28,5 +31,7 @@ public final class ModDataGenerators {
         generator.addProvider(event.includeServer(), new ModLootTableProvider(output));
         generator.addProvider(event.includeServer(), new ModRecipeProvider(output));
         generator.addProvider(event.includeServer(), new ModAdvancementProvider(output, lookupProvider, existingFileHelper));
+        generator.addProvider(event.includeServer(), new SnbtToNbt(output,
+                List.of(Path.of("..", "src", "main", "snbt").normalize())));
     }
 }

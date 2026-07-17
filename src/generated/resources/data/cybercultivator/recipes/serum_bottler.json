@@ -5,6 +5,9 @@
     "B": {
       "item": "minecraft:glass_bottle"
     },
+    "C": {
+      "item": "cybercultivator:rare_earth_dust"
+    },
     "I": {
       "item": "minecraft:iron_ingot"
     },
@@ -17,7 +20,7 @@
   },
   "pattern": [
     "IRI",
-    "SRS",
+    "SCS",
     "IBI"
   ],
   "result": {

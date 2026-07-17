@@ -40,7 +40,7 @@ public class AtmosphericCondenserBlock extends MachineBlock {
         }
 
         if (player.isShiftKeyDown()) {
-            sendStatus(player, blockEntity, "状态查看");
+            sendStatus(player, blockEntity, Component.translatable("message.cybercultivator.condenser.inspect"));
             return InteractionResult.CONSUME;
         }
 
@@ -49,11 +49,11 @@ public class AtmosphericCondenserBlock extends MachineBlock {
             if (!player.addItem(out)) {
                 player.drop(out, false);
             }
-            sendStatus(player, blockEntity, "已取出纯净水");
+            sendStatus(player, blockEntity, Component.translatable("message.cybercultivator.condenser.output_extracted"));
             return InteractionResult.CONSUME;
         }
 
-        sendStatus(player, blockEntity, "状态查看");
+        sendStatus(player, blockEntity, Component.translatable("message.cybercultivator.condenser.inspect"));
         return InteractionResult.CONSUME;
     }
 
@@ -98,8 +98,8 @@ public class AtmosphericCondenserBlock extends MachineBlock {
         return 2;
     }
 
-    private static void sendStatus(Player player, AtmosphericCondenserBlockEntity blockEntity, String action) {
-        String msg = String.format("[Condenser] %s | 库存:%d", action, blockEntity.getOutput().getCount());
-        player.displayClientMessage(Component.literal(msg).withStyle(ChatFormatting.GRAY), true);
+    private static void sendStatus(Player player, AtmosphericCondenserBlockEntity blockEntity, Component action) {
+        player.displayClientMessage(Component.translatable("message.cybercultivator.condenser.status",
+                action, blockEntity.getOutput().getCount()).withStyle(ChatFormatting.GRAY), true);
     }
 }
