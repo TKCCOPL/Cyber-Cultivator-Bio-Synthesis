@@ -225,7 +225,17 @@ git commit -m "release: vX.Y.Z 更新与修复
 
 ### 4. PR 合并 + 自动发布
 - 推送版本分支并创建 PR，不直接推送 `main`。
-- PR 标题和正文只列出本版本面向用户的更新内容与问题修复；不要加入审计过程、测试过程、内部计划或延期事项。CI 会将其写入 annotated tag 注释和 GitHub Release notes。
+- 版本 PR 正文必须使用下列格式；没有内容的章节直接省略，每一项必须为单行列表：
+  ```markdown
+  ## 更新
+
+  - 用户可见的功能更新
+
+  ## 修复
+
+  - 用户可见的问题修复
+  ```
+- PR 正文不要写版本号提升、README 或其他文档同步，也不要加入审计过程、测试过程、内部计划或延期事项。CI 只接受上述格式，并将其写入 annotated tag 注释和 GitHub Release notes。
 - PR 合并到 `main` 后，CI 在构建、datagen、Curios 运行时测试和无可选依赖测试全部通过后自动：
   1. 上传 `cybercultivator-X.Y.Z.jar` 为 workflow artifact（保留 30 天）。
   2. 创建 annotated tag `vX.Y.Z`。

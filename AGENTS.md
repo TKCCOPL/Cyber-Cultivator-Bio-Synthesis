@@ -112,8 +112,8 @@ For every version release, follow this order:
 2. Update the displayed version in both `README.md` and `README_EN.md`; do not add a historical changelog.
 3. Check whether `CLAUDE.md`, `AGENTS.md`, `docs/USER_GUIDE.md`, plans, specifications, or test reports need synchronization.
 4. Run `./gradlew build`, plus `runData`, GameTests, and runtime smoke tests when applicable.
-5. Commit with a release subject such as `release: vX.Y.Z 更新与修复` and a body containing only user-visible updates and fixes.
-6. Push a version branch and open a PR. The PR title and body become the annotated tag and GitHub Release notes, so include only user-visible updates and fixes—omit audit process, test process, internal plans, and deferred work.
+5. Commit with a release subject such as `release: vX.Y.Z 更新与修复` and a body containing only user-visible feature updates and fixes.
+6. Push a version branch and open a PR. Format its body with optional `## 更新` and `## 修复` headings followed only by single-line `- ` items; include at least one item. CI normalizes this body into the annotated tag and GitHub Release notes and rejects any other content. Omit version bumps, README or other documentation synchronization, audit and test processes, internal plans, and deferred work.
 7. Merge only after build, datagen, the Curios runtime smoke test, and the no-optional-dependencies smoke test pass.
 
 After merge, CI uploads `cybercultivator-X.Y.Z.jar`, creates annotated tag `vX.Y.Z`, and creates the matching GitHub Release with the JAR attached. If that release already exists, CI keeps only the workflow artifact; therefore, every real release must use a new version.

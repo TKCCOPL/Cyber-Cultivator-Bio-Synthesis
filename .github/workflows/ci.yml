@@ -168,31 +168,83 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" \
             > associated-prs.json
 
-          release_title="$(jq -r '.[0].title // empty' associated-prs.json)"
           release_body="$(jq -r '.[0].body // empty' associated-prs.json)"
-          if [[ -z "$release_title" ]]; then
-            release_title="$(git log -1 --pretty=%s "$GITHUB_SHA")"
-          fi
           if [[ -z "$release_body" ]]; then
-            previous_tag="$(git describe --tags --abbrev=0 "$GITHUB_SHA^" 2>/dev/null || true)"
-            if [[ -n "$previous_tag" ]]; then
-              release_body="$(git log --pretty='- %s' "${previous_tag}..${GITHUB_SHA}")"
-            else
-              release_body="$(git log --pretty='- %s' "$GITHUB_SHA")"
-            fi
+            echo "A version release requires an associated PR body." >&2
+            exit 1
           fi
 
-          {
-            printf '%s: %s\n\n' "$tag" "$release_title"
-            printf '%s\n' "$release_body"
-          } > tag-message.md
+          printf '%s\n' "$release_body" > release-body.md
+          : > release-updates.md
+          : > release-fixes.md
 
-          {
-            printf '## 更新内容 / Changes\n\n'
-            printf '%s\n' "$release_body"
-            printf '\n## 下载 / Download\n\n'
-            printf -- '- `%s` — Minecraft 1.20.1 / Forge 47.4.18\n' "$JAR_NAME"
-          } > release-notes.md
+          awk '
+            BEGIN {
+              section = ""
+              update_heading = 0
+              fix_heading = 0
+              item_count = 0
+              invalid = 0
+            }
+            {
+              line = $0
+              sub(/\r$/, "", line)
+
+              if (line == "## 更新") {
+                if (update_heading++) {
+                  print "Duplicate release heading: ## 更新" > "/dev/stderr"
+                  invalid = 1
+                }
+                section = "update"
+                next
+              }
+              if (line == "## 修复") {
+                if (fix_heading++) {
+                  print "Duplicate release heading: ## 修复" > "/dev/stderr"
+                  invalid = 1
+                }
+                section = "fix"
+                next
+              }
+              if (line ~ /^[[:space:]]*$/) {
+                next
+              }
+              if (line ~ /^- [^[:space:]]/ && section == "update") {
+                print line >> "release-updates.md"
+                item_count++
+                next
+              }
+              if (line ~ /^- [^[:space:]]/ && section == "fix") {
+                print line >> "release-fixes.md"
+                item_count++
+                next
+              }
+
+              print "Invalid release note line: " line > "/dev/stderr"
+              invalid = 1
+            }
+            END {
+              if (item_count == 0) {
+                print "Release notes require at least one update or fix." > "/dev/stderr"
+                invalid = 1
+              }
+              exit invalid
+            }
+          ' release-body.md
+
+          : > release-notes.md
+          if [[ -s release-updates.md ]]; then
+            printf '## 更新\n\n' >> release-notes.md
+            cat release-updates.md >> release-notes.md
+          fi
+          if [[ -s release-fixes.md ]]; then
+            if [[ -s release-notes.md ]]; then
+              printf '\n' >> release-notes.md
+            fi
+            printf '## 修复\n\n' >> release-notes.md
+            cat release-fixes.md >> release-notes.md
+          fi
+          cp release-notes.md tag-message.md
 
           if git rev-parse --verify --quiet "refs/tags/${tag}" >/dev/null; then
             tag_commit="$(git rev-list -n 1 "$tag")"
@@ -211,6 +263,6 @@ jobs:
             "${jar_path}#${JAR_NAME}" \
             --repo "$GITHUB_REPOSITORY" \
             --verify-tag \
-            --title "$tag — $release_title" \
+            --title "$tag" \
             --notes-file release-notes.md \
             --latest
