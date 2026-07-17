@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <b>v1.1.4</b> · Forge 1.20.1 · Curios API 5.3.5<br>
+  <b>v1.1.5</b> · Forge 1.20.1 · Curios API 5.3.5<br>
   遗传育种算法 + 生物强化血清系统
 </p>
 
@@ -145,6 +145,17 @@
 ## 更新日志
 
 <details open>
+<summary><b>v1.1.5</b> — API 稳定性修复 + GameTest 覆盖</summary>
+
+- 修复灌装机合成配方与培养槽成熟事件取消语义
+- 统一 Activity 1–15 边界、血清事件覆盖规则及旧配方编号兼容
+- 加强公开 API 的 null 安全、不可变快照和 ItemStack 深拷贝
+- 将四类机器状态消息完整本地化，并同步用户指南与历史报告
+- 新增 5 项 Forge GameTest，覆盖关键玩法与 API 回归
+
+</details>
+
+<details>
 <summary><b>v1.1.4</b> — 核心生产链稳定性修复 + 自动发布</summary>
 
 - 修复种子默认基因初始化、旧 NBT 迁移及 Synergy 跨代继承

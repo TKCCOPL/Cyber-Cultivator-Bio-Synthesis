@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <b>v1.1.4</b> · Forge 1.20.1 · Curios API 5.3.5<br>
+  <b>v1.1.5</b> · Forge 1.20.1 · Curios API 5.3.5<br>
   Genetic Breeding Algorithm + Bio-Enhancement Serum System
 </p>
 
@@ -139,6 +139,17 @@ Hopper connections: Condenser side extraction, Bottler top/side input, bottom ou
 ## Changelog
 
 <details open>
+<summary><b>v1.1.5</b> — API Stability Fixes + GameTest Coverage</summary>
+
+- Fixed the Bottler crafting recipe and Incubator maturity-event cancellation semantics
+- Unified the Activity 1–15 boundary, serum event overrides, and legacy recipe indices
+- Hardened public APIs with null safety, immutable snapshots, and defensive ItemStack copies
+- Localized all four machine status messages and synchronized user guides and historical reports
+- Added five Forge GameTests covering key gameplay and API regressions
+
+</details>
+
+<details>
 <summary><b>v1.1.4</b> — Core Production Stability Fixes + Automated Releases</summary>
 
 - Fixed default seed gene initialization, legacy NBT migration, and cross-generation Synergy inheritance
