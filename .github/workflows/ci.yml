@@ -3,7 +3,13 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
   pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
   workflow_dispatch:
 
 permissions:
@@ -36,11 +42,8 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Build reobfuscated JAR
-        run: ./gradlew build --no-daemon --stacktrace
-
-      - name: Regenerate data resources
-        run: ./gradlew runData --no-daemon --stacktrace
+      - name: Build JAR and regenerate data resources
+        run: ./gradlew build runData --no-daemon --stacktrace
 
       - name: Check generated resources are current
         run: git diff --exit-code -- src/generated/resources
