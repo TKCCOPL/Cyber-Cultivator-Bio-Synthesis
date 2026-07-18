@@ -8,22 +8,29 @@ import com.TKCCOPL.recipe.SerumRecipe;
 import com.TKCCOPL.recipe.SerumRecipeIds;
 import com.TKCCOPL.recipe.RecipeOrdering;
 import com.TKCCOPL.event.SerumCraftEvent;
+import com.TKCCOPL.menu.SerumBottlerMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.MenuProvider;
 import net.minecraft.world.WorldlyContainer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
-public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyContainer {
+public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyContainer, MenuProvider {
     private static final String TAG_PROGRESS = "Progress";
     private static final String TAG_MAX_PROGRESS = "MaxProgress";
     private static final String TAG_INPUT = "Input";
@@ -92,6 +99,26 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     private String pendingRecipeId; // 用于 load() 后延迟恢复 cachedRecipe
     private final SimpleContainer recipeContainer = new SimpleContainer(INPUT_SLOTS);
     private boolean inputsDirty = true;
+    private final ContainerData menuData = new ContainerData() {
+        @Override
+        public int get(int index) {
+            return switch (index) {
+                case 0 -> progress;
+                case 1 -> maxProgress;
+                case 2 -> calculateActivity(inputs);
+                default -> 0;
+            };
+        }
+
+        @Override
+        public void set(int index, int value) {
+        }
+
+        @Override
+        public int getCount() {
+            return 3;
+        }
+    };
 
     public SerumBottlerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SERUM_BOTTLER.get(), pos, state);
@@ -323,7 +350,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
                 ? cachedRecipe.getId()
                 : pendingRecipeId == null ? null : ResourceLocation.tryParse(pendingRecipeId);
     }
-    public ItemStack getOutput() { return output; }
+    public ItemStack getOutput() { return output.copy(); }
 
     public ItemStack extractOutput() {
         if (output.isEmpty()) return ItemStack.EMPTY;
@@ -343,7 +370,11 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
                 ItemStack out = inputs[i];
                 inputs[i] = ItemStack.EMPTY;
                 markInputsDirty();
-                syncToClient();
+                if (maxProgress > 0) {
+                    cancelProcessing();
+                } else {
+                    syncToClient();
+                }
                 return out;
             }
         }
@@ -355,11 +386,15 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
      * Called when the player extracts input materials mid-processing.
      */
     public void cancelProcessing() {
+        resetProcessing();
+        syncToClient();
+    }
+
+    private void resetProcessing() {
         cachedRecipe = null;
         pendingRecipeId = null;
         progress = 0;
         maxProgress = 0;
-        syncToClient();
     }
 
     private void markInputsDirty() {
@@ -431,6 +466,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
             ItemStack out = inputs[slot];
             inputs[slot] = ItemStack.EMPTY;
             markInputsDirty();
+            resetProcessing();
             setChanged();
             return out;
         }
@@ -440,15 +476,34 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     @Override
     public void setItem(int slot, ItemStack stack) {
         if (slot < INPUT_SLOTS) {
-            inputs[slot] = stack;
+            boolean changed = !ItemStack.matches(inputs[slot], stack);
+            inputs[slot] = stack.copy();
             markInputsDirty();
-            setChanged();
+            if (changed && maxProgress > 0) {
+                cancelProcessing();
+            } else {
+                syncToClient();
+            }
+        } else if (slot == OUTPUT_SLOT) {
+            output = stack.copy();
+            syncToClient();
         }
     }
 
     @Override
+    public boolean canPlaceItem(int slot, ItemStack stack) {
+        if (slot < 0 || slot >= INPUT_SLOTS || stack.isEmpty()) return false;
+        if (level == null) return true;
+        return level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get()).stream()
+                .flatMap(recipe -> java.util.Arrays.stream(recipe.getInputs()))
+                .anyMatch(ingredient -> ingredient.test(stack));
+    }
+
+    @Override
     public boolean stillValid(net.minecraft.world.entity.player.Player player) {
-        return true;
+        return level != null && level.getBlockEntity(worldPosition) == this
+                && player.distanceToSqr(worldPosition.getX() + 0.5, worldPosition.getY() + 0.5,
+                worldPosition.getZ() + 0.5) <= 64.0;
     }
 
     @Override
@@ -458,7 +513,22 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         }
         output = ItemStack.EMPTY;
         markInputsDirty();
-        setChanged();
+        cachedRecipe = null;
+        pendingRecipeId = null;
+        progress = 0;
+        maxProgress = 0;
+        syncToClient();
+    }
+
+    @Override
+    public Component getDisplayName() {
+        return Component.translatable("container.cybercultivator.serum_bottler");
+    }
+
+    @org.jetbrains.annotations.Nullable
+    @Override
+    public AbstractContainerMenu createMenu(int containerId, Inventory inventory, Player player) {
+        return new SerumBottlerMenu(containerId, inventory, this, menuData);
     }
 
     @Override
@@ -470,7 +540,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
 
     @Override
     public boolean canPlaceItemThroughFace(int slot, ItemStack stack, Direction side) {
-        return slot < INPUT_SLOTS && side != Direction.DOWN;
+        return side != Direction.DOWN && canPlaceItem(slot, stack);
     }
 
     @Override
@@ -486,6 +556,11 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         // 加载配方 ID（延迟恢复，因为 load() 时 level 为 null）
         cachedRecipe = null;
         pendingRecipeId = tag.contains(TAG_RECIPE_ID) ? tag.getString(TAG_RECIPE_ID) : null;
+        if (maxProgress > 0 && (pendingRecipeId == null || pendingRecipeId.isBlank())) {
+            progress = 0;
+            maxProgress = 0;
+            pendingRecipeId = null;
+        }
         for (int i = 0; i < INPUT_SLOTS; i++) {
             String key = TAG_INPUT + i;
             inputs[i] = tag.contains(key) ? ItemStack.of(tag.getCompound(key)) : ItemStack.EMPTY;
@@ -500,8 +575,9 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         tag.putInt(TAG_PROGRESS, progress);
         tag.putInt(TAG_MAX_PROGRESS, maxProgress);
         // 持久化配方 ID，用于世界重载后恢复
-        if (cachedRecipe != null) {
-            tag.putString(TAG_RECIPE_ID, cachedRecipe.getId().toString());
+        ResourceLocation activeRecipeId = getActiveRecipeId();
+        if (activeRecipeId != null) {
+            tag.putString(TAG_RECIPE_ID, activeRecipeId.toString());
         }
         for (int i = 0; i < INPUT_SLOTS; i++) {
             String key = TAG_INPUT + i;

@@ -4,25 +4,70 @@ import com.TKCCOPL.Config;
 import com.TKCCOPL.init.ModBlockEntities;
 import com.TKCCOPL.item.GeneticSeedItem;
 import com.TKCCOPL.event.GeneSpliceEvent;
+import com.TKCCOPL.menu.GeneSplicerMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.Container;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
-public class GeneSplicerBlockEntity extends BlockEntity {
+public class GeneSplicerBlockEntity extends BlockEntity implements Container, MenuProvider {
     private static final String TAG_SEED_A = "SeedA";
     private static final String TAG_SEED_B = "SeedB";
     private static final String TAG_OUTPUT = "Output";
+    private static final String TAG_SPLICE_PROGRESS = "SpliceProgress";
+    private static final String TAG_SPLICING = "Splicing";
+    private static final String TAG_AUTOMATIC_WORKFLOW = "AutomaticWorkflow";
+
+    public static final int SPLICE_DURATION_TICKS = 100;
+
+    public static final int SEED_A_SLOT = 0;
+    public static final int SEED_B_SLOT = 1;
+    public static final int OUTPUT_SLOT = 2;
 
     private ItemStack seedA = ItemStack.EMPTY;
     private ItemStack seedB = ItemStack.EMPTY;
     private ItemStack output = ItemStack.EMPTY;
+    private int spliceProgress;
+    private boolean splicing;
+
+    private final ContainerData menuData = new ContainerData() {
+        @Override
+        public int get(int index) {
+            return switch (index) {
+                case 0 -> spliceProgress;
+                case 1 -> SPLICE_DURATION_TICKS;
+                case 2 -> splicing ? 1 : 0;
+                case 3 -> Math.min(Short.MAX_VALUE, getPredictedGeneration());
+                case 4 -> getPredictedMutationPermille();
+                default -> 0;
+            };
+        }
+
+        @Override
+        public void set(int index, int value) {
+            if (index == 0) spliceProgress = Math.max(0, Math.min(SPLICE_DURATION_TICKS, value));
+            if (index == 2) splicing = value != 0;
+        }
+
+        @Override
+        public int getCount() {
+            return 5;
+        }
+    };
 
     /** 防止同 tick 双次 use() 导致放入两颗种子 */
     private long lastInsertTick = -1;
@@ -32,7 +77,7 @@ public class GeneSplicerBlockEntity extends BlockEntity {
     }
 
     public boolean tryInsertSeed(ItemStack stack, RandomSource random) {
-        if (!output.isEmpty()) {
+        if (splicing || !output.isEmpty()) {
             return false;
         }
         if (!(stack.getItem() instanceof GeneticSeedItem)) {
@@ -46,16 +91,17 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         }
 
         if (seedA.isEmpty()) {
-            seedA = stack;
+            seedA = normalizedSeed(stack);
             lastInsertTick = currentTick;
             syncToClient();
             return true;
         }
         if (seedB.isEmpty()) {
-            seedB = stack;
+            seedB = normalizedSeed(stack);
             lastInsertTick = currentTick;
-            craftOutput(random);
-            syncToClient();
+            if (!startSplicing()) {
+                syncToClient();
+            }
             return true;
         }
         return false;
@@ -67,7 +113,8 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         }
         ItemStack out = output;
         output = ItemStack.EMPTY;
-        // 取出 output 后清除父本种子
+        resetSplicing();
+        // Defensive cleanup for saves created before parents were consumed on completion.
         seedA = ItemStack.EMPTY;
         seedB = ItemStack.EMPTY;
         syncToClient();
@@ -78,12 +125,14 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         if (!seedB.isEmpty()) {
             ItemStack out = seedB;
             seedB = ItemStack.EMPTY;
+            resetSplicing();
             syncToClient();
             return out;
         }
         if (!seedA.isEmpty()) {
             ItemStack out = seedA;
             seedA = ItemStack.EMPTY;
+            resetSplicing();
             syncToClient();
             return out;
         }
@@ -91,19 +140,53 @@ public class GeneSplicerBlockEntity extends BlockEntity {
     }
 
     public ItemStack getSeedA() {
-        return seedA;
+        return seedA.copy();
     }
 
     public ItemStack getSeedB() {
-        return seedB;
+        return seedB.copy();
     }
 
     public ItemStack getOutput() {
-        return output;
+        return output.copy();
     }
 
     public boolean hasOutput() {
         return !output.isEmpty();
+    }
+
+    public int getSpliceProgress() {
+        return spliceProgress;
+    }
+
+    public int getSpliceDuration() {
+        return SPLICE_DURATION_TICKS;
+    }
+
+    public int getRemainingTicks() {
+        return splicing ? Math.max(0, SPLICE_DURATION_TICKS - spliceProgress) : 0;
+    }
+
+    public boolean isSplicing() {
+        return splicing;
+    }
+
+    public int getPredictedGeneration() {
+        if (seedA.isEmpty() || seedB.isEmpty()) {
+            return 0;
+        }
+        int maxGeneration = Math.max(
+                GeneticSeedItem.getGeneration(seedA),
+                GeneticSeedItem.getGeneration(seedB));
+        return maxGeneration == Integer.MAX_VALUE ? Integer.MAX_VALUE : maxGeneration + 1;
+    }
+
+    public int getPredictedMutationPermille() {
+        if (seedA.isEmpty() || seedB.isEmpty()) {
+            return 0;
+        }
+        double chance = Math.max(0.0D, Math.min(1.0D, calculateMutationChance()));
+        return (int) Math.round(chance * 1000.0D);
     }
 
     public int getInputCount() {
@@ -115,6 +198,51 @@ public class GeneSplicerBlockEntity extends BlockEntity {
             count++;
         }
         return count;
+    }
+
+    public boolean startSplicing(RandomSource random) {
+        return startSplicing();
+    }
+
+    public boolean startSplicing() {
+        if (splicing || !output.isEmpty() || seedA.isEmpty() || seedB.isEmpty()) return false;
+        spliceProgress = 0;
+        splicing = true;
+        syncToClient();
+        return true;
+    }
+
+    public static void tick(Level level, BlockPos pos, BlockState state, GeneSplicerBlockEntity blockEntity) {
+        if (level.isClientSide || !blockEntity.splicing) return;
+        if (blockEntity.seedA.isEmpty() || blockEntity.seedB.isEmpty() || !blockEntity.output.isEmpty()) {
+            blockEntity.resetSplicing();
+            blockEntity.syncToClient();
+            return;
+        }
+
+        blockEntity.spliceProgress++;
+        blockEntity.setChanged();
+        if (blockEntity.spliceProgress >= SPLICE_DURATION_TICKS) {
+            blockEntity.craftOutput(level.getRandom());
+            blockEntity.resetSplicing();
+            blockEntity.syncToClient();
+        } else if (blockEntity.spliceProgress % 5 == 0) {
+            blockEntity.syncToClient();
+        }
+    }
+
+    private void resetSplicing() {
+        spliceProgress = 0;
+        splicing = false;
+    }
+
+    private static ItemStack normalizedSeed(ItemStack stack) {
+        ItemStack normalized = stack.copy();
+        normalized.setCount(1);
+        if (normalized.getItem() instanceof GeneticSeedItem geneticSeed) {
+            geneticSeed.ensureGeneData(normalized);
+        }
+        return normalized;
     }
 
     private void craftOutput(RandomSource random) {
@@ -134,11 +262,7 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         int genA = GeneticSeedItem.getGeneration(seedA);
         int genB = GeneticSeedItem.getGeneration(seedB);
         int maxGen = Math.max(genA, genB);
-        int maxDiff = Math.max(
-                Math.abs(speedA - speedB),
-                Math.max(Math.abs(yieldA - yieldB), Math.abs(potencyA - potencyB))
-        );
-        double mutationChance = Config.mutationChanceBase + maxGen * Config.mutationChancePerGen + maxDiff * Config.mutationChancePerGeneDiff;
+        double mutationChance = calculateMutationChance();
         boolean isMutation = random.nextDouble() < mutationChance;
 
         // 3. 计算子代基因（标准公式 ±mutationRange）
@@ -243,8 +367,26 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         result.getOrCreateTag().putInt(GeneticSeedItem.GENE_GENERATION, Math.max(0, event.getGeneration()));
 
         output = result;
+        seedA = ItemStack.EMPTY;
+        seedB = ItemStack.EMPTY;
+    }
 
-        // 保留种子显示，直到玩家取出 output 后由 extractOutput() 清除
+    private double calculateMutationChance() {
+        int maxGeneration = Math.max(
+                GeneticSeedItem.getGeneration(seedA),
+                GeneticSeedItem.getGeneration(seedB));
+        int maxGeneDifference = Math.max(
+                Math.abs(GeneticSeedItem.getGene(seedA, GeneticSeedItem.GENE_SPEED)
+                        - GeneticSeedItem.getGene(seedB, GeneticSeedItem.GENE_SPEED)),
+                Math.max(
+                        Math.abs(GeneticSeedItem.getGene(seedA, GeneticSeedItem.GENE_YIELD)
+                                - GeneticSeedItem.getGene(seedB, GeneticSeedItem.GENE_YIELD)),
+                        Math.abs(GeneticSeedItem.getGene(seedA, GeneticSeedItem.GENE_POTENCY)
+                                - GeneticSeedItem.getGene(seedB, GeneticSeedItem.GENE_POTENCY)))
+        );
+        return Config.mutationChanceBase
+                + maxGeneration * Config.mutationChancePerGen
+                + maxGeneDifference * Config.mutationChancePerGeneDiff;
     }
 
     @Override
@@ -253,6 +395,14 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         seedA = tag.contains(TAG_SEED_A) ? ItemStack.of(tag.getCompound(TAG_SEED_A)) : ItemStack.EMPTY;
         seedB = tag.contains(TAG_SEED_B) ? ItemStack.of(tag.getCompound(TAG_SEED_B)) : ItemStack.EMPTY;
         output = tag.contains(TAG_OUTPUT) ? ItemStack.of(tag.getCompound(TAG_OUTPUT)) : ItemStack.EMPTY;
+        if (!output.isEmpty()) {
+            seedA = ItemStack.EMPTY;
+            seedB = ItemStack.EMPTY;
+        }
+        spliceProgress = Math.max(0, Math.min(SPLICE_DURATION_TICKS - 1, tag.getInt(TAG_SPLICE_PROGRESS)));
+        boolean ready = !seedA.isEmpty() && !seedB.isEmpty() && output.isEmpty();
+        splicing = ready && (tag.getBoolean(TAG_SPLICING) || !tag.contains(TAG_AUTOMATIC_WORKFLOW));
+        if (!splicing) spliceProgress = 0;
     }
 
     @Override
@@ -273,6 +423,9 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         } else {
             tag.put(TAG_OUTPUT, new CompoundTag());
         }
+        tag.putInt(TAG_SPLICE_PROGRESS, spliceProgress);
+        tag.putBoolean(TAG_SPLICING, splicing);
+        tag.putBoolean(TAG_AUTOMATIC_WORKFLOW, true);
     }
 
     private void syncToClient() {
@@ -280,6 +433,109 @@ public class GeneSplicerBlockEntity extends BlockEntity {
         if (level != null && !level.isClientSide) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
         }
+    }
+
+    @Override
+    public Component getDisplayName() {
+        return Component.translatable("container.cybercultivator.gene_splicer");
+    }
+
+    @Nullable
+    @Override
+    public AbstractContainerMenu createMenu(int containerId, Inventory inventory, Player player) {
+        return new GeneSplicerMenu(containerId, inventory, this, menuData);
+    }
+
+    @Override
+    public int getContainerSize() {
+        return 3;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return seedA.isEmpty() && seedB.isEmpty() && output.isEmpty();
+    }
+
+    @Override
+    public ItemStack getItem(int slot) {
+        return switch (slot) {
+            case SEED_A_SLOT -> seedA;
+            case SEED_B_SLOT -> seedB;
+            case OUTPUT_SLOT -> output;
+            default -> ItemStack.EMPTY;
+        };
+    }
+
+    @Override
+    public ItemStack removeItem(int slot, int amount) {
+        ItemStack stack = getItem(slot);
+        if (stack.isEmpty()) return ItemStack.EMPTY;
+        if (slot != OUTPUT_SLOT) resetSplicing();
+        ItemStack result = stack.split(amount);
+        if (stack.isEmpty()) setItemInternal(slot, ItemStack.EMPTY);
+        if (slot == OUTPUT_SLOT && output.isEmpty()) {
+            seedA = ItemStack.EMPTY;
+            seedB = ItemStack.EMPTY;
+        }
+        syncToClient();
+        return result;
+    }
+
+    @Override
+    public ItemStack removeItemNoUpdate(int slot) {
+        ItemStack result = getItem(slot);
+        if (slot != OUTPUT_SLOT) resetSplicing();
+        setItemInternal(slot, ItemStack.EMPTY);
+        if (slot == OUTPUT_SLOT) {
+            seedA = ItemStack.EMPTY;
+            seedB = ItemStack.EMPTY;
+        }
+        setChanged();
+        return result;
+    }
+
+    @Override
+    public void setItem(int slot, ItemStack stack) {
+        if (slot != OUTPUT_SLOT && !output.isEmpty()) return;
+        ItemStack normalized = stack.copy();
+        if (slot != OUTPUT_SLOT && !normalized.isEmpty()) normalized.setCount(1);
+        if (slot != OUTPUT_SLOT) resetSplicing();
+        setItemInternal(slot, normalized);
+        if (slot != OUTPUT_SLOT && startSplicing()) {
+            return;
+        }
+        syncToClient();
+    }
+
+    private void setItemInternal(int slot, ItemStack stack) {
+        switch (slot) {
+            case SEED_A_SLOT -> seedA = stack;
+            case SEED_B_SLOT -> seedB = stack;
+            case OUTPUT_SLOT -> output = stack;
+            default -> { }
+        }
+    }
+
+    @Override
+    public boolean canPlaceItem(int slot, ItemStack stack) {
+        return !splicing && slot != OUTPUT_SLOT && output.isEmpty()
+                && stack.getItem() instanceof GeneticSeedItem;
+    }
+
+    @Override
+    public boolean stillValid(Player player) {
+        return level != null && level.getBlockEntity(worldPosition) == this
+                && player.distanceToSqr(worldPosition.getX() + 0.5, worldPosition.getY() + 0.5,
+                worldPosition.getZ() + 0.5) <= 64.0;
+    }
+
+    @Override
+    public void clearContent() {
+        seedA = ItemStack.EMPTY;
+        seedB = ItemStack.EMPTY;
+        output = ItemStack.EMPTY;
+        resetSplicing();
+        syncToClient();
     }
 
     @Nullable

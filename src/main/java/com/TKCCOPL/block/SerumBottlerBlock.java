@@ -2,9 +2,9 @@ package com.TKCCOPL.block;
 
 import com.TKCCOPL.block.entity.SerumBottlerBlockEntity;
 import com.TKCCOPL.init.ModBlockEntities;
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.Nullable;
 
 public class SerumBottlerBlock extends MachineBlock {
@@ -34,8 +35,6 @@ public class SerumBottlerBlock extends MachineBlock {
             return InteractionResult.PASS;
         }
 
-        ItemStack held = player.getItemInHand(hand);
-
         if (level.isClientSide) {
             return InteractionResult.SUCCESS;
         }
@@ -45,48 +44,13 @@ public class SerumBottlerBlock extends MachineBlock {
             ItemStack out = blockEntity.extractOutput();
             if (!out.isEmpty()) {
                 giveToPlayer(player, out);
-                sendStatus(player, blockEntity, Component.translatable("message.cybercultivator.bottler.serum_extracted"));
+                player.displayClientMessage(Component.translatable(
+                        "message.cybercultivator.bottler.serum_extracted"), true);
                 return InteractionResult.CONSUME;
             }
-            sendStatus(player, blockEntity, Component.translatable("message.cybercultivator.bottler.inspect"));
-            return InteractionResult.CONSUME;
+            return InteractionResult.PASS;
         }
-
-        // Right-click with item: try to insert into input slots
-        if (!held.isEmpty()) {
-            for (int i = 0; i < 3; i++) {
-                if (blockEntity.getItem(i).isEmpty()) {
-                    ItemStack one = held.copy();
-                    one.setCount(1);
-                    blockEntity.setItem(i, one);
-                    if (!player.getAbilities().instabuild) {
-                        held.shrink(1);
-                    }
-                    sendStatus(player, blockEntity, Component.translatable("message.cybercultivator.bottler.input_inserted"));
-                    return InteractionResult.CONSUME;
-                }
-            }
-            sendStatus(player, blockEntity, Component.translatable("message.cybercultivator.bottler.input_full"));
-            return InteractionResult.CONSUME;
-        }
-
-        // Empty hand: extract output first, then input materials
-        ItemStack out = blockEntity.extractOutput();
-        if (!out.isEmpty()) {
-            giveToPlayer(player, out);
-            sendStatus(player, blockEntity, Component.translatable("message.cybercultivator.bottler.serum_extracted"));
-            return InteractionResult.CONSUME;
-        }
-
-        ItemStack input = blockEntity.extractLastInput();
-        if (!input.isEmpty()) {
-            blockEntity.cancelProcessing();
-            giveToPlayer(player, input);
-            sendStatus(player, blockEntity, Component.translatable("message.cybercultivator.bottler.input_retrieved"));
-            return InteractionResult.CONSUME;
-        }
-
-        sendStatus(player, blockEntity, Component.translatable("message.cybercultivator.bottler.inspect"));
+        NetworkHooks.openScreen((ServerPlayer) player, blockEntity, pos);
         return InteractionResult.CONSUME;
     }
 
@@ -141,15 +105,4 @@ public class SerumBottlerBlock extends MachineBlock {
         }
     }
 
-    private static void sendStatus(Player player, SerumBottlerBlockEntity blockEntity, Component action) {
-        Component progress = blockEntity.getMaxProgress() > 0
-                ? Component.translatable("message.cybercultivator.bottler.processing",
-                (int) (100.0 * blockEntity.getProgress() / blockEntity.getMaxProgress()))
-                : Component.translatable("message.cybercultivator.bottler.idle");
-        Component output = Component.translatable(blockEntity.getOutput().isEmpty()
-                ? "message.cybercultivator.state.no"
-                : "message.cybercultivator.state.yes");
-        player.displayClientMessage(Component.translatable("message.cybercultivator.bottler.status", action, progress, output)
-                .withStyle(ChatFormatting.GRAY), true);
-    }
 }
