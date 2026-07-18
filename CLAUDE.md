@@ -64,7 +64,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `curios/` | `CuriosCompat` — Curios API 饰品集成（compileOnly），`CurioAccessoryItem` 基类，`BioPulseBeltItem`（腰带），`LifeSupportPackItem`（支持箱），`CurioEventHandler`（事件驱动 tick） |
 | `compat/kubejs/` | 可选 KubeJS 插件、两类 Recipe Schema 与四类可热重载事件包装；核心代码不得引用 KubeJS 类型 |
 | `datagen/` | 数据生成器：配方、战利品表、方块状态、物品模型、语言文件、标签、进度引导 |
-| `client/` | `ClientTooltipEvents` — 客户端渲染/Tooltip 逻辑，`IncubatorHudOverlay` — 单片镜 HUD 浮窗 |
+| `client/` | `ClientTooltipEvents` — 单片镜种子基因 Tooltip；`client/screen/` — 四台机器的客户端界面与动画 |
+| `menu/` | 四台机器的服务端 Menu、槽位边界、Shift 快速移动与 `ContainerData` 同步 |
+| `compat/jei/` | 可选 JEI 分类；复用真实机器 GUI 工作区、槽位坐标与加工动画，核心代码不依赖 JEI |
 
 ### 关键机制
 
@@ -74,9 +76,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **培养槽 (BioIncubatorBlockEntity):**
 - 三项动态数值：Nutrition / Purity / Data Signal (0-100，随时间衰减)
-- 交互：放入种子、纯净水瓶注入纯净度、生化原液注入营养液、硅碎片注入信号、潜行取回
+- 交互：普通右键打开 6 槽 GUI（种子、营养、纯净水、信号、成熟资源输出、玻璃瓶输出）；三类资源放入后每 20 tick 自动注入一次，每个周期每条 N/P/D 通道最多消耗一份，潜行右键快速取回种子
+- 自动化：侧面仅接受三种资源，底面输出成熟资源和玻璃瓶，种子保持手动管理
+- GUI 在 N/P/D 通道上方显示实时数值，并明确区分等待种子、缺失资源、培养中/ETA、成熟输出阻塞和产物就绪状态；大生长条保持静态进度表达，不增加装饰动画
 - Tick 采用静态方法签名 `tick(Level, BlockPos, BlockState, BioIncubatorBlockEntity)`，通过 `BlockEntityTicker` 注册
 - 客户端同步：所有状态变更通过 `syncToClient()` → `setChanged()` + `level.sendBlockUpdated(pos, state, state, 2)` 推送到客户端（flags=2 是 `Block.UPDATE_CLIENTS`）。注意：`saveAdditional()` 必须写入非空 tag（空字段写入哨兵 `new CompoundTag()`），否则 `ClientboundBlockEntityDataPacket` 会将 tag 设为 null 导致客户端不调用 `load()`
+
+**基因拼接机 (GeneSplicerBlockEntity):**
+- 第二颗亲本进入槽位后自动开始，经过 100 tick（5 秒）生成子代；移除输入会取消并清零，重新补齐后自动重启
+- `GeneSplicerBlock` 注册服务端 ticker；进度与加工状态持久化并通过 `ContainerData` 同步，供 GUI 细进度条、剩余时间和连接条动画使用
+- GUI 不提供开始/交换按钮，也不显示父本 A/B 的 S/Y/P；三行信息依次显示状态、预计代数与突变概率、子代均值或实际代数/基因/协同值
+- `GeneSpliceEvent` 成功且子代写入输出槽后立即消耗两颗父本；事件取消时保留父本。普通点击、GUI Shift 快速移动和潜行右键仅负责领取已生成的子代
 
 **血清效果重平衡 (v1.1.1):**
 - S-01 突触超频：攻速+力量随 amplifier 动态增长（`applyEffectTick` 中 transient modifier + addEffect），抗性（上限 III）
@@ -93,16 +103,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `CurioEventHandler` 通过 `PlayerTickEvent` + `CuriosApi.getCuriosInventory()` 检测装备状态并驱动逻辑
 - 腰带：扫描范围内培养槽，自动消耗背包材料注入三项数值
 - 支持箱：加速 NeuralOverload 消退 + 低血量应急治疗（冷却 60s）
-- 单片镜 HUD：`IncubatorHudOverlay` 监听 `RenderGuiOverlayEvent`，准星对准机器时显示 HUD
-  - 培养槽：N/P/D 进度条 + 生长进度(G) + 预计成熟时间(ETA)
-  - 灌装机：配方名 + 加工进度条 + 突触活性值
-  - 冷凝器：生产进度条 + 库存量 + 状态
-  - 拼接机：父本种子基因 + 输出结果
+- 单片镜：仅在物品提示中解析基因种子的 S/Y/P、代数、协同与突变信息；机器状态统一在机器 GUI 中查看，不再绘制屏幕 HUD
 
 **大气冷凝器 (AtmosphericCondenserBlockEntity):**
 - 每 600 tick 生产 1 纯净水瓶，库存上限 32
-- 相邻传输：下方为培养槽时自动注入 Purity +20（消耗 1 瓶）
+- 相邻传输：下方为培养槽时可自动注入 Purity +20（消耗 1 瓶），GUI 可持久化开关此模式
 - 实现 `WorldlyContainer`，漏斗可从侧面抽取
+- GUI 以散热鳍片、竖向冷凝柱和输出箭头显示生产流程；仅生产时播放冷凝扫描，并显示进度/剩余时间、库存、下游连接或手动模式。主按钮用于暂停/继续生产，下游注入另设开关
+- GUI Shift 快速移动、潜行右键和漏斗抽取库存时都使用相同的进度清零规则
 
 **血清灌装机 (SerumBottlerBlockEntity):**
 - 3 输入槽 + 1 输出槽，配方通过 `RecipeType<SerumRecipe>` JSON 数据驱动（`data/cybercultivator/recipes/serum/`）
@@ -111,6 +119,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `matchRecipe()` 从 `RecipeManager` 查询 `SerumRecipe`，`consumeInputs()` 消耗材料
 - Activity 公式：`clamp(round(Potency×0.25 + Purity×0.375 + Concentration×0.375), 1, 10)`，按物品种类查找输入
 - `activeRecipe` 缓存配方索引避免 TOCTOU；加工开始时缓存，完成后使用缓存值
+- GUI 以三输入汇流、灌装进度和输出箭头显示自动流程；加工时仅播放一个依次经过输入支路、总线和灌装入口的材料包，三路轮流运行，避免多段脉冲同时闪动。界面显示状态、产出/耗时与预计 Activity，无手动取消按钮，输入变化仍会自动取消旧进度
+- 普通点击或 GUI Shift 快速移动任一加工输入都必须立即取消当前配方，不能保留幽灵进度
 
 **血清品质链路 (v1.1.0):**
 - 原料品质 NBT：培养槽产出时从种子 Potency 基因写入（纤维→Potency，乙醇→Purity，原液→Concentration）
@@ -125,6 +135,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `SerumRecipe`：JSON 数据驱动配方，支持 `inheritActivity` / `inheritMutation` 标签
 - `ModRecipes`：静态注册表，暴露 `IGeneSpliceRecipe`（拼接算法）和 `IIncubatorOutput`（培养槽产出）接口，供第三方 mod 查询
 - `getSeedItemForType(String)`：根据种子类型标识查找对应种子物品
+- JEI 四类机器页面直接裁切各机器 GUI 的 `(8, 19)`、`178×95` 工作区，并使用实际槽位、箭头和进度动画；冷凝器以无输入合成配方显示固定 30 秒周期
 
 **自定义事件 (event/):**
 - `GeneSpliceEvent`：拼接完成后触发，可修改子代基因/突变类型（可取消）
@@ -164,7 +175,7 @@ datagen 覆盖范围：
 - 自定义配方统一按 `priority` 降序、配方 ID 升序选择；机器、公开 API 与 JEI 必须复用 `RecipeOrdering`
 - KubeJS 专用类型只允许位于 `compat/kubejs/`，通过 `kubejs.plugins.txt` 发现；`api/`、配方核心和机器逻辑保持零耦合
 - 运行目录为 `run/`（客户端）和 `run-data/`（数据生成）
-- `Config.java` 含 6 项可配置参数（腰带扫描范围、注入阈值、支持箱效果消减速率、治疗阈值/冷却、单片镜 HUD 距离）
+- `Config.java` 的 Curios 段含 7 项可配置参数（腰带扫描范围与三项注入阈值、支持箱效果消减速率、治疗阈值与冷却）；单片镜无 HUD 距离配置
 - 贴图规范见 `docs/texture_generation_spec.md`（16x16 像素，扁平化高对比度，霓虹高光风格）
 
 ## 辅助工具

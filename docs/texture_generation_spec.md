@@ -165,3 +165,20 @@
 - `ModItemModelProvider`：生成 16 个物品的 item model
 
 运行 `./gradlew runData` 即可重新生成。生成文件位于 `src/generated/resources/assets/cybercultivator/`。
+
+---
+
+## 7. 机器 GUI 纹理
+
+四台机器使用独立的 256×256 RGBA 图集，界面有效区域为左上角 194×210，其余区域保持透明：
+
+| 文件 | 结构重点 |
+|------|----------|
+| `gui/bio_incubator.png` | 底部生长进度、位于对应物品槽左侧的 N/P/D 状态条、自动注入通道、右侧成熟资源输出、水槽下方玻璃瓶输出 |
+| `gui/gene_splicer.png` | 对齐父本槽中心的上方汇流连接条、动态拼接脉冲、细进度条、独立箭头和子代输出 |
+| `gui/serum_bottler.png` | 三路无序输入、液路合流、血清输出 |
+| `gui/atmospheric_condenser.png` | 进气栅格、冷凝柱、纯净水库存 |
+
+纹理采用 Industrial Foregoing 风格参考：透明未用区、灰色平面、1px 明暗倒角、原版物品栏槽位和少量功能色。动态进度、开关状态及按钮由 Screen 代码绘制，不烘焙进静态纹理。运行 `node scripts/generate_machine_gui_textures.mjs` 可确定性重建四张图集。
+
+JEI 不维护另一套机器背景纹理。四类机器配方页面直接裁切对应图集的 `(8, 19)`、`178×95` 工作区，复用实际槽位坐标并由分类代码绘制进度动画与简要数据；修改机器布局时必须同步检查 Screen 与 JEI 分类。

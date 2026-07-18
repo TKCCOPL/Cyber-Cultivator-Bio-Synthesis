@@ -26,13 +26,13 @@ Cyber-Cultivator: Bio-Synthesis is a Forge mod built around a biotechnology prod
 ## Highlights
 
 - Three inheritable seed genes with mutation-driven breeding
-- An automated production chain using Incubators, Gene Splicers, Serum Bottlers, and Atmospheric Condensers
+- An interactive GUI production chain using Incubators, Gene Splicers, Serum Bottlers, and Atmospheric Condensers
 - Three enhancement serums with Activity-based quality scaling and stacking
-- Optional Curios accessories for machine HUDs, automatic injection, and life support
+- Optional Curios accessories for seed analysis, automatic injection, and life support
 - Optional KubeJS recipe DSL and reloadable gameplay events
 - Hopper automation and public query/event APIs
 
-Compatible with JEI; KubeJS, JEI, and Curios are all optional.
+Compatible with JEI, with cultivation, splicing, bottling, and condensation shown through the machines' actual GUI layouts; KubeJS, JEI, and Curios are all optional.
 
 For recipes, machine operation, breeding rules, and serum values, see the [full user guide](docs/USER_GUIDE.md) (Chinese).
 
