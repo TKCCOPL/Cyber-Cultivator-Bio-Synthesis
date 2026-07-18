@@ -4,6 +4,8 @@ import com.TKCCOPL.Config;
 import com.TKCCOPL.api.BottlerInfo;
 import com.TKCCOPL.api.CyberCultivatorAPI;
 import com.TKCCOPL.block.entity.BioIncubatorBlockEntity;
+import com.TKCCOPL.block.entity.AtmosphericCondenserBlockEntity;
+import com.TKCCOPL.block.entity.GeneSplicerBlockEntity;
 import com.TKCCOPL.block.entity.SerumBottlerBlockEntity;
 import com.TKCCOPL.cybercultivator;
 import com.TKCCOPL.event.CropMatureEvent;
@@ -14,6 +16,9 @@ import com.TKCCOPL.init.ModBlocks;
 import com.TKCCOPL.init.ModItems;
 import com.TKCCOPL.item.GeneticSeedItem;
 import com.TKCCOPL.item.SynapticSerumItem;
+import com.TKCCOPL.menu.AtmosphericCondenserMenu;
+import com.TKCCOPL.menu.GeneSplicerMenu;
+import com.TKCCOPL.menu.SerumBottlerMenu;
 import com.TKCCOPL.recipe.IncubatorOutputRecipe;
 import com.TKCCOPL.recipe.IncubatorOutputSerializer;
 import com.TKCCOPL.recipe.RecipeOrdering;
@@ -23,6 +28,7 @@ import com.TKCCOPL.recipe.SerumRecipeIds;
 import com.google.gson.JsonParser;
 import io.netty.buffer.Unpooled;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.gametest.framework.GameTest;
@@ -363,6 +369,28 @@ public final class ModGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void spectrumMonocleHasDeterministicCraftingRecipe(GameTestHelper helper) {
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID, "spectrum_monocle");
+        Recipe<?> recipe = helper.getLevel().getRecipeManager().byKey(id).orElse(null);
+        helper.assertTrue(recipe instanceof ShapedRecipe, "Spectrum monocle recipe must be shaped");
+        ShapedRecipe shaped = (ShapedRecipe) recipe;
+        helper.assertTrue(shaped.getWidth() == 3 && shaped.getHeight() == 3,
+                "Spectrum monocle recipe must retain the intended 3x3 silhouette");
+        List<Ingredient> ingredients = shaped.getIngredients();
+        helper.assertTrue(ingredients.get(0).test(new ItemStack(Items.IRON_NUGGET))
+                        && ingredients.get(1).test(new ItemStack(Items.GLASS_PANE))
+                        && ingredients.get(2).test(new ItemStack(Items.IRON_NUGGET)),
+                "Monocle lens row must use iron nuggets around a glass pane");
+        helper.assertTrue(ingredients.get(3).test(new ItemStack(ModItems.SILICON_SHARD.get()))
+                        && ingredients.get(4).test(new ItemStack(ModItems.RARE_EARTH_DUST.get()))
+                        && ingredients.get(5).test(new ItemStack(ModItems.SILICON_SHARD.get())),
+                "Monocle analysis row must use silicon around rare earth dust");
+        helper.assertTrue(ingredients.get(7).test(new ItemStack(Items.IRON_NUGGET)),
+                "Monocle handle must use an iron nugget");
+        helper.succeed();
+    }
+
     @GameTest(template = EMPTY_TEMPLATE, timeoutTicks = 300)
     public static void cancelledCropMaturityStartsFreshCycle(GameTestHelper helper) {
         BlockPos pos = new BlockPos(1, 1, 1);
@@ -395,6 +423,287 @@ public final class ModGameTests {
         });
         listenerHolder[0] = listener;
         MinecraftForge.EVENT_BUS.register(listener);
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void incubatorAutoInjectionAndDualOutputs(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.BIO_INCUBATOR.get());
+        BioIncubatorBlockEntity incubator = (BioIncubatorBlockEntity) helper.getBlockEntity(pos);
+        incubator.setItem(BioIncubatorBlockEntity.NUTRITION_SLOT,
+                new ItemStack(ModItems.BIOCHEMICAL_SOLUTION.get(), 2));
+        incubator.setItem(BioIncubatorBlockEntity.PURITY_SLOT,
+                new ItemStack(ModItems.PURIFIED_WATER_BOTTLE.get(), 2));
+        incubator.setItem(BioIncubatorBlockEntity.SIGNAL_SLOT,
+                new ItemStack(ModItems.SILICON_SHARD.get(), 2));
+
+        helper.assertTrue(incubator.getNutrition() == 0 && incubator.getPurity() == 0
+                        && incubator.getDataSignal() == 0,
+                "Resource stacks must wait for the first timed injection cycle");
+        helper.assertTrue(incubator.getItem(BioIncubatorBlockEntity.NUTRITION_SLOT).getCount() == 2
+                        && incubator.getItem(BioIncubatorBlockEntity.PURITY_SLOT).getCount() == 2
+                        && incubator.getItem(BioIncubatorBlockEntity.SIGNAL_SLOT).getCount() == 2,
+                "Inserting resource stacks must not fill the reservoirs immediately");
+        helper.assertFalse(incubator.canPlaceItemThroughFace(BioIncubatorBlockEntity.SEED_SLOT,
+                new ItemStack(ModItems.FIBER_REED_SEEDS.get()), Direction.NORTH),
+                "Hoppers must not automate the seed slot");
+        helper.assertTrue(incubator.canTakeItemThroughFace(BioIncubatorBlockEntity.RESOURCE_OUTPUT_SLOT,
+                        new ItemStack(ModItems.PLANT_FIBER.get()), Direction.DOWN),
+                "The bottom face must expose the resource output");
+        helper.assertTrue(incubator.canTakeItemThroughFace(BioIncubatorBlockEntity.BOTTLE_OUTPUT_SLOT,
+                incubator.getItem(BioIncubatorBlockEntity.BOTTLE_OUTPUT_SLOT), Direction.DOWN),
+                "The bottom face must expose the bottle output");
+
+        helper.runAfterDelay(BioIncubatorBlockEntity.INPUT_INJECTION_INTERVAL_TICKS / 2, () -> {
+            helper.assertTrue(incubator.getNutrition() == 0 && incubator.getPurity() == 0
+                            && incubator.getDataSignal() == 0,
+                    "No resource may inject before the configured interval elapses");
+        });
+        helper.runAfterDelay(BioIncubatorBlockEntity.INPUT_INJECTION_INTERVAL_TICKS + 1, () -> {
+            helper.assertTrue(incubator.getNutrition() == Config.nutritionInjectAmount
+                            && incubator.getPurity() == Config.purityInjectAmount
+                            && incubator.getDataSignal() == Config.dataSignalInjectAmount,
+                    "Each timed cycle must inject at most one resource per N/P/D channel");
+            helper.assertTrue(incubator.getItem(BioIncubatorBlockEntity.NUTRITION_SLOT).getCount() == 1
+                            && incubator.getItem(BioIncubatorBlockEntity.PURITY_SLOT).getCount() == 1
+                            && incubator.getItem(BioIncubatorBlockEntity.SIGNAL_SLOT).getCount() == 1,
+                    "The first cycle must leave the second resource in every input slot");
+            helper.assertTrue(incubator.getItem(BioIncubatorBlockEntity.BOTTLE_OUTPUT_SLOT).is(Items.GLASS_BOTTLE)
+                            && incubator.getItem(BioIncubatorBlockEntity.BOTTLE_OUTPUT_SLOT).getCount() == 1,
+                    "Each timed water injection must return exactly one empty bottle");
+        });
+        helper.runAfterDelay(BioIncubatorBlockEntity.INPUT_INJECTION_INTERVAL_TICKS * 2 + 2, () -> {
+            helper.assertTrue(incubator.getNutrition() == Config.nutritionInjectAmount * 2
+                            && incubator.getPurity() == Config.purityInjectAmount * 2
+                            && incubator.getDataSignal() == Config.dataSignalInjectAmount * 2,
+                    "The second resource in each channel must wait for the next interval");
+            helper.assertTrue(incubator.getItem(BioIncubatorBlockEntity.NUTRITION_SLOT).isEmpty()
+                            && incubator.getItem(BioIncubatorBlockEntity.PURITY_SLOT).isEmpty()
+                            && incubator.getItem(BioIncubatorBlockEntity.SIGNAL_SLOT).isEmpty(),
+                    "Both timed cycles must consume exactly two resources per channel");
+
+            incubator.setItem(BioIncubatorBlockEntity.BOTTLE_OUTPUT_SLOT,
+                    new ItemStack(Items.GLASS_BOTTLE, Items.GLASS_BOTTLE.getDefaultInstance().getMaxStackSize()));
+            incubator.setItem(BioIncubatorBlockEntity.PURITY_SLOT,
+                    new ItemStack(ModItems.PURIFIED_WATER_BOTTLE.get()));
+            helper.assertTrue(incubator.getItem(BioIncubatorBlockEntity.PURITY_SLOT)
+                            .is(ModItems.PURIFIED_WATER_BOTTLE.get()),
+                    "Water input must wait while the bottle output is full");
+            incubator.setItem(BioIncubatorBlockEntity.BOTTLE_OUTPUT_SLOT, ItemStack.EMPTY);
+        });
+        helper.runAfterDelay(BioIncubatorBlockEntity.INPUT_INJECTION_INTERVAL_TICKS * 3 + 3, () -> {
+            helper.assertTrue(incubator.getItem(BioIncubatorBlockEntity.PURITY_SLOT).isEmpty()
+                            && incubator.getItem(BioIncubatorBlockEntity.BOTTLE_OUTPUT_SLOT).is(Items.GLASS_BOTTLE),
+                    "Waiting water input must resume on a later interval after output space becomes available");
+
+            ItemStack seed = new ItemStack(ModItems.FIBER_REED_SEEDS.get());
+            GeneticSeedItem.setGene(seed, GeneticSeedItem.GENE_SPEED, 10);
+            helper.assertTrue(incubator.tryInsertSeed(seed), "A test seed must enter the incubator");
+            CompoundTag nearMature = incubator.saveWithoutMetadata();
+            nearMature.putInt("GrowthProgress", Config.maturationThreshold - 1);
+            incubator.load(nearMature);
+            BioIncubatorBlockEntity.tick(helper.getLevel(), incubator.getBlockPos(), incubator.getBlockState(), incubator);
+            helper.assertTrue(incubator.getItem(BioIncubatorBlockEntity.RESOURCE_OUTPUT_SLOT)
+                            .is(ModItems.PLANT_FIBER.get()),
+                    "A mature crop must enter the resource output instead of spawning in the world");
+            helper.assertItemEntityNotPresent(ModItems.PLANT_FIBER.get(), pos, 4.0);
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void splicerStartsAutomatically(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.GENE_SPLICER.get());
+        GeneSplicerBlockEntity splicer = (GeneSplicerBlockEntity) helper.getBlockEntity(pos);
+        ItemStack first = new ItemStack(ModItems.FIBER_REED_SEEDS.get());
+        ItemStack second = new ItemStack(ModItems.PROTEIN_SOY_SEEDS.get());
+        GeneticSeedItem.setGenes(first, 2, 5, 8);
+        GeneticSeedItem.setGenes(second, 7, 5, 4);
+        first.getOrCreateTag().putInt(GeneticSeedItem.GENE_GENERATION, 2);
+        second.getOrCreateTag().putInt(GeneticSeedItem.GENE_GENERATION, 4);
+        splicer.setItem(GeneSplicerBlockEntity.SEED_A_SLOT, first);
+        splicer.setItem(GeneSplicerBlockEntity.SEED_B_SLOT, second);
+        int expectedMutationPermille = (int) Math.round(Math.max(0.0D, Math.min(1.0D,
+                Config.mutationChanceBase
+                        + 4 * Config.mutationChancePerGen
+                        + 5 * Config.mutationChancePerGeneDiff)) * 1000.0D);
+        helper.assertTrue(splicer.getPredictedGeneration() == 5,
+                "GUI generation preview must use the higher parent generation plus one");
+        helper.assertTrue(splicer.getPredictedMutationPermille() == expectedMutationPermille,
+                "GUI mutation preview must match the server-side splice formula");
+        helper.assertTrue(splicer.isSplicing() && splicer.getOutput().isEmpty(),
+                "Adding the second parent must automatically start timed splicing");
+        GeneSplicerBlockEntity.tick(helper.getLevel(), pos, splicer.getBlockState(), splicer);
+        CompoundTag savedSplice = splicer.saveWithoutMetadata();
+        GeneSplicerBlockEntity restoredSplice =
+                new GeneSplicerBlockEntity(splicer.getBlockPos(), splicer.getBlockState());
+        restoredSplice.load(savedSplice);
+        helper.assertTrue(restoredSplice.isSplicing() && restoredSplice.getSpliceProgress() == 1,
+                "Active splice progress must survive an NBT round-trip");
+        for (int tick = 1; tick < GeneSplicerBlockEntity.SPLICE_DURATION_TICKS - 1; tick++) {
+            GeneSplicerBlockEntity.tick(helper.getLevel(), pos, splicer.getBlockState(), splicer);
+        }
+        helper.assertTrue(splicer.getOutput().isEmpty()
+                        && splicer.getSpliceProgress() == GeneSplicerBlockEntity.SPLICE_DURATION_TICKS - 1,
+                "Splicing must not complete before the configured wait time");
+        GeneSplicerBlockEntity.tick(helper.getLevel(), pos, splicer.getBlockState(), splicer);
+        helper.assertFalse(splicer.isSplicing(), "Splicing state must clear on completion");
+        helper.assertFalse(splicer.getOutput().isEmpty(), "Timed splicing must create an output");
+        splicer.extractOutput();
+        helper.assertTrue(splicer.getSeedA().isEmpty() && splicer.getSeedB().isEmpty(),
+                "Taking the output must clear both parents");
+
+        splicer.setItem(GeneSplicerBlockEntity.SEED_A_SLOT, first);
+        splicer.setItem(GeneSplicerBlockEntity.SEED_B_SLOT, second);
+        helper.assertTrue(splicer.isSplicing(), "A second pair of parents must start automatically");
+        GeneSplicerBlockEntity.tick(helper.getLevel(), pos, splicer.getBlockState(), splicer);
+        splicer.setItem(GeneSplicerBlockEntity.SEED_B_SLOT, ItemStack.EMPTY);
+        helper.assertFalse(splicer.isSplicing(), "Removing a parent must cancel the active splice");
+        helper.assertTrue(splicer.getSpliceProgress() == 0,
+                "Removing a parent must reset the splice progress");
+        splicer.setItem(GeneSplicerBlockEntity.SEED_B_SLOT, second);
+        helper.assertTrue(splicer.isSplicing() && splicer.getSpliceProgress() == 0,
+                "Replacing the missing parent must start a fresh splice automatically");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void machineMenuQuickMoveCommitsMachineTransactions(GameTestHelper helper) {
+        Player player = helper.makeMockSurvivalPlayer();
+
+        BlockPos splicerPos = new BlockPos(1, 1, 1);
+        helper.setBlock(splicerPos, ModBlocks.GENE_SPLICER.get());
+        GeneSplicerBlockEntity splicer = (GeneSplicerBlockEntity) helper.getBlockEntity(splicerPos);
+        splicer.setItem(GeneSplicerBlockEntity.SEED_A_SLOT,
+                new ItemStack(ModItems.FIBER_REED_SEEDS.get()));
+        splicer.setItem(GeneSplicerBlockEntity.SEED_B_SLOT,
+                new ItemStack(ModItems.PROTEIN_SOY_SEEDS.get()));
+        for (int tick = 0; tick < GeneSplicerBlockEntity.SPLICE_DURATION_TICKS; tick++) {
+            GeneSplicerBlockEntity.tick(helper.getLevel(), splicerPos, splicer.getBlockState(), splicer);
+        }
+        helper.assertFalse(splicer.getOutput().isEmpty(), "Splicer test setup must produce a child seed");
+        helper.assertTrue(splicer.getSeedA().isEmpty() && splicer.getSeedB().isEmpty(),
+                "Successful splicing must consume both parents immediately");
+        GeneSplicerMenu splicerMenu = (GeneSplicerMenu) splicer.createMenu(1, player.getInventory(), player);
+        ItemStack committedParent = splicerMenu.quickMoveStack(player, GeneSplicerBlockEntity.SEED_A_SLOT);
+        helper.assertTrue(committedParent.isEmpty() && !splicer.getOutput().isEmpty(),
+                "Consumed parents must not be recoverable before the child is collected");
+        helper.assertFalse(splicerMenu.getSlot(GeneSplicerBlockEntity.SEED_A_SLOT)
+                        .mayPlace(new ItemStack(ModItems.FIBER_REED_SEEDS.get())),
+                "Parent slots must reject new seeds while an output is waiting");
+        helper.assertTrue(splicer.removeItem(GeneSplicerBlockEntity.SEED_B_SLOT, 1).isEmpty()
+                        && splicer.extractLastInput().isEmpty(),
+                "Container and block interaction paths must not recover consumed parents");
+        ItemStack child = splicerMenu.quickMoveStack(player, GeneSplicerBlockEntity.OUTPUT_SLOT);
+        helper.assertFalse(child.isEmpty(), "Shift-moving the child must transfer it to the player");
+        helper.assertTrue(splicer.getOutput().isEmpty()
+                        && splicer.getSeedA().isEmpty() && splicer.getSeedB().isEmpty(),
+                "Shift-moving the child must leave the completed transaction empty");
+
+        CompoundTag legacySplicerState = new CompoundTag();
+        legacySplicerState.put("SeedA", new ItemStack(ModItems.FIBER_REED_SEEDS.get()).save(new CompoundTag()));
+        legacySplicerState.put("SeedB", new ItemStack(ModItems.PROTEIN_SOY_SEEDS.get()).save(new CompoundTag()));
+        legacySplicerState.put("Output", child.save(new CompoundTag()));
+        GeneSplicerBlockEntity migratedSplicer =
+                new GeneSplicerBlockEntity(splicer.getBlockPos(), splicer.getBlockState());
+        migratedSplicer.load(legacySplicerState);
+        helper.assertTrue(migratedSplicer.getSeedA().isEmpty() && migratedSplicer.getSeedB().isEmpty()
+                        && !migratedSplicer.getOutput().isEmpty(),
+                "Legacy completed splices must discard retained parents during load");
+
+        BlockPos bottlerPos = new BlockPos(3, 1, 1);
+        helper.setBlock(bottlerPos, ModBlocks.SERUM_BOTTLER.get());
+        SerumBottlerBlockEntity bottler = (SerumBottlerBlockEntity) helper.getBlockEntity(bottlerPos);
+        bottler.setItem(0, new ItemStack(ModItems.PLANT_FIBER.get()));
+        bottler.setItem(1, new ItemStack(ModItems.INDUSTRIAL_ETHANOL.get()));
+        bottler.setItem(2, new ItemStack(ModItems.BIOCHEMICAL_SOLUTION.get()));
+        SerumBottlerBlockEntity.tick(helper.getLevel(), bottlerPos, bottler.getBlockState(), bottler);
+        helper.assertTrue(bottler.getMaxProgress() > 0, "Bottler test setup must start processing");
+        SerumBottlerMenu bottlerMenu = (SerumBottlerMenu) bottler.createMenu(2, player.getInventory(), player);
+        ItemStack ingredient = bottlerMenu.quickMoveStack(player, 0);
+        helper.assertFalse(ingredient.isEmpty(), "Shift-moving a bottler input must transfer it");
+        helper.assertTrue(bottler.getProgress() == 0 && bottler.getMaxProgress() == 0,
+                "Shift-moving a bottler input must cancel processing immediately");
+
+        BlockPos condenserPos = new BlockPos(5, 1, 1);
+        helper.setBlock(condenserPos, ModBlocks.ATMOSPHERIC_CONDENSER.get());
+        AtmosphericCondenserBlockEntity condenser =
+                (AtmosphericCondenserBlockEntity) helper.getBlockEntity(condenserPos);
+        CompoundTag condenserState = new CompoundTag();
+        condenserState.putInt("Progress", 599);
+        condenserState.put("Output", new ItemStack(ModItems.PURIFIED_WATER_BOTTLE.get(), 4)
+                .save(new CompoundTag()));
+        condenser.load(condenserState);
+        AtmosphericCondenserMenu condenserMenu =
+                (AtmosphericCondenserMenu) condenser.createMenu(3, player.getInventory(), player);
+        ItemStack water = condenserMenu.quickMoveStack(player, 0);
+        helper.assertTrue(water.getCount() == 4 && condenser.getOutput().isEmpty(),
+                "Shift-moving condenser stock must transfer the complete output");
+        helper.assertTrue(condenser.getProgress() == 0,
+                "Shift-moving condenser stock must reset progress like every other extraction path");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void guiStateCancellationAndCondenserPersistence(GameTestHelper helper) {
+        BlockPos bottlerPos = new BlockPos(1, 1, 1);
+        helper.setBlock(bottlerPos, ModBlocks.SERUM_BOTTLER.get());
+        SerumBottlerBlockEntity bottler = (SerumBottlerBlockEntity) helper.getBlockEntity(bottlerPos);
+        CompoundTag processing = new CompoundTag();
+        processing.putInt("Progress", 7);
+        processing.putInt("MaxProgress", 300);
+        processing.putString("RecipeId", SerumRecipeIds.S01_BOTTLING.toString());
+        bottler.load(processing);
+        CompoundTag resavedBeforeTick = bottler.saveWithoutMetadata();
+        helper.assertTrue(SerumRecipeIds.S01_BOTTLING.toString()
+                        .equals(resavedBeforeTick.getString("RecipeId")),
+                "A loaded bottler must preserve its pending recipe ID if saved before the next tick");
+        bottler.setItem(0, new ItemStack(Items.DIRT));
+        helper.assertTrue(bottler.getProgress() == 0 && bottler.getMaxProgress() == 0,
+                "Changing a bottler input must cancel the cached process");
+
+        CompoundTag orphanedProcessing = new CompoundTag();
+        orphanedProcessing.putInt("Progress", 7);
+        orphanedProcessing.putInt("MaxProgress", 300);
+        bottler.load(orphanedProcessing);
+        helper.assertTrue(bottler.getProgress() == 0 && bottler.getMaxProgress() == 0,
+                "Processing state without a recipe ID must be discarded during load");
+
+        BlockPos condenserPos = new BlockPos(3, 1, 1);
+        helper.setBlock(condenserPos, ModBlocks.ATMOSPHERIC_CONDENSER.get());
+        AtmosphericCondenserBlockEntity condenser =
+                (AtmosphericCondenserBlockEntity) helper.getBlockEntity(condenserPos);
+        helper.assertTrue(condenser.isAutoInject(), "Existing and new condensers must default auto injection to on");
+        helper.assertFalse(condenser.isPaused(), "New condensers must start production unpaused");
+        CompoundTag inProgress = new CompoundTag();
+        inProgress.putInt("Progress", 10);
+        condenser.load(inProgress);
+        Player player = helper.makeMockSurvivalPlayer();
+        AtmosphericCondenserMenu condenserMenu =
+                (AtmosphericCondenserMenu) condenser.createMenu(4, player.getInventory(), player);
+        helper.assertTrue(condenserMenu.clickMenuButton(player, AtmosphericCondenserMenu.BUTTON_TOGGLE_PAUSED),
+                "Pause button must be handled by the condenser menu");
+        helper.assertTrue(condenser.isPaused(), "Pause button must pause condenser production");
+        AtmosphericCondenserBlockEntity.tick(helper.getLevel(), condenserPos, condenser.getBlockState(), condenser);
+        helper.assertTrue(condenser.getProgress() == 10, "Paused condensers must not advance production");
+        condenser.toggleAutoInject();
+        CompoundTag saved = condenser.saveWithoutMetadata();
+        AtmosphericCondenserBlockEntity restored =
+                new AtmosphericCondenserBlockEntity(condenser.getBlockPos(), condenser.getBlockState());
+        restored.load(saved);
+        helper.assertFalse(restored.isAutoInject(), "Auto injection mode must survive NBT round-trip");
+        helper.assertTrue(restored.isPaused(), "Paused production state must survive NBT round-trip");
+        helper.assertTrue(condenserMenu.clickMenuButton(player, AtmosphericCondenserMenu.BUTTON_TOGGLE_PAUSED),
+                "Resume button must be handled by the condenser menu");
+        AtmosphericCondenserBlockEntity.tick(helper.getLevel(), condenserPos, condenser.getBlockState(), condenser);
+        helper.assertTrue(condenser.getProgress() == 11, "Resumed condensers must continue from stored progress");
+        AtmosphericCondenserBlockEntity legacy =
+                new AtmosphericCondenserBlockEntity(condenser.getBlockPos(), condenser.getBlockState());
+        legacy.load(new CompoundTag());
+        helper.assertTrue(legacy.isAutoInject(), "Legacy NBT without AutoInject must remain enabled");
+        helper.assertFalse(legacy.isPaused(), "Legacy NBT without Paused must remain operational");
+        helper.succeed();
     }
 
     private static void assertEffectId(GameTestHelper helper, ItemStack serum, String expected) {
