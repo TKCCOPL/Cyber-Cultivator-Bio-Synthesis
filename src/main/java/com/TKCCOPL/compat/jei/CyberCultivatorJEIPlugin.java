@@ -17,7 +17,8 @@ import net.minecraft.world.item.ItemStack;
 
 @JeiPlugin
 public class CyberCultivatorJEIPlugin implements IModPlugin {
-    private static final ResourceLocation UID = new ResourceLocation(cybercultivator.MODID, "jei_plugin");
+    private static final ResourceLocation UID =
+            ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID, "jei_plugin");
 
     @Override
     public ResourceLocation getPluginUid() {
@@ -30,7 +31,8 @@ public class CyberCultivatorJEIPlugin implements IModPlugin {
         registration.addRecipeCategories(
                 new SerumBottlingCategory(guiHelper),
                 new GeneSplicingCategory(guiHelper),
-                new IncubatorOutputCategory(guiHelper)
+                new IncubatorOutputCategory(guiHelper),
+                new AtmosphericCondensingCategory(guiHelper)
         );
     }
 
@@ -55,6 +57,11 @@ public class CyberCultivatorJEIPlugin implements IModPlugin {
         registration.addRecipes(
                 IncubatorOutputCategory.RECIPE_TYPE,
                 IncubatorOutputCategory.buildRecipes(level)
+        );
+
+        registration.addRecipes(
+                AtmosphericCondensingCategory.RECIPE_TYPE,
+                java.util.List.of(AtmosphericCondensingCategory.RECIPE)
         );
 
         // 物品信息页面
@@ -189,6 +196,10 @@ public class CyberCultivatorJEIPlugin implements IModPlugin {
         registration.addRecipeCatalyst(
                 new ItemStack(ModItems.BIO_INCUBATOR_ITEM.get()),
                 IncubatorOutputCategory.RECIPE_TYPE
+        );
+        registration.addRecipeCatalyst(
+                new ItemStack(ModItems.ATMOSPHERIC_CONDENSER_ITEM.get()),
+                AtmosphericCondensingCategory.RECIPE_TYPE
         );
     }
 }

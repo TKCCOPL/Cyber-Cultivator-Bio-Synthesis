@@ -1,166 +1,123 @@
 package com.TKCCOPL.compat.jei;
 
+import com.TKCCOPL.Config;
 import com.TKCCOPL.cybercultivator;
 import com.TKCCOPL.init.ModItems;
 import com.TKCCOPL.recipe.ModRecipeTypes;
 import com.TKCCOPL.recipe.RecipeOrdering;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
-import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.RecipeType;
-import mezz.jei.api.recipe.category.IRecipeCategory;
-import net.minecraft.client.Minecraft;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
-public class IncubatorOutputCategory implements IRecipeCategory<IncubatorOutputCategory.DisplayRecipe> {
+public class IncubatorOutputCategory extends MachineRecipeCategory<IncubatorOutputCategory.DisplayRecipe> {
     public static final RecipeType<DisplayRecipe> RECIPE_TYPE =
-            new RecipeType<>(new ResourceLocation(cybercultivator.MODID, "incubator_output"), DisplayRecipe.class);
-
+            new RecipeType<>(ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID, "incubator_output"),
+                    DisplayRecipe.class);
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(cybercultivator.MODID, "textures/gui/jei_incubator_output.png");
+            ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID, "textures/gui/bio_incubator.png");
 
-    private final IDrawable background;
-    private final IDrawable icon;
-
-    /** JEI 展示用配方数据 */
-    public record DisplayRecipe(
-            List<ItemStack> seeds, ItemStack output,
-            String cropName,
-            int defaultSpeed, int defaultYield, int defaultPotency
-    ) {}
+    public record DisplayRecipe(ResourceLocation id, List<ItemStack> seeds, ItemStack output,
+                                int defaultSpeed, int defaultYield, int defaultPotency) {
+    }
 
     public IncubatorOutputCategory(IGuiHelper guiHelper) {
-        this.background = guiHelper.createDrawable(TEXTURE, 0, 0, 140, 60);
-        this.icon = guiHelper.createDrawableItemStack(new ItemStack(ModItems.BIO_INCUBATOR_ITEM.get()));
-    }
-
-    @Override
-    public RecipeType<DisplayRecipe> getRecipeType() {
-        return RECIPE_TYPE;
-    }
-
-    @Override
-    public Component getTitle() {
-        return Component.translatable("jei.cybercultivator.incubator_output");
-    }
-
-    @Override
-    public IDrawable getBackground() {
-        return background;
-    }
-
-    @Override
-    public IDrawable getIcon() {
-        return icon;
+        super(guiHelper, RECIPE_TYPE, "jei.cybercultivator.incubator_output",
+                new ItemStack(ModItems.BIO_INCUBATOR_ITEM.get()), TEXTURE);
     }
 
     @Override
     public void setRecipe(IRecipeLayoutBuilder builder, DisplayRecipe recipe, IFocusGroup focuses) {
-        builder.addSlot(RecipeIngredientRole.INPUT, 1, 11)
+        builder.addSlot(RecipeIngredientRole.INPUT, 22, 31)
                 .addItemStacks(recipe.seeds());
-        builder.addSlot(RecipeIngredientRole.OUTPUT, 113, 11)
+        builder.addSlot(RecipeIngredientRole.INPUT, 56, 31)
+                .addItemStack(new ItemStack(ModItems.BIOCHEMICAL_SOLUTION.get()))
+                .addTooltipCallback((slot, tooltip) -> tooltip.add(Component.translatable(
+                        "jei.cybercultivator.incubator.resource_nutrition", injectAmount(Config.nutritionInjectAmount, 25))
+                        .withStyle(ChatFormatting.GRAY)));
+        builder.addSlot(RecipeIngredientRole.INPUT, 86, 31)
+                .addItemStack(new ItemStack(ModItems.PURIFIED_WATER_BOTTLE.get()))
+                .addTooltipCallback((slot, tooltip) -> tooltip.add(Component.translatable(
+                        "jei.cybercultivator.incubator.resource_purity", injectAmount(Config.purityInjectAmount, 20))
+                        .withStyle(ChatFormatting.GRAY)));
+        builder.addSlot(RecipeIngredientRole.INPUT, 116, 31)
+                .addItemStack(new ItemStack(ModItems.SILICON_SHARD.get()))
+                .addTooltipCallback((slot, tooltip) -> tooltip.add(Component.translatable(
+                        "jei.cybercultivator.incubator.resource_signal", injectAmount(Config.dataSignalInjectAmount, 15))
+                        .withStyle(ChatFormatting.GRAY)));
+        builder.addSlot(RecipeIngredientRole.OUTPUT, 146, 31)
                 .addItemStack(recipe.output());
+        builder.addSlot(RecipeIngredientRole.OUTPUT, 86, 55)
+                .addItemStack(new ItemStack(Items.GLASS_BOTTLE))
+                .addTooltipCallback((slot, tooltip) -> tooltip.add(Component.translatable(
+                        "jei.cybercultivator.incubator.bottle_byproduct").withStyle(ChatFormatting.GRAY)));
     }
 
     @Override
-    public void draw(DisplayRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphics guiGraphics,
+    public void draw(DisplayRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphics graphics,
                      double mouseX, double mouseY) {
-        var font = Minecraft.getInstance().font;
+        drawFitted(graphics, Component.literal("N"), 46, 19, 10, 0x6B741E);
+        drawFitted(graphics, Component.literal("P"), 76, 19, 10, 0x2F6F79);
+        drawFitted(graphics, Component.literal("D"), 106, 19, 10, 0x6B4C12);
+        verticalBar(graphics, 48, 31, 16, 0xFFB7CF45);
+        verticalBar(graphics, 78, 31, 16, 0xFF49B8D1);
+        verticalBar(graphics, 108, 31, 16, 0xFFDBB441);
 
-        // ── 基因行（输入槽右侧，每行一个基因）──
-        // 速度 — 控制生长速率
-        guiGraphics.drawString(font,
-                Component.translatable("jei.cybercultivator.gene_speed", recipe.defaultSpeed()),
-                22, 2, 0x808080, false);
-        // 产量 — 控制产出数量
-        guiGraphics.drawString(font,
-                Component.translatable("jei.cybercultivator.gene_yield", recipe.defaultYield()),
-                22, 13, 0x808080, false);
-        // 潜力 — 决定产出品质
-        guiGraphics.drawString(font,
-                Component.translatable("jei.cybercultivator.gene_potency", recipe.defaultPotency()),
-                22, 24, 0x808080, false);
-
-        // ── 派生数值行 ──
-        // 产出数量范围（基于 Yield：2 + yield/3）
-        int minOutput = 2;
-        int maxOutput = 2 + recipe.defaultYield() / 3;
-        guiGraphics.drawString(font,
-                Component.translatable("jei.cybercultivator.output_range", minOutput, maxOutput),
-                22, 37, 0x55FF55, false);
-
-        // 生长速率（基于 Speed：0.5 + speed/10*1.5）
-        double growthRate = 0.5 + recipe.defaultSpeed() / 10.0 * 1.5;
-        guiGraphics.drawString(font,
-                Component.translatable("jei.cybercultivator.growth_rate",
-                        String.format("%.1f", growthRate)),
-                80, 37, 0xFFFF55, false);
-
-        // 产出品质（基于 Potency 基因直接决定）
-        guiGraphics.drawString(font,
-                Component.translatable("jei.cybercultivator.output_quality", recipe.defaultPotency()),
-                22, 50, 0xFFAA00, false);
+        drawFitted(graphics, Component.translatable("jei.cybercultivator.incubator.summary",
+                recipe.defaultSpeed(), recipe.defaultYield(), recipe.defaultPotency(), recipe.output().getCount()),
+                14, 72, 155, 0x3F6F32);
+        horizontalBar(graphics, 14, 83, 155, 0xFF75BD4B);
     }
 
     @Override
     public List<Component> getTooltipStrings(DisplayRecipe recipe, IRecipeSlotsView recipeSlotsView,
                                              double mouseX, double mouseY) {
-        List<Component> tooltip = new ArrayList<>();
-        // 速度基因提示
-        if (mouseX >= 20 && mouseX <= 80 && mouseY >= 0 && mouseY <= 12) {
-            tooltip.add(Component.translatable("jei.cybercultivator.tooltip.gene_speed")
-                    .withStyle(net.minecraft.ChatFormatting.GRAY));
+        if (mouseX >= 14 && mouseX <= 169 && mouseY >= 70 && mouseY <= 94) {
+            double rate = 0.5D + recipe.defaultSpeed() / 10.0D * 1.5D;
+            return List.of(
+                    Component.translatable("jei.cybercultivator.tooltip.output_formula").withStyle(ChatFormatting.GRAY),
+                    Component.translatable("jei.cybercultivator.tooltip.rate_value",
+                                    String.format(Locale.ROOT, "%.1f", rate))
+                            .withStyle(ChatFormatting.GRAY),
+                    Component.translatable("jei.cybercultivator.tooltip.quality_formula")
+                            .withStyle(ChatFormatting.GRAY));
         }
-        // 产量基因提示
-        if (mouseX >= 20 && mouseX <= 80 && mouseY >= 11 && mouseY <= 23) {
-            tooltip.add(Component.translatable("jei.cybercultivator.tooltip.gene_yield")
-                    .withStyle(net.minecraft.ChatFormatting.GRAY));
-        }
-        // 潜力基因提示
-        if (mouseX >= 20 && mouseX <= 80 && mouseY >= 22 && mouseY <= 34) {
-            tooltip.add(Component.translatable("jei.cybercultivator.tooltip.gene_potency")
-                    .withStyle(net.minecraft.ChatFormatting.GRAY));
-        }
-        // 产出范围提示
-        if (mouseX >= 20 && mouseX <= 75 && mouseY >= 35 && mouseY <= 47) {
-            tooltip.add(Component.translatable("jei.cybercultivator.tooltip.output_formula")
-                    .withStyle(net.minecraft.ChatFormatting.GRAY));
-        }
-        // 生长速率提示
-        if (mouseX >= 78 && mouseX <= 130 && mouseY >= 35 && mouseY <= 47) {
-            tooltip.add(Component.translatable("jei.cybercultivator.tooltip.rate_formula")
-                    .withStyle(net.minecraft.ChatFormatting.GRAY));
-        }
-        // 品质提示
-        if (mouseX >= 20 && mouseX <= 100 && mouseY >= 48 && mouseY <= 58) {
-            tooltip.add(Component.translatable("jei.cybercultivator.tooltip.quality_formula")
-                    .withStyle(net.minecraft.ChatFormatting.GRAY));
-        }
-        return tooltip;
+        return List.of();
     }
 
-    /** 设置种子基因值（用于 JEI 展示） */
+    @Override
+    public ResourceLocation getRegistryName(DisplayRecipe recipe) {
+        return recipe.id();
+    }
+
+    private static int injectAmount(int configured, int fallback) {
+        return configured > 0 ? configured : fallback;
+    }
+
     private static ItemStack seedWithGenes(ItemStack seed, int speed, int yield, int potency) {
         ItemStack stack = seed.copy();
         stack.getOrCreateTag().putInt("Gene_Speed", speed);
         stack.getOrCreateTag().putInt("Gene_Yield", yield);
         stack.getOrCreateTag().putInt("Gene_Potency", potency);
+        stack.getOrCreateTag().putInt("Gene_Generation", 0);
         return stack;
     }
 
-    /** 从 RecipeManager 构建展示用配方列表（JSON 数据驱动） */
     public static List<DisplayRecipe> buildRecipes(net.minecraft.world.level.Level level) {
-        if (level == null) return java.util.Collections.emptyList();
+        if (level == null) return List.of();
 
         List<DisplayRecipe> recipes = new ArrayList<>();
         for (var recipe : RecipeOrdering.sorted(
@@ -169,10 +126,8 @@ public class IncubatorOutputCategory implements IRecipeCategory<IncubatorOutputC
             List<ItemStack> seeds = Arrays.stream(recipe.getSeedIngredient().getItems())
                     .map(seed -> seedWithGenes(seed, genes[0], genes[1], genes[2]))
                     .toList();
-            recipes.add(new DisplayRecipe(
-                    seeds,
-                    recipe.getOutputItem(),
-                    recipe.getCropName(),
+            if (seeds.isEmpty()) continue;
+            recipes.add(new DisplayRecipe(recipe.getId(), seeds, recipe.assemble(seeds.get(0)),
                     genes[0], genes[1], genes[2]));
         }
         return recipes;

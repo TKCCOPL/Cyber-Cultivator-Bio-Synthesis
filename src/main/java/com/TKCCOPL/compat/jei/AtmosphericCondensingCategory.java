@@ -1,0 +1,87 @@
+package com.TKCCOPL.compat.jei;
+
+import com.TKCCOPL.Config;
+import com.TKCCOPL.cybercultivator;
+import com.TKCCOPL.init.ModItems;
+import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
+import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
+import mezz.jei.api.helpers.IGuiHelper;
+import mezz.jei.api.recipe.IFocusGroup;
+import mezz.jei.api.recipe.RecipeIngredientRole;
+import mezz.jei.api.recipe.RecipeType;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+
+import java.util.List;
+
+public class AtmosphericCondensingCategory extends MachineRecipeCategory<AtmosphericCondensingCategory.DisplayRecipe> {
+    public static final RecipeType<DisplayRecipe> RECIPE_TYPE = new RecipeType<>(
+            ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID, "atmospheric_condensing"),
+            DisplayRecipe.class);
+    public static final DisplayRecipe RECIPE = new DisplayRecipe(
+            ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID,
+                    "atmospheric_condensing/purified_water"), 600, 32);
+    private static final ResourceLocation TEXTURE =
+            ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID,
+                    "textures/gui/atmospheric_condenser.png");
+
+    public record DisplayRecipe(ResourceLocation id, int processingTicks, int maxStock) {
+    }
+
+    public AtmosphericCondensingCategory(IGuiHelper guiHelper) {
+        super(guiHelper, RECIPE_TYPE, "jei.cybercultivator.atmospheric_condensing",
+                new ItemStack(ModItems.ATMOSPHERIC_CONDENSER_ITEM.get()), TEXTURE);
+    }
+
+    @Override
+    public void setRecipe(IRecipeLayoutBuilder builder, DisplayRecipe recipe, IFocusGroup focuses) {
+        builder.addSlot(RecipeIngredientRole.OUTPUT, 150, 31)
+                .addItemStack(new ItemStack(ModItems.PURIFIED_WATER_BOTTLE.get()));
+    }
+
+    @Override
+    public void draw(DisplayRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphics graphics,
+                     double mouseX, double mouseY) {
+        verticalBar(graphics, 109, 9, 32, 0xFF5DB9C7);
+        renderCondensationScan(graphics);
+
+        drawFitted(graphics, Component.translatable("jei.cybercultivator.condenser.cycle",
+                recipe.processingTicks() / 20), 8, 51, 162, 0x2F6F79);
+        drawFitted(graphics, Component.translatable("jei.cybercultivator.condenser.stock",
+                recipe.maxStock()), 8, 64, 162, 0x373737);
+        int purity = Config.purityInjectAmount > 0 ? Config.purityInjectAmount : 20;
+        drawFitted(graphics, Component.translatable("jei.cybercultivator.condenser.downstream", purity),
+                8, 78, 162, 0x2F6F79);
+    }
+
+    @Override
+    public List<Component> getTooltipStrings(DisplayRecipe recipe, IRecipeSlotsView recipeSlotsView,
+                                             double mouseX, double mouseY) {
+        if (mouseX >= 8 && mouseX <= 170 && mouseY >= 49 && mouseY <= 94) {
+            return List.of(Component.translatable("jei.cybercultivator.condenser.tooltip")
+                    .withStyle(ChatFormatting.GRAY));
+        }
+        return List.of();
+    }
+
+    @Override
+    public ResourceLocation getRegistryName(DisplayRecipe recipe) {
+        return recipe.id();
+    }
+
+    private void renderCondensationScan(GuiGraphics graphics) {
+        float animationTick = animationValue();
+        int activeFin = (int) (animationTick / 4.0F) % 6;
+        graphics.fill(24 + activeFin * 10, 14, 26 + activeFin * 10, 38, 0xFF5DB9C7);
+
+        int pipeOffset = (int) (animationTick % 30.0F);
+        if (pipeOffset < 20) {
+            graphics.fill(93, 15 + pipeOffset, 96, 18 + pipeOffset, 0xFF5DB9C7);
+        } else {
+            graphics.fill(95 + pipeOffset - 20, 32, 98 + pipeOffset - 20, 35, 0xFF5DB9C7);
+        }
+    }
+}
