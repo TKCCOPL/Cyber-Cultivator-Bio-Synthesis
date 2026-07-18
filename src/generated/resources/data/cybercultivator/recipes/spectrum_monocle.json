@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "I": {
+      "item": "minecraft:iron_nugget"
+    },
+    "P": {
+      "item": "minecraft:glass_pane"
+    },
+    "R": {
+      "item": "cybercultivator:rare_earth_dust"
+    },
+    "S": {
+      "item": "cybercultivator:silicon_shard"
+    }
+  },
+  "pattern": [
+    "IPI",
+    "SRS",
+    " I "
+  ],
+  "result": {
+    "item": "cybercultivator:spectrum_monocle"
+  },
+  "show_notification": true
+}

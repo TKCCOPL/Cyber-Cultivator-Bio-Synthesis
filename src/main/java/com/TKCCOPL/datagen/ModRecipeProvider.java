@@ -18,7 +18,7 @@ public class ModRecipeProvider extends RecipeProvider {
     }
 
     @Override
-        protected void buildRecipes(@Nonnull Consumer<FinishedRecipe> writer) {
+    protected void buildRecipes(@Nonnull Consumer<FinishedRecipe> writer) {
         ShapedRecipeBuilder.shaped(RecipeCategory.DECORATIONS, ModItems.BIO_INCUBATOR_ITEM.get())
                 .pattern("GSG")
                 .pattern("IBI")
@@ -65,6 +65,15 @@ public class ModRecipeProvider extends RecipeProvider {
                 .unlockedBy(getHasName(ModItems.RARE_EARTH_DUST.get()), has(ModItems.RARE_EARTH_DUST.get()))
                 .save(writer);
 
-        // Curios accessories are now obtained through loot chests, not crafting
+        ShapedRecipeBuilder.shaped(RecipeCategory.TOOLS, ModItems.SPECTRUM_MONOCLE.get())
+                .pattern("IPI")
+                .pattern("SRS")
+                .pattern(" I ")
+                .define('I', Items.IRON_NUGGET)
+                .define('P', Items.GLASS_PANE)
+                .define('S', ModItems.SILICON_SHARD.get())
+                .define('R', ModItems.RARE_EARTH_DUST.get())
+                .unlockedBy(getHasName(ModItems.RARE_EARTH_DUST.get()), has(ModItems.RARE_EARTH_DUST.get()))
+                .save(writer);
     }
 }
