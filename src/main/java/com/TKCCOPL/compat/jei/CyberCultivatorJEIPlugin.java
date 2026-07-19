@@ -113,6 +113,16 @@ public class CyberCultivatorJEIPlugin implements IModPlugin {
 
         // 基础材料
         registration.addIngredientInfo(
+                new ItemStack(ModItems.RAW_SILICON_CRYSTAL.get()),
+                VanillaTypes.ITEM_STACK,
+                Component.translatable("jei.cybercultivator.info.raw_silicon_crystal")
+        );
+        registration.addIngredientInfo(
+                new ItemStack(ModItems.RAW_RARE_EARTH.get()),
+                VanillaTypes.ITEM_STACK,
+                Component.translatable("jei.cybercultivator.info.raw_rare_earth")
+        );
+        registration.addIngredientInfo(
                 new ItemStack(ModItems.SILICON_SHARD.get()),
                 VanillaTypes.ITEM_STACK,
                 Component.translatable("jei.cybercultivator.info.silicon_shard")

@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:smelting",
+  "category": "misc",
+  "cookingtime": 200,
+  "experience": 0.7,
+  "ingredient": {
+    "item": "cybercultivator:raw_rare_earth"
+  },
+  "result": "cybercultivator:rare_earth_dust"
+}

@@ -30,6 +30,8 @@ import java.util.function.Supplier;
 public final class ModItems {
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, cybercultivator.MODID);
 
+    public static final RegistryObject<Item> RAW_SILICON_CRYSTAL = ITEMS.register("raw_silicon_crystal", () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> RAW_RARE_EARTH = ITEMS.register("raw_rare_earth", () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> SILICON_SHARD = ITEMS.register("silicon_shard", () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> RARE_EARTH_DUST = ITEMS.register("rare_earth_dust", () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> PLANT_FIBER = ITEMS.register("plant_fiber", () -> new Item(new Item.Properties()) {
@@ -76,11 +78,11 @@ public final class ModItems {
             () -> new SynapticSerumItem(new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON)));
 
     public static final RegistryObject<Item> FIBER_REED_SEEDS = ITEMS.register("fiber_reed_seeds",
-            () -> new GeneticSeedItem(ModBlocks.FIBER_REED_CROP.get(), new Item.Properties(), 4, 7, 3));
+            () -> new GeneticSeedItem(ModBlocks.FIBER_REED_CROP.get(), new Item.Properties(), 5, 5, 5));
     public static final RegistryObject<Item> PROTEIN_SOY_SEEDS = ITEMS.register("protein_soy_seeds",
-            () -> new GeneticSeedItem(ModBlocks.PROTEIN_SOY_CROP.get(), new Item.Properties(), 5, 4, 7));
+            () -> new GeneticSeedItem(ModBlocks.PROTEIN_SOY_CROP.get(), new Item.Properties(), 5, 5, 5));
     public static final RegistryObject<Item> ALCOHOL_BLOOM_SEEDS = ITEMS.register("alcohol_bloom_seeds",
-            () -> new GeneticSeedItem(ModBlocks.ALCOHOL_BLOOM_CROP.get(), new Item.Properties(), 6, 3, 5));
+            () -> new GeneticSeedItem(ModBlocks.ALCOHOL_BLOOM_CROP.get(), new Item.Properties(), 5, 5, 5));
 
     public static final RegistryObject<Item> PURIFIED_WATER_BOTTLE = ITEMS.register("purified_water_bottle", () -> new Item(new Item.Properties().stacksTo(16)));
 
@@ -106,6 +108,10 @@ public final class ModItems {
 
     public static final RegistryObject<Item> SILICON_ORE_ITEM = registerBlockItem("silicon_ore", ModBlocks.SILICON_ORE);
     public static final RegistryObject<Item> RARE_EARTH_ORE_ITEM = registerBlockItem("rare_earth_ore", ModBlocks.RARE_EARTH_ORE);
+    public static final RegistryObject<Item> RAW_SILICON_BLOCK_ITEM = registerBlockItem("raw_silicon_block", ModBlocks.RAW_SILICON_BLOCK);
+    public static final RegistryObject<Item> RAW_RARE_EARTH_BLOCK_ITEM = registerBlockItem("raw_rare_earth_block", ModBlocks.RAW_RARE_EARTH_BLOCK);
+    public static final RegistryObject<Item> SILICON_BLOCK_ITEM = registerBlockItem("silicon_block", ModBlocks.SILICON_BLOCK);
+    public static final RegistryObject<Item> RARE_EARTH_BLOCK_ITEM = registerBlockItem("rare_earth_block", ModBlocks.RARE_EARTH_BLOCK);
     public static final RegistryObject<Item> BIO_INCUBATOR_ITEM = registerBlockItem("bio_incubator", ModBlocks.BIO_INCUBATOR);
     public static final RegistryObject<Item> GENE_SPLICER_ITEM = registerBlockItem("gene_splicer", ModBlocks.GENE_SPLICER);
     public static final RegistryObject<Item> ATMOSPHERIC_CONDENSER_ITEM = registerBlockItem("atmospheric_condenser", ModBlocks.ATMOSPHERIC_CONDENSER);

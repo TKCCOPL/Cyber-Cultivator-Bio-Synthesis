@@ -27,6 +27,12 @@ public class ModBlockStateProvider extends BlockStateProvider {
         simpleBlockWithItem(ModBlocks.SILICON_ORE.get(), cubeAll(ModBlocks.SILICON_ORE.get()));
         simpleBlockWithItem(ModBlocks.RARE_EARTH_ORE.get(), cubeAll(ModBlocks.RARE_EARTH_ORE.get()));
 
+        // Material storage blocks — simple cube_all
+        simpleBlockWithItem(ModBlocks.RAW_SILICON_BLOCK.get(), cubeAll(ModBlocks.RAW_SILICON_BLOCK.get()));
+        simpleBlockWithItem(ModBlocks.RAW_RARE_EARTH_BLOCK.get(), cubeAll(ModBlocks.RAW_RARE_EARTH_BLOCK.get()));
+        simpleBlockWithItem(ModBlocks.SILICON_BLOCK.get(), cubeAll(ModBlocks.SILICON_BLOCK.get()));
+        simpleBlockWithItem(ModBlocks.RARE_EARTH_BLOCK.get(), cubeAll(ModBlocks.RARE_EARTH_BLOCK.get()));
+
         // Machine blocks — multi-face cube with horizontal facing
         machineBlock(ModBlocks.BIO_INCUBATOR.get());
         machineBlock(ModBlocks.GENE_SPLICER.get());

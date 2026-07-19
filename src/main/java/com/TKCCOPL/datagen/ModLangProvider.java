@@ -14,9 +14,14 @@ public class ModLangProvider extends LanguageProvider {
     @Override
     protected void addTranslations() {
         add("itemGroup.cybercultivator", "赛博农夫");
+        add("itemGroup.cybercultivator.quality_samples", "赛博农夫：品质样本");
 
-        addBlock(ModBlocks.SILICON_ORE, "硅晶矿");
-        addBlock(ModBlocks.RARE_EARTH_ORE, "稀土矿");
+        addBlock(ModBlocks.SILICON_ORE, "硅晶矿石");
+        addBlock(ModBlocks.RARE_EARTH_ORE, "稀土矿石");
+        addBlock(ModBlocks.RAW_SILICON_BLOCK, "粗硅晶块");
+        addBlock(ModBlocks.RAW_RARE_EARTH_BLOCK, "粗稀土块");
+        addBlock(ModBlocks.SILICON_BLOCK, "硅晶块");
+        addBlock(ModBlocks.RARE_EARTH_BLOCK, "稀土块");
         addBlock(ModBlocks.BIO_INCUBATOR, "生物培养槽");
         addBlock(ModBlocks.GENE_SPLICER, "基因拼接机");
         addBlock(ModBlocks.ATMOSPHERIC_CONDENSER, "大气冷凝器");
@@ -25,6 +30,8 @@ public class ModLangProvider extends LanguageProvider {
         addBlock(ModBlocks.PROTEIN_SOY_CROP, "蛋白质豆");
         addBlock(ModBlocks.ALCOHOL_BLOOM_CROP, "酒精花");
 
+        addItem(ModItems.RAW_SILICON_CRYSTAL, "粗硅晶矿");
+        addItem(ModItems.RAW_RARE_EARTH, "粗稀土矿");
         addItem(ModItems.SILICON_SHARD, "硅碎片");
         addItem(ModItems.RARE_EARTH_DUST, "稀土粉末");
         addItem(ModItems.PLANT_FIBER, "植物纤维");
@@ -170,8 +177,10 @@ public class ModLangProvider extends LanguageProvider {
         add("jei.cybercultivator.info.seeds.bloom", "酒精花种子：地牢或村庄战利品箱获得。放入培养槽中培育，产出工业乙醇。通过基因拼接机可改变基因值（速度、产量、效价）。");
 
         // JEI 基础材料信息
-        add("jei.cybercultivator.info.silicon_shard", "硅碎片：从硅晶矿中开采获得，是制造数据信号注入剂的基础材料。");
-        add("jei.cybercultivator.info.rare_earth_dust", "稀土粉末：从稀土矿中开采获得，用于合成 S-02 视觉强化血清。");
+        add("jei.cybercultivator.info.raw_silicon_crystal", "粗硅晶矿：硅晶矿石的原始掉落物，可在熔炉或高炉中烧制为硅碎片。");
+        add("jei.cybercultivator.info.raw_rare_earth", "粗稀土矿：稀土矿石的原始掉落物，可在熔炉或高炉中烧制为稀土粉末。");
+        add("jei.cybercultivator.info.silicon_shard", "硅碎片：由粗硅晶矿烧制获得，是制造数据信号注入剂的基础材料。");
+        add("jei.cybercultivator.info.rare_earth_dust", "稀土粉末：由粗稀土矿烧制获得，用于合成 S-02 视觉强化血清。");
         add("jei.cybercultivator.info.plant_fiber", "植物纤维：由纤维草在培养槽中培育产出。品质（Potency）继承自种子基因，影响血清活性。用于合成突触神经莓。");
         add("jei.cybercultivator.info.biochemical_solution", "生化原液：由蛋白质豆在培养槽中培育产出。品质（Concentration）继承自种子基因，影响血清活性。用于合成突触神经莓和 S-01 血清。");
         add("jei.cybercultivator.info.industrial_ethanol", "工业乙醇：由酒精花在培养槽中培育产出。品质（Purity）继承自种子基因，影响血清活性。用于合成突触神经莓和 S-03 血清。");
@@ -185,8 +194,8 @@ public class ModLangProvider extends LanguageProvider {
         add("jei.cybercultivator.info.serum_bottler", "血清灌装机：将突触神经莓加工为高级血清（S-01/S-02/S-03）。支持漏斗自动化（顶部/侧面注入，底部抽取）。");
 
         // JEI 矿石信息
-        add("jei.cybercultivator.info.silicon_ore", "硅晶矿：在地下生成，挖掘后掉落硅碎片。用于制造数据信号注入剂。");
-        add("jei.cybercultivator.info.rare_earth_ore", "稀土矿：在地下生成，挖掘后掉落稀土粉末。用于合成 S-02 视觉强化血清。");
+        add("jei.cybercultivator.info.silicon_ore", "硅晶矿石：在地下生成，挖掘后掉落粗硅晶矿；精准采集可保留矿石方块。");
+        add("jei.cybercultivator.info.rare_earth_ore", "稀土矿石：在地下生成，挖掘后掉落粗稀土矿；精准采集可保留矿石方块。");
 
         // JEI 血清效果简介
         add("jei.cybercultivator.serum_effect.s01", "攻速+力量 | 副作用: 凋零+饥饿");
