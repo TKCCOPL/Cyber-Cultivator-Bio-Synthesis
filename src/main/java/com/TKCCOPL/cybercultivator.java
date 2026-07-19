@@ -76,7 +76,9 @@ public class cybercultivator {
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
             event.accept(ModItems.SILICON_ORE_ITEM);
+            event.accept(ModItems.SILICON_BLOCK_ITEM);
             event.accept(ModItems.RARE_EARTH_ORE_ITEM);
+            event.accept(ModItems.RARE_EARTH_BLOCK_ITEM);
             event.accept(ModItems.BIO_INCUBATOR_ITEM);
             event.accept(ModItems.GENE_SPLICER_ITEM);
             event.accept(ModItems.ATMOSPHERIC_CONDENSER_ITEM);
