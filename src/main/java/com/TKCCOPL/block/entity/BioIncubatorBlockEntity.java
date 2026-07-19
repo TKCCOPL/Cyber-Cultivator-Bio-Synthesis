@@ -112,6 +112,12 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
             return;
         }
 
+        // v1.1.7 hotfix：执行 clearRemoved 推迟的红石重新采样
+        if (blockEntity.redstone.consumePendingResample(level, pos)) {
+            blockEntity.setChanged();
+            level.sendBlockUpdated(pos, state, state, 2);
+        }
+
         boolean autoInjected = false;
         if (level.getGameTime() >= blockEntity.nextInputInjectionTick) {
             autoInjected = blockEntity.consumeAvailableInputs();
@@ -383,12 +389,18 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
         return Math.max(1, Math.min(14, raw));
     }
 
-    /** 区块加载时重新采样红石供电状态。 */
+    /**
+     * 区块加载时仅标记需要重新采样；实际采样在首次 tick 时执行。
+     *
+     * <p>v1.1.7 hotfix：在 post-load 阶段调用 {@code level.hasNeighborSignal}
+     * 会触发相邻 chunk 加载，而 spawn area 生成期间 Server thread 自身被阻塞
+     * 导致死锁。改为延迟到 tick，此时区块已完全加载。</p>
+     */
     @Override
     public void clearRemoved() {
         super.clearRemoved();
         if (level != null && !level.isClientSide) {
-            redstone.resamplePowered(level, worldPosition);
+            redstone.markPendingResample();
         }
     }
 

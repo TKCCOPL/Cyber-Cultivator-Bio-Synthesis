@@ -228,7 +228,16 @@ public class GeneSplicerBlockEntity extends BlockEntity implements WorldlyContai
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, GeneSplicerBlockEntity blockEntity) {
-        if (level.isClientSide || !blockEntity.splicing) return;
+        if (level.isClientSide) return;
+
+        // v1.1.7 hotfix：执行 clearRemoved 推迟的红石重新采样
+        // 注意：必须在 splicing 状态检查之前执行，否则闲置 BE 不会更新供电状态
+        if (blockEntity.redstone.consumePendingResample(level, pos)) {
+            blockEntity.setChanged();
+            level.sendBlockUpdated(pos, state, state, 2);
+        }
+
+        if (!blockEntity.splicing) return;
         if (blockEntity.seedA.isEmpty() || blockEntity.seedB.isEmpty() || !blockEntity.output.isEmpty()) {
             blockEntity.resetSplicing();
             blockEntity.syncToClient();
@@ -510,12 +519,18 @@ public class GeneSplicerBlockEntity extends BlockEntity implements WorldlyContai
         return Math.max(1, Math.min(14, raw));
     }
 
-    /** 区块加载时重新采样红石供电状态。 */
+    /**
+     * 区块加载时仅标记需要重新采样；实际采样在首次 tick 时执行。
+     *
+     * <p>v1.1.7 hotfix：在 post-load 阶段调用 {@code level.hasNeighborSignal}
+     * 会触发相邻 chunk 加载，而 spawn area 生成期间 Server thread 自身被阻塞
+     * 导致死锁。改为延迟到 tick，此时区块已完全加载。</p>
+     */
     @Override
     public void clearRemoved() {
         super.clearRemoved();
         if (level != null && !level.isClientSide) {
-            redstone.resamplePowered(level, worldPosition);
+            redstone.markPendingResample();
         }
     }
 

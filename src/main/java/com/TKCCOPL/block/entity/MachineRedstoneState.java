@@ -25,6 +25,16 @@ public final class MachineRedstoneState {
 
     private RedstoneControlMode mode = RedstoneControlMode.IGNORE;
     private boolean powered = false;
+    /**
+     * 区块加载后需要重新采样供电状态的标记（v1.1.7 hotfix）。
+     *
+     * <p>{@code clearRemoved()} 不能直接调用 {@link #resamplePowered}：
+     * 区块 post-load 阶段调用 {@code level.hasNeighborSignal} 会触发相邻 chunk 加载，
+     * 而 chunk 生成任务必须由 Server thread 执行 → Server thread 自身被阻塞 →
+     * spawn area 生成死锁（"Preparing spawn area: 0%" 卡死）。
+     * 改为设置标记，由 BE 在首次 tick 时安全执行重新采样。</p>
+     */
+    private boolean pendingResample = false;
 
     public RedstoneControlMode getMode() {
         return mode;
@@ -65,6 +75,25 @@ public final class MachineRedstoneState {
     /** 从 {@code level.hasNeighborSignal(pos)} 重新采样供电状态。 */
     public boolean resamplePowered(net.minecraft.world.level.Level level, net.minecraft.core.BlockPos pos) {
         return updatePowered(level.hasNeighborSignal(pos));
+    }
+
+    /**
+     * 标记需要延迟重新采样（在 {@code clearRemoved()} 中调用）。
+     * 实际采样由 BE 在首次 tick 中通过 {@link #consumePendingResample} 执行。
+     */
+    public void markPendingResample() {
+        this.pendingResample = true;
+    }
+
+    /**
+     * 若有挂起的重新采样请求，执行之并清除标记。BE 应在 tick 开头调用。
+     *
+     * @return 供电状态是否实际变化（用于 BE 决定是否同步给客户端）
+     */
+    public boolean consumePendingResample(net.minecraft.world.level.Level level, net.minecraft.core.BlockPos pos) {
+        if (!pendingResample) return false;
+        pendingResample = false;
+        return resamplePowered(level, pos);
     }
 
     /**
