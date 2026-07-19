@@ -69,13 +69,19 @@ public class AtmosphericCondenserScreen extends MachineScreen<AtmosphericCondens
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         graphics.drawString(font, title, titleLabelX, titleLabelY, 0x373737, false);
-        drawFitted(graphics, getStatusLine(), 16, 70, 162,
-                menu.isPaused() || menu.getStock() >= MAX_STOCK ? 0x6B4C12 : 0x2F6F79);
+        // v1.1.7 hotfix：红石阻塞优先级最高，使用警示橙
+        int statusColor = isRedstoneBlocked() ? REDSTONE_BLOCKED_COLOR
+                : menu.isPaused() || menu.getStock() >= MAX_STOCK ? 0x6B4C12 : 0x2F6F79;
+        drawFitted(graphics, getStatusLine(), 16, 70, 162, statusColor);
         drawFitted(graphics, getStockLine(), 16, 82, 162, 0x373737);
         graphics.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, 0x404040, false);
     }
 
     private Component getStatusLine() {
+        // v1.1.7 hotfix：红石阻塞优先级最高（高于暂停、库存满、产水中等所有状态）
+        if (isRedstoneBlocked()) {
+            return redstoneBlockedStatus();
+        }
         if (menu.isPaused()) {
             int maximum = menu.getMaxProgress();
             int percent = maximum <= 0 ? 0 : Math.min(100, menu.getProgress() * 100 / maximum);

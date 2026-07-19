@@ -182,8 +182,12 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
             }
         }
 
-        // Try to start a recipe
-        if (!processingCancelled && blockEntity.maxProgress == 0) {
+        // v1.1.7 红石门控：配方选取与加工推进均受红石模式控制
+        // 红石阻塞时不新建加工批次（cachedRecipe/maxProgress 保持 0），不推进 progress
+        boolean redstoneAllows = blockEntity.redstone.isProcessingAllowed();
+
+        // Try to start a recipe（红石禁止时不新建批次，比较器保持 0）
+        if (!processingCancelled && blockEntity.maxProgress == 0 && redstoneAllows) {
             SerumRecipe recipe = blockEntity.findRecipe();
             if (recipe != null) {
                 blockEntity.cachedRecipe = recipe;
@@ -192,10 +196,6 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
                 changed = true;
             }
         }
-
-        // v1.1.7 红石门控：加工推进受红石模式控制
-        // 红石阻塞时不推进 progress，但保留 cachedRecipe 和 maxProgress（不取消配方）
-        boolean redstoneAllows = blockEntity.redstone.isProcessingAllowed();
 
         // Process current recipe
         if (!processingCancelled && blockEntity.maxProgress > 0 && redstoneAllows) {
@@ -432,6 +432,8 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         setChanged();
         if (level != null && !level.isClientSide) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
+            // v1.1.7 hotfix：库存变化时立即刷新比较器（防产物抽走后卡在 15）
+            updateComparatorIfChanged(level, worldPosition);
         }
     }
 

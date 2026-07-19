@@ -3,7 +3,6 @@ package com.TKCCOPL.menu;
 import com.TKCCOPL.block.entity.GeneSplicerBlockEntity;
 import com.TKCCOPL.init.ModBlocks;
 import com.TKCCOPL.init.ModMenuTypes;
-import com.TKCCOPL.item.GeneticSeedItem;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
@@ -48,9 +47,10 @@ public class GeneSplicerMenu extends MachineMenu implements RedstoneMenuAccess {
 
     private static Slot seedSlot(Container container, int index, int x, int y) {
         return new Slot(container, index, x, y) {
+            // v1.1.7 hotfix：统一委托 BE canPlaceItem（语义标签为唯一真相源，整合包可扩展）
             @Override
             public boolean mayPlace(ItemStack stack) {
-                return stack.getItem() instanceof GeneticSeedItem && container.canPlaceItem(index, stack);
+                return container.canPlaceItem(index, stack);
             }
 
             @Override public int getMaxStackSize() { return 1; }

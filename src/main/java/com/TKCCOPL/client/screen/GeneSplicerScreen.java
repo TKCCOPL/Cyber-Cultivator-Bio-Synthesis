@@ -69,7 +69,7 @@ public class GeneSplicerScreen extends MachineScreen<GeneSplicerMenu> {
                 144, 38, 0x4B3D4A, false);
 
         drawFitted(graphics, getStatus(first, second, output), 12, 68, 164,
-                menu.isSplicing() || !output.isEmpty() ? 0x78406F : 0x555555);
+                getStatusColor(menu.isSplicing() || !output.isEmpty()));
         if (output.getItem() instanceof GeneticSeedItem) {
             drawFitted(graphics, Component.translatable("gui.cybercultivator.splicer.offspring_generation",
                     GeneticSeedItem.getGeneration(output)), 12, 81, 164, 0x5C3D58);
@@ -83,6 +83,10 @@ public class GeneSplicerScreen extends MachineScreen<GeneSplicerMenu> {
     }
 
     private Component getStatus(ItemStack first, ItemStack second, ItemStack output) {
+        // v1.1.7 hotfix：红石阻塞优先级最高（高于产物就绪、拼接中等所有状态）
+        if (isRedstoneBlocked()) {
+            return redstoneBlockedStatus();
+        }
         if (!output.isEmpty()) {
             String key = output.hasTag() && output.getTag().getInt("Mutation") > 0
                     ? "gui.cybercultivator.splicer.status_mutated"
@@ -99,6 +103,12 @@ public class GeneSplicerScreen extends MachineScreen<GeneSplicerMenu> {
         return Component.translatable(first.isEmpty() && second.isEmpty()
                 ? "gui.cybercultivator.splicer.status_waiting_two"
                 : "gui.cybercultivator.splicer.status_waiting_one");
+    }
+
+    /** v1.1.7 hotfix：拼接机状态行颜色，红石阻塞优先。 */
+    private int getStatusColor(boolean active) {
+        if (isRedstoneBlocked()) return REDSTONE_BLOCKED_COLOR;
+        return active ? 0x78406F : 0x555555;
     }
 
     private Component getOffspringInfo(ItemStack first, ItemStack second, ItemStack output) {

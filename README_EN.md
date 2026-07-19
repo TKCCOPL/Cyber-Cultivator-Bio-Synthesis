@@ -29,7 +29,7 @@ Cyber-Cultivator: Bio-Synthesis is a Forge mod built around a biotechnology prod
 - An interactive GUI production chain using Incubators, Gene Splicers, Serum Bottlers, and Atmospheric Condensers
 - Three enhancement serums with Activity-based quality scaling and stacking
 - Redstone control (ignore/high/low) and unified comparator output for redstone automation
-- Forge `IItemHandler` sided capabilities and cross-mod material tags, compatible with Create, Mekanism, AE2 logistics
+- Forge `IItemHandler` sided capabilities and cross-mod material tags, expected to be compatible with logistics mods supporting this capability (no dedicated integration provided)
 - Optional Curios accessories for seed analysis, automatic injection, and life support
 - Optional KubeJS recipe DSL and reloadable gameplay events
 - Hopper automation and public query/event APIs

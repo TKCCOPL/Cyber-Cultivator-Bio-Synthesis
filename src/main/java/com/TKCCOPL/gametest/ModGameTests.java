@@ -1493,6 +1493,180 @@ public final class ModGameTests {
         helper.succeed();
     }
 
+    // === v1.1.7 hotfix 边界回归测试（问题 1/2/3/5/7） ===
+
+    /** 问题 1：IItemHandler 异物插入不得覆盖原物品（防止物品复制/丢失）。 */
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void itemHandlerRejectsMismatchedInsert(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.GENE_SPLICER.get());
+        GeneSplicerBlockEntity splicer = (GeneSplicerBlockEntity) helper.getBlockEntity(pos);
+
+        ItemStack first = new ItemStack(ModItems.FIBER_REED_SEEDS.get());
+        splicer.setItem(GeneSplicerBlockEntity.SEED_A_SLOT, first);
+
+        var upHandler = splicer.getCapability(
+                net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, Direction.UP).orElse(null);
+        helper.assertTrue(upHandler != null, "Splicer UP capability must be present");
+
+        ItemStack mismatched = new ItemStack(ModItems.PROTEIN_SOY_SEEDS.get());
+        ItemStack mismatchedCopy = mismatched.copy();
+        ItemStack remaining = upHandler.insertItem(0, mismatched, false);
+
+        helper.assertTrue(remaining.getCount() == 1,
+                "Mismatched insert must return full remaining (no silent accept)");
+        helper.assertTrue(ItemStack.matches(remaining, mismatchedCopy),
+                "Returned remaining must match input (no item duplication)");
+        ItemStack slotAfter = splicer.getItem(GeneSplicerBlockEntity.SEED_A_SLOT);
+        helper.assertTrue(slotAfter.is(ModItems.FIBER_REED_SEEDS.get()),
+                "Existing item must not be overwritten by mismatched insert");
+        helper.assertTrue(slotAfter.getCount() == 1,
+                "Existing item count must remain 1");
+
+        helper.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        helper.succeed();
+    }
+
+    /** 问题 2：种子/亲本槽严格 1，漏斗连续输入不得堆叠。 */
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void hopperCannotStackOccupiedSeedSlot(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.BIO_INCUBATOR.get());
+        BioIncubatorBlockEntity incubator = (BioIncubatorBlockEntity) helper.getBlockEntity(pos);
+
+        var upHandler = incubator.getCapability(
+                net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, Direction.UP).orElse(null);
+        helper.assertTrue(upHandler != null, "Incubator UP capability must be present");
+
+        ItemStack first = new ItemStack(ModItems.FIBER_REED_SEEDS.get());
+        ItemStack remaining1 = upHandler.insertItem(0, first, false);
+        helper.assertTrue(remaining1.isEmpty(), "First seed insert must succeed");
+        helper.assertTrue(incubator.getItem(BioIncubatorBlockEntity.SEED_SLOT).getCount() == 1,
+                "Seed slot must hold 1 after first insert");
+
+        ItemStack second = new ItemStack(ModItems.FIBER_REED_SEEDS.get());
+        ItemStack remaining2 = upHandler.insertItem(0, second, false);
+        helper.assertTrue(remaining2.getCount() == 1,
+                "Second seed insert must be rejected (slot occupied, no stacking)");
+        helper.assertTrue(incubator.getItem(BioIncubatorBlockEntity.SEED_SLOT).getCount() == 1,
+                "Seed slot must remain at 1 after rejected insert");
+
+        helper.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        helper.succeed();
+    }
+
+    /** 问题 3：产物抽走后比较器信号必须从 15 归 0（提前 return 路径仍调用 updateComparatorIfChanged）。 */
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void comparatorDropsToZeroAfterExtraction(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.GENE_SPLICER.get());
+        GeneSplicerBlockEntity splicer = (GeneSplicerBlockEntity) helper.getBlockEntity(pos);
+
+        // 初始：output 非空 → 比较器 = 15
+        CompoundTag withOutput = new CompoundTag();
+        withOutput.put("Output", new ItemStack(ModItems.FIBER_REED_SEEDS.get()).save(new CompoundTag()));
+        splicer.load(withOutput);
+        helper.assertTrue(splicer.getComparatorSignal() == 15,
+                "Splicer with output must emit 15");
+        // 触发 tick 让 lastComparatorSignal 缓存为 15（走 !splicing 提前 return 路径）
+        GeneSplicerBlockEntity.tick(helper.getLevel(), pos, splicer.getBlockState(), splicer);
+
+        // 抽走产物
+        splicer.setItem(GeneSplicerBlockEntity.OUTPUT_SLOT, ItemStack.EMPTY);
+        helper.assertTrue(splicer.getComparatorSignal() == 0,
+                "getComparatorSignal must return 0 immediately after output cleared");
+
+        // 再次 tick：!splicing 提前 return 路径必须调用 updateComparatorIfChanged
+        GeneSplicerBlockEntity.tick(helper.getLevel(), pos, splicer.getBlockState(), splicer);
+        helper.assertTrue(splicer.getComparatorSignal() == 0,
+                "Comparator must remain 0 after tick (no stale 15 cache)");
+
+        helper.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        helper.succeed();
+    }
+
+    /** 问题 5：HIGH 未供电时灌装机不得选取配方（cachedRecipe/maxProgress 保持 0）。 */
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void bottlerSkipsRecipeSelectionWhenRedstoneBlocked(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.SERUM_BOTTLER.get());
+        SerumBottlerBlockEntity bottler = (SerumBottlerBlockEntity) helper.getBlockEntity(pos);
+
+        // 输入合法配方材料（莓合成配方）
+        bottler.setItem(0, new ItemStack(ModItems.PLANT_FIBER.get()));
+        bottler.setItem(1, new ItemStack(ModItems.INDUSTRIAL_ETHANOL.get()));
+        bottler.setItem(2, new ItemStack(ModItems.BIOCHEMICAL_SOLUTION.get()));
+
+        // HIGH 模式 + 未供电 → 红石阻塞
+        bottler.getRedstoneState().setMode(RedstoneControlMode.HIGH);
+        bottler.getRedstoneState().updatePowered(false);
+        helper.assertFalse(bottler.getRedstoneState().isProcessingAllowed(),
+                "HIGH mode without power must block processing");
+
+        // 触发 tick：应跳过配方选取
+        SerumBottlerBlockEntity.tick(helper.getLevel(), pos, bottler.getBlockState(), bottler);
+        helper.assertTrue(bottler.getMaxProgress() == 0,
+                "Bottler must not select recipe when redstone blocked (maxProgress must stay 0)");
+        helper.assertTrue(bottler.getProgress() == 0,
+                "Bottler must not advance progress when redstone blocked");
+        helper.assertTrue(bottler.getComparatorSignal() == 0,
+                "Blocked bottler must emit comparator 0 (no batch started)");
+
+        // 供电恢复后应立即选取配方
+        bottler.getRedstoneState().updatePowered(true);
+        SerumBottlerBlockEntity.tick(helper.getLevel(), pos, bottler.getBlockState(), bottler);
+        helper.assertTrue(bottler.getMaxProgress() > 0,
+                "Bottler must select recipe after power restored");
+
+        helper.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        helper.succeed();
+    }
+
+    /** 问题 7：拼接机冻结期间状态稳定（不推进、不消耗、不抛异常）。 */
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void splicerFrozenStaysStableAcrossManyTicks(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.GENE_SPLICER.get());
+        GeneSplicerBlockEntity splicer = (GeneSplicerBlockEntity) helper.getBlockEntity(pos);
+
+        ItemStack seedA = new ItemStack(ModItems.FIBER_REED_SEEDS.get());
+        ItemStack seedB = new ItemStack(ModItems.PROTEIN_SOY_SEEDS.get());
+        splicer.setItem(GeneSplicerBlockEntity.SEED_A_SLOT, seedA);
+        splicer.setItem(GeneSplicerBlockEntity.SEED_B_SLOT, seedB);
+        helper.assertTrue(splicer.isSplicing(), "Two parents must start splicing");
+
+        // 推进 1 tick（IGNORE 默认允许加工）
+        GeneSplicerBlockEntity.tick(helper.getLevel(), pos, splicer.getBlockState(), splicer);
+        helper.assertTrue(splicer.getSpliceProgress() == 1,
+                "Initial tick must advance progress to 1");
+
+        // HIGH 模式 + 未供电 → 冻结
+        splicer.getRedstoneState().setMode(RedstoneControlMode.HIGH);
+        splicer.getRedstoneState().updatePowered(false);
+
+        // 100 tick 冻结验证（远超原 syncToClient 间隔 5，验证删除冗余同步后行为仍正确）
+        for (int i = 0; i < 100; i++) {
+            GeneSplicerBlockEntity.tick(helper.getLevel(), pos, splicer.getBlockState(), splicer);
+        }
+        helper.assertTrue(splicer.getSpliceProgress() == 1,
+                "Frozen splice must stay at progress=1 across 100 ticks");
+        helper.assertTrue(splicer.isSplicing(),
+                "Frozen splice must remain in splicing state");
+        helper.assertFalse(splicer.getSeedA().isEmpty() || splicer.getSeedB().isEmpty(),
+                "Frozen splice must not consume parents");
+        helper.assertTrue(splicer.getComparatorSignal() == 1,
+                "Frozen splicer at progress=1 must emit comparator signal 1");
+
+        // 恢复供电：进度立即恢复推进
+        splicer.getRedstoneState().updatePowered(true);
+        GeneSplicerBlockEntity.tick(helper.getLevel(), pos, splicer.getBlockState(), splicer);
+        helper.assertTrue(splicer.getSpliceProgress() == 2,
+                "Resumed splice must advance progress again");
+
+        helper.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        helper.succeed();
+    }
+
     private static void assertEffectId(GameTestHelper helper, ItemStack serum, String expected) {
         var info = CyberCultivatorAPI.getSerumEffectInfo(serum);
         helper.assertTrue(info != null && expected.equals(info.effectId()), "Unexpected serum effect registry ID");

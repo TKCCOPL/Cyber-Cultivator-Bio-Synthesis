@@ -88,6 +88,8 @@
   "gui.cybercultivator.splicer.status_splicing": "拼接中 · %s 秒",
   "gui.cybercultivator.splicer.status_waiting_one": "还需一颗基因种子",
   "gui.cybercultivator.splicer.status_waiting_two": "放入两颗基因种子",
+  "gui.cybercultivator.status.redstone_blocked.high": "红石阻塞：需高电平激活",
+  "gui.cybercultivator.status.redstone_blocked.low": "红石阻塞：需低电平激活",
   "gui.cybercultivator.waiting": "等待资源",
   "item.cybercultivator.alcohol_bloom_seeds": "酒精花种子",
   "item.cybercultivator.bio_pulse_belt": "生化脉冲腰带",

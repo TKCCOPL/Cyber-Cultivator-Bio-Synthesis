@@ -97,6 +97,28 @@ public abstract class MachineScreen<M extends AbstractContainerMenu> extends Abs
         return values[ordinal];
     }
 
+    /**
+     * v1.1.7 hotfix：返回红石阻塞状态行。
+     * 仅在 {@link RedstoneMenuAccess#isRedstoneProcessingAllowed()} 为 {@code false} 时调用。
+     * 子类状态行方法应在最高优先级判定中调用本方法。
+     */
+    protected Component redstoneBlockedStatus() {
+        if (!(menu instanceof RedstoneMenuAccess redstoneMenu)) {
+            return Component.empty();
+        }
+        RedstoneControlMode mode = safeMode(redstoneMenu.getRedstoneModeOrdinal());
+        return Component.translatable("gui.cybercultivator.status.redstone_blocked." + mode.getSerializedName());
+    }
+
+    /** v1.1.7 hotfix：红石阻塞状态颜色（与"阻塞/等待"一致，使用警示橙）。 */
+    protected static final int REDSTONE_BLOCKED_COLOR = 0x6B4C12;
+
+    /** v1.1.7 hotfix：判断当前 menu 是否处于红石阻塞状态。 */
+    protected boolean isRedstoneBlocked() {
+        return menu instanceof RedstoneMenuAccess redstoneMenu
+                && !redstoneMenu.isRedstoneProcessingAllowed();
+    }
+
     protected void sendButton(int id) {
         if (minecraft != null && minecraft.gameMode != null) {
             minecraft.gameMode.handleInventoryButtonClick(menu.containerId, id);

@@ -134,6 +134,8 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
         setChanged();
         if (level != null && !level.isClientSide) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
+            // v1.1.7 hotfix：库存变化时立即刷新比较器
+            updateComparatorIfChanged(level, worldPosition);
         }
     }
 

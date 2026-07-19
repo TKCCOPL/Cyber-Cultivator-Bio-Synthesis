@@ -42,17 +42,18 @@ public class BioIncubatorMenu extends MachineMenu implements RedstoneMenuAccess 
         this.data = data;
         this.access = access;
         addSlot(new Slot(machine, BioIncubatorBlockEntity.SEED_SLOT, 30, 50) {
-            @Override public boolean mayPlace(ItemStack stack) { return stack.getItem() instanceof GeneticSeedItem; }
+            // v1.1.7 hotfix：统一委托 BE canPlaceItem（语义标签为唯一真相源，整合包可扩展）
+            @Override public boolean mayPlace(ItemStack stack) { return machine.canPlaceItem(BioIncubatorBlockEntity.SEED_SLOT, stack); }
             @Override public int getMaxStackSize() { return 1; }
         });
         addSlot(new Slot(machine, BioIncubatorBlockEntity.NUTRITION_SLOT, 64, 50) {
-            @Override public boolean mayPlace(ItemStack stack) { return stack.is(ModItems.BIOCHEMICAL_SOLUTION.get()); }
+            @Override public boolean mayPlace(ItemStack stack) { return machine.canPlaceItem(BioIncubatorBlockEntity.NUTRITION_SLOT, stack); }
         });
         addSlot(new Slot(machine, BioIncubatorBlockEntity.PURITY_SLOT, 94, 50) {
-            @Override public boolean mayPlace(ItemStack stack) { return stack.is(ModItems.PURIFIED_WATER_BOTTLE.get()); }
+            @Override public boolean mayPlace(ItemStack stack) { return machine.canPlaceItem(BioIncubatorBlockEntity.PURITY_SLOT, stack); }
         });
         addSlot(new Slot(machine, BioIncubatorBlockEntity.SIGNAL_SLOT, 124, 50) {
-            @Override public boolean mayPlace(ItemStack stack) { return stack.is(ModItems.SILICON_SHARD.get()); }
+            @Override public boolean mayPlace(ItemStack stack) { return machine.canPlaceItem(BioIncubatorBlockEntity.SIGNAL_SLOT, stack); }
         });
         addSlot(new Slot(machine, BioIncubatorBlockEntity.RESOURCE_OUTPUT_SLOT, 154, 50) {
             @Override public boolean mayPlace(ItemStack stack) { return false; }

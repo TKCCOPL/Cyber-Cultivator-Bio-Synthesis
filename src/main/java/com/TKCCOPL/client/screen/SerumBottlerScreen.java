@@ -28,7 +28,11 @@ public class SerumBottlerScreen extends MachineScreen<SerumBottlerMenu> {
         graphics.drawString(font, title, titleLabelX, titleLabelY, 0x373737, false);
         SerumRecipe recipe = menu.getDisplayRecipe();
         Component statusLine = getStatusLine(recipe);
-        int statusColor = menu.isProcessing() ? 0x2F6F79 : menu.hasOutput() ? 0x3F6F32 : 0x555555;
+        // v1.1.7 hotfix：红石阻塞优先级最高，使用警示橙
+        int statusColor = isRedstoneBlocked() ? REDSTONE_BLOCKED_COLOR
+                : menu.isProcessing() ? 0x2F6F79
+                : menu.hasOutput() ? 0x3F6F32
+                : 0x555555;
         drawFitted(graphics, statusLine, 16, 78, 162, statusColor);
 
         if (recipe == null) {
@@ -47,6 +51,10 @@ public class SerumBottlerScreen extends MachineScreen<SerumBottlerMenu> {
     }
 
     private Component getStatusLine(SerumRecipe recipe) {
+        // v1.1.7 hotfix：红石阻塞优先级最高（高于产物阻塞、加工中等所有状态）
+        if (isRedstoneBlocked()) {
+            return redstoneBlockedStatus();
+        }
         if (menu.isProcessing()) {
             int maximum = menu.getMaxProgress();
             int percent = maximum <= 0 ? 0 : Math.min(100, menu.getProgress() * 100 / maximum);

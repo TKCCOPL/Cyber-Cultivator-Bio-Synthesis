@@ -58,6 +58,10 @@ public class SidedMachineItemHandler implements IItemHandler {
         if (!policy.canInsert(actual, stack, side)) return stack;
 
         ItemStack existing = container.getItem(actual);
+        // 非空槽必须物品+标签一致才允许合并，否则会覆盖原物品（物品丢失/复制）
+        if (!existing.isEmpty() && !ItemStack.isSameItemSameTags(existing, stack)) {
+            return stack;
+        }
         int limit = Math.min(policy.getSlotLimit(actual), stack.getMaxStackSize());
         int currentCount = existing.getCount();
         if (currentCount >= limit) return stack;
@@ -71,10 +75,14 @@ public class SidedMachineItemHandler implements IItemHandler {
             return remaining;
         }
 
-        ItemStack normalized = policy.normalizeInsertedStack(actual, stack);
-        normalized.setCount(currentCount + toInsert);
+        // 空槽首次插入走 normalize（保留 instanceof GeneticSeedItem NBT 品质检查）；
+        // 非空槽合并基于 existing.copy() 增长，避免覆盖原物品
+        ItemStack target = existing.isEmpty()
+                ? policy.normalizeInsertedStack(actual, stack)
+                : existing.copy();
+        target.setCount(currentCount + toInsert);
         // 走 BE 标准入口（含 syncToClient、cancelProcessing 等副作用）
-        container.setItem(actual, normalized);
+        container.setItem(actual, target);
         return remaining;
     }
 

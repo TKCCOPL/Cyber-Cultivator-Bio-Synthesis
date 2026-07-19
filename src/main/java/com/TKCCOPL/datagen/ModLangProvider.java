@@ -293,5 +293,8 @@ public class ModLangProvider extends LanguageProvider {
         add("gui.cybercultivator.redstone.tooltip.low", "需低电平激活 · 当前电平：%s");
         add("gui.cybercultivator.redstone.powered.yes", "已供电");
         add("gui.cybercultivator.redstone.powered.no", "未供电");
+        // v1.1.7 hotfix：红石阻塞时机器状态行（4 机器共用，最高优先级）
+        add("gui.cybercultivator.status.redstone_blocked.high", "红石阻塞：需高电平激活");
+        add("gui.cybercultivator.status.redstone_blocked.low", "红石阻塞：需低电平激活");
     }
 }

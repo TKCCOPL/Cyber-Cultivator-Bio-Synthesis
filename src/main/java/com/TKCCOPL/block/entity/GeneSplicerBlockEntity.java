@@ -237,21 +237,23 @@ public class GeneSplicerBlockEntity extends BlockEntity implements WorldlyContai
             level.sendBlockUpdated(pos, state, state, 2);
         }
 
-        if (!blockEntity.splicing) return;
+        if (!blockEntity.splicing) {
+            // v1.1.7 hotfix：闲置时仍需检测比较器变化（子代被抽走后 15→0）
+            blockEntity.updateComparatorIfChanged(level, pos);
+            return;
+        }
         if (blockEntity.seedA.isEmpty() || blockEntity.seedB.isEmpty() || !blockEntity.output.isEmpty()) {
             blockEntity.resetSplicing();
             blockEntity.syncToClient();
+            blockEntity.updateComparatorIfChanged(level, pos);
             return;
         }
 
         // v1.1.7 红石门控：拼接进度推进受红石模式控制
         boolean redstoneAllows = blockEntity.redstone.isProcessingAllowed();
         if (!redstoneAllows) {
-            // 红石阻塞时不推进，但仍每 5 tick 同步状态以驱动 GUI 连接条动画
-            if (blockEntity.spliceProgress % 5 == 0) {
-                blockEntity.syncToClient();
-            }
-            // 仍检测比较器变化（虽然数值未变，但安全兜底）
+            // v1.1.7 hotfix：红石阻塞时不推进，也不每 tick 同步（数据无变化，避免冗余网络包）
+            // ContainerData 已通过 data.get(7) 同步 processingAllowed 给客户端，无需额外 syncToClient
             blockEntity.updateComparatorIfChanged(level, pos);
             return;
         }
@@ -477,6 +479,8 @@ public class GeneSplicerBlockEntity extends BlockEntity implements WorldlyContai
         setChanged();
         if (level != null && !level.isClientSide) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
+            // v1.1.7 hotfix：库存变化时立即刷新比较器（防子代抽走后卡在 15）
+            updateComparatorIfChanged(level, worldPosition);
         }
     }
 
@@ -679,6 +683,9 @@ public class GeneSplicerBlockEntity extends BlockEntity implements WorldlyContai
         if (side == Direction.DOWN) return false;
         // §10.4 机器输入验证改用语义标签；默认仅含本 mod 种子
         if (slot == SEED_A_SLOT || slot == SEED_B_SLOT) {
+            // 亲本槽严格 1：已占用时拒绝插入（防止漏斗堆叠导致机器无法启动）
+            ItemStack target = getItem(slot);
+            if (!target.isEmpty()) return false;
             return !splicing && output.isEmpty() && stack.is(ModTags.SemanticItems.GENETIC_SEEDS);
         }
         return false;

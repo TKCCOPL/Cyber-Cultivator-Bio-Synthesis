@@ -115,12 +115,16 @@ public final class CyberCultivatorAPI {
     /**
      * 获取机器红石控制状态快照。位置无效或非机器 BE 返回 {@code null}。
      *
-     * @param level 世界（客户端或服务端均可）
+     * <p>v1.1.7 hotfix：仅服务端可用。{@code powered} 状态不持久化、不在客户端采样，
+     * 客户端调用会返回 {@code null} 避免返回陈旧状态。</p>
+     *
+     * @param level 世界（仅服务端）
      * @param pos   方块位置
-     * @return 控制信息快照；位置无效返回 {@code null}
+     * @return 控制信息快照；位置无效或客户端调用返回 {@code null}
      */
     public static MachineControlInfo getMachineControlInfo(Level level, BlockPos pos) {
         if (level == null || pos == null) return null;
+        if (!(level instanceof ServerLevel)) return null;
         BlockEntity be = level.getBlockEntity(pos);
         if (!(be instanceof MachineRedstoneBlockEntity machine)) return null;
         MachineRedstoneState state = machine.getRedstoneState();

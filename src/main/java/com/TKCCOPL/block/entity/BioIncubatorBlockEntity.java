@@ -127,6 +127,8 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
         }
         if (blockEntity.seed.isEmpty()) {
             if (autoInjected) blockEntity.syncToClient();
+            // v1.1.7 hotfix：提前 return 仍需检测比较器变化（产物被抽走后 15→0）
+            blockEntity.updateComparatorIfChanged(level, pos);
             return;
         }
 
@@ -347,6 +349,8 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
         setChanged();
         if (level != null && !level.isClientSide) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
+            // v1.1.7 hotfix：库存变化时立即刷新比较器（防产物抽走后卡在 15）
+            updateComparatorIfChanged(level, worldPosition);
         }
     }
 
@@ -656,8 +660,9 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
         };
         if (!sideAllows) return false;
         // §10.4 机器输入验证改用语义标签；默认仅含原物品，整合包可通过数据包扩展
+        // 种子槽严格 1（单次投入，已占用时拒绝）；N/P/D 槽缓冲 64（工业自动化友好）
         return switch (slot) {
-            case SEED_SLOT -> stack.is(ModTags.SemanticItems.GENETIC_SEEDS);
+            case SEED_SLOT -> seed.isEmpty() && stack.is(ModTags.SemanticItems.GENETIC_SEEDS);
             case NUTRITION_SLOT -> stack.is(ModTags.SemanticItems.INCUBATOR_NUTRITION);
             case PURITY_SLOT -> stack.is(ModTags.SemanticItems.INCUBATOR_PURITY);
             case SIGNAL_SLOT -> stack.is(ModTags.SemanticItems.INCUBATOR_DATA_SIGNAL);
@@ -685,8 +690,8 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
 
     @Override
     public int getSlotLimit(int slot) {
-        // 种子槽限 1；N/P/D 输入槽限 1（每周期每通道最多消耗一份）；输出槽不限
-        if (slot == SEED_SLOT || slot == NUTRITION_SLOT || slot == PURITY_SLOT || slot == SIGNAL_SLOT) {
+        // 种子槽限 1（单次投入）；N/P/D 输入槽缓冲 64（每周期消耗 1 份，工业自动化友好）；输出槽不限
+        if (slot == SEED_SLOT) {
             return 1;
         }
         return 64;
