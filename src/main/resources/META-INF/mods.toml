@@ -79,6 +79,6 @@ side = "CLIENT"
 [[dependencies."${mod_id}"]]
 modId = "kubejs"
 mandatory = false
-versionRange = "[2001,)"
+versionRange = "[2001.6.5-build.16,2001.6.6)"
 ordering = "AFTER"
 side = "BOTH"

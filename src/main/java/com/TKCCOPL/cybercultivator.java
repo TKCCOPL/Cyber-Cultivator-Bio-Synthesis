@@ -7,11 +7,17 @@ import com.TKCCOPL.init.ModBlockEntities;
 import com.TKCCOPL.init.ModCreativeTabs;
 import com.TKCCOPL.init.ModEffects;
 import com.TKCCOPL.init.ModItems;
+import com.TKCCOPL.init.ModMenuTypes;
+import com.TKCCOPL.client.screen.AtmosphericCondenserScreen;
+import com.TKCCOPL.client.screen.BioIncubatorScreen;
+import com.TKCCOPL.client.screen.GeneSplicerScreen;
+import com.TKCCOPL.client.screen.SerumBottlerScreen;
 import com.TKCCOPL.curios.CuriosCompat;
 import com.TKCCOPL.recipe.ModRecipeTypes;
 import com.mojang.logging.LogUtils;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
@@ -49,6 +55,7 @@ public class cybercultivator {
         ModCreativeTabs.register(modEventBus);
         ModLootModifiers.register(modEventBus);
         ModRecipeTypes.register(modEventBus);
+        ModMenuTypes.register(modEventBus);
 
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
@@ -69,7 +76,9 @@ public class cybercultivator {
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS) {
             event.accept(ModItems.SILICON_ORE_ITEM);
+            event.accept(ModItems.SILICON_BLOCK_ITEM);
             event.accept(ModItems.RARE_EARTH_ORE_ITEM);
+            event.accept(ModItems.RARE_EARTH_BLOCK_ITEM);
             event.accept(ModItems.BIO_INCUBATOR_ITEM);
             event.accept(ModItems.GENE_SPLICER_ITEM);
             event.accept(ModItems.ATMOSPHERIC_CONDENSER_ITEM);
@@ -100,6 +109,12 @@ public class cybercultivator {
             // Some client setup code
             LOGGER.info("HELLO FROM CLIENT SETUP");
             LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
+            event.enqueueWork(() -> {
+                MenuScreens.register(ModMenuTypes.BIO_INCUBATOR.get(), BioIncubatorScreen::new);
+                MenuScreens.register(ModMenuTypes.GENE_SPLICER.get(), GeneSplicerScreen::new);
+                MenuScreens.register(ModMenuTypes.SERUM_BOTTLER.get(), SerumBottlerScreen::new);
+                MenuScreens.register(ModMenuTypes.ATMOSPHERIC_CONDENSER.get(), AtmosphericCondenserScreen::new);
+            });
         }
     }
 }

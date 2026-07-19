@@ -9,6 +9,10 @@ plugins {
 group = mod_group_id
 version = mod_version
 
+def enableKubeJSRuntime = providers.gradleProperty('enableKubeJSRuntime')
+        .map(String::toBoolean)
+        .getOrElse(false)
+
 base {
     archivesName = mod_id
 }
@@ -49,6 +53,9 @@ minecraft {
 
         gameTestServer {
             property 'forge.enabledGameTestNamespaces', mod_id
+            if (enableKubeJSRuntime) {
+                workingDirectory layout.buildDirectory.dir('kubejs-smoke').get().asFile
+            }
         }
 
         data {
@@ -69,6 +76,7 @@ repositories {
     maven { url = 'https://maven.theillusivec4.top/' }
     maven { url = 'https://maven.blamejared.com/' }
     maven { url = 'https://maven.latvian.dev/releases' }
+    maven { url = 'https://maven.architectury.dev/' }
 }
 
 dependencies {
@@ -81,9 +89,28 @@ dependencies {
     compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}")
     runtimeOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge:${jei_version}")
 
-    // KubeJS 暂时注释掉，需要验证 Maven 仓库可用性
-    // compileOnly fg.deobf("dev.latvian.mods:kubejs-forge:${kubejs_version}:api")
-    // runtimeOnly fg.deobf("dev.latvian.mods:kubejs-forge:${kubejs_version}")
+    // KubeJS integration is compile-only and isolated under compat/kubejs.
+    // Enable the full development runtime explicitly with -PenableKubeJSRuntime=true.
+    compileOnly fg.deobf("dev.latvian.mods:kubejs-forge:${kubejs_version}") { transitive = false }
+    compileOnly fg.deobf("dev.latvian.mods:rhino-forge:${rhino_version}") { transitive = false }
+    compileOnly fg.deobf("dev.architectury:architectury-forge:${architectury_version}") { transitive = false }
+
+    if (enableKubeJSRuntime) {
+        runtimeOnly fg.deobf("dev.latvian.mods:kubejs-forge:${kubejs_version}") { transitive = false }
+        runtimeOnly fg.deobf("dev.latvian.mods:rhino-forge:${rhino_version}") { transitive = false }
+        runtimeOnly fg.deobf("dev.architectury:architectury-forge:${architectury_version}") { transitive = false }
+    }
+}
+
+tasks.register('prepareKubeJSSmoke', Sync) {
+    from('src/kubejsTest/resources/kubejs')
+    into(layout.buildDirectory.dir('kubejs-smoke/kubejs'))
+}
+
+tasks.configureEach {
+    if (name == 'runGameTestServer' && enableKubeJSRuntime) {
+        dependsOn tasks.named('prepareKubeJSSmoke')
+    }
 }
 
 tasks.named('processResources', ProcessResources).configure {

@@ -2,11 +2,11 @@ package com.TKCCOPL.api;
 
 import com.TKCCOPL.Config;
 import com.TKCCOPL.block.entity.*;
-import com.TKCCOPL.curios.CuriosCompat;
 import com.TKCCOPL.cybercultivator;
 import com.TKCCOPL.item.GeneticSeedItem;
 import com.TKCCOPL.item.SynapticSerumItem;
 import com.TKCCOPL.recipe.ModRecipeTypes;
+import com.TKCCOPL.recipe.RecipeOrdering;
 import com.TKCCOPL.recipe.SerumRecipe;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
@@ -111,7 +111,7 @@ public final class CyberCultivatorAPI {
     /** 查询所有血清配方 */
     public static List<SerumRecipe> getSerumRecipes(Level level) {
         if (level == null) return List.of();
-        return List.copyOf(level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get()));
+        return RecipeOrdering.sorted(level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get()));
     }
 
     /** 计算 Activity 值 */
@@ -147,6 +147,6 @@ public final class CyberCultivatorAPI {
     }
 
     public static boolean isCuriosLoaded() {
-        return CuriosCompat.isCuriosLoaded();
+        return ModList.get().isLoaded("curios");
     }
 }

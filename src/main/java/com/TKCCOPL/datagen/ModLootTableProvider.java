@@ -35,8 +35,14 @@ public class ModLootTableProvider extends LootTableProvider {
 
         @Override
         protected void generate() {
-            dropOther(ModBlocks.SILICON_ORE.get(), ModItems.SILICON_SHARD.get());
-            dropOther(ModBlocks.RARE_EARTH_ORE.get(), ModItems.RARE_EARTH_DUST.get());
+            add(ModBlocks.SILICON_ORE.get(), createOreDrop(
+                    ModBlocks.SILICON_ORE.get(), ModItems.RAW_SILICON_CRYSTAL.get()));
+            add(ModBlocks.RARE_EARTH_ORE.get(), createOreDrop(
+                    ModBlocks.RARE_EARTH_ORE.get(), ModItems.RAW_RARE_EARTH.get()));
+            dropSelf(ModBlocks.RAW_SILICON_BLOCK.get());
+            dropSelf(ModBlocks.RAW_RARE_EARTH_BLOCK.get());
+            dropSelf(ModBlocks.SILICON_BLOCK.get());
+            dropSelf(ModBlocks.RARE_EARTH_BLOCK.get());
             dropSelf(ModBlocks.BIO_INCUBATOR.get());
             dropSelf(ModBlocks.GENE_SPLICER.get());
             dropSelf(ModBlocks.ATMOSPHERIC_CONDENSER.get());

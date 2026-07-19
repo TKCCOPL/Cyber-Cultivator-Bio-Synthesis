@@ -5,5 +5,5 @@
   "count_formula": "2 + yield / 3",
   "quality_tag": "Concentration",
   "crop_name": "蛋白质豆",
-  "default_genes": { "speed": 5, "yield": 4, "potency": 7 }
+  "default_genes": { "speed": 5, "yield": 5, "potency": 5 }
 }

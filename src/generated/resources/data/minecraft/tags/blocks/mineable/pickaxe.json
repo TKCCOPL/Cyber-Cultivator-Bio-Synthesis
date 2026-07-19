@@ -2,7 +2,13 @@
   "values": [
     "cybercultivator:silicon_ore",
     "cybercultivator:rare_earth_ore",
+    "cybercultivator:raw_silicon_block",
+    "cybercultivator:raw_rare_earth_block",
+    "cybercultivator:silicon_block",
+    "cybercultivator:rare_earth_block",
     "cybercultivator:bio_incubator",
-    "cybercultivator:gene_splicer"
+    "cybercultivator:gene_splicer",
+    "cybercultivator:atmospheric_condenser",
+    "cybercultivator:serum_bottler"
   ]
 }

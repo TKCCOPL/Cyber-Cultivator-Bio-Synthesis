@@ -2,9 +2,9 @@ package com.TKCCOPL.block;
 
 import com.TKCCOPL.block.entity.AtmosphericCondenserBlockEntity;
 import com.TKCCOPL.init.ModBlockEntities;
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -17,6 +17,7 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.Nullable;
 
 public class AtmosphericCondenserBlock extends MachineBlock {
@@ -40,20 +41,15 @@ public class AtmosphericCondenserBlock extends MachineBlock {
         }
 
         if (player.isShiftKeyDown()) {
-            sendStatus(player, blockEntity, Component.translatable("message.cybercultivator.condenser.inspect"));
-            return InteractionResult.CONSUME;
-        }
-
-        ItemStack out = blockEntity.extractOutput();
-        if (!out.isEmpty()) {
-            if (!player.addItem(out)) {
-                player.drop(out, false);
+            ItemStack out = blockEntity.extractOutput();
+            if (!out.isEmpty()) {
+                if (!player.addItem(out)) player.drop(out, false);
+                player.displayClientMessage(Component.translatable(
+                        "message.cybercultivator.condenser.output_extracted"), true);
             }
-            sendStatus(player, blockEntity, Component.translatable("message.cybercultivator.condenser.output_extracted"));
             return InteractionResult.CONSUME;
         }
-
-        sendStatus(player, blockEntity, Component.translatable("message.cybercultivator.condenser.inspect"));
+        NetworkHooks.openScreen((ServerPlayer) player, blockEntity, pos);
         return InteractionResult.CONSUME;
     }
 
@@ -98,8 +94,4 @@ public class AtmosphericCondenserBlock extends MachineBlock {
         return 2;
     }
 
-    private static void sendStatus(Player player, AtmosphericCondenserBlockEntity blockEntity, Component action) {
-        player.displayClientMessage(Component.translatable("message.cybercultivator.condenser.status",
-                action, blockEntity.getOutput().getCount()).withStyle(ChatFormatting.GRAY), true);
-    }
 }

@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <b>v1.1.5 · Minecraft Forge 1.20.1</b><br>
+  <b>v1.1.6 · Minecraft Forge 1.20.1</b><br>
   Genetic breeding, automated cultivation, and bio-enhancement serums
 </p>
 
@@ -26,12 +26,13 @@ Cyber-Cultivator: Bio-Synthesis is a Forge mod built around a biotechnology prod
 ## Highlights
 
 - Three inheritable seed genes with mutation-driven breeding
-- An automated production chain using Incubators, Gene Splicers, Serum Bottlers, and Atmospheric Condensers
+- An interactive GUI production chain using Incubators, Gene Splicers, Serum Bottlers, and Atmospheric Condensers
 - Three enhancement serums with Activity-based quality scaling and stacking
-- Optional Curios accessories for machine HUDs, automatic injection, and life support
+- Optional Curios accessories for seed analysis, automatic injection, and life support
+- Optional KubeJS recipe DSL and reloadable gameplay events
 - Hopper automation and public query/event APIs
 
-Compatible with JEI.
+Compatible with JEI, with cultivation, splicing, bottling, and condensation shown through the machines' actual GUI layouts; KubeJS, JEI, and Curios are all optional.
 
 For recipes, machine operation, breeding rules, and serum values, see the [full user guide](docs/USER_GUIDE.md) (Chinese).
 
@@ -42,10 +43,11 @@ For recipes, machine operation, breeding rules, and serum values, see the [full 
 | Minecraft | 1.20.1 | Required |
 | Forge | 47.4.18+ | Required |
 | Curios API | 5.3.5+ | Optional; enables accessories |
+| KubeJS | 2001.6.5-build.16 through build.26 | Optional; enables scripted recipes and events |
 
 1. Install Minecraft Forge 1.20.1.
 2. Download the mod JAR from [Releases](https://github.com/TKCCOPL/Cyber-Cultivator-Bio-Synthesis/releases/latest) and place it in the `mods` directory.
-3. Install Curios API if desired.
+3. Install Curios API or KubeJS and its dependencies if desired.
 
 ## Documentation
 

@@ -3,21 +3,24 @@ package com.TKCCOPL.curios;
 import com.TKCCOPL.Config;
 import com.TKCCOPL.init.ModEffects;
 import com.TKCCOPL.init.ModItems;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 
 public class LifeSupportPackItem extends CurioAccessoryItem {
-    private static final String TAG_HEAL_COOLDOWN = "HealCooldown";
-
     public LifeSupportPackItem(Properties properties) {
         super(properties, "back", "tooltip.cybercultivator.life_support_pack");
     }
 
-    public static void tick(Player player, ItemStack packStack) {
-        if (player.level().isClientSide) return;
+    static boolean shouldTick(Player player) {
+        if (!player.isAlive()) return false;
+        if (player.level().getGameTime() % 10L == 0L) return true;
+        return player.getHealth() <= Config.packHealThreshold
+                && !player.getCooldowns().isOnCooldown(ModItems.LIFE_SUPPORT_PACK.get());
+    }
+
+    public static void tick(Player player) {
+        if (player.level().isClientSide || !player.isAlive()) return;
 
         // Side effect mitigation: reduce NeuralOverload duration (every 10 ticks)
         if (player.level().getGameTime() % 10L == 0L) {
@@ -35,32 +38,15 @@ public class LifeSupportPackItem extends CurioAccessoryItem {
         }
 
         // Low HP emergency heal
-        int cooldown = getHealCooldown(packStack);
-        if (cooldown > 0) {
-            setHealCooldown(packStack, cooldown - 1);
-            return;
-        }
+        if (player.getCooldowns().isOnCooldown(ModItems.LIFE_SUPPORT_PACK.get())) return;
 
         if (player.getHealth() <= Config.packHealThreshold) {
-            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-                ItemStack slotStack = player.getInventory().getItem(i);
-                if (slotStack.is(ModItems.BIOCHEMICAL_SOLUTION.get())) {
-                    slotStack.shrink(1);
-                    player.heal(4.0F);
-                    player.addEffect(new MobEffectInstance(MobEffects.DIG_SPEED, 200, 0, true, false, true));
-                    setHealCooldown(packStack, Config.packHealCooldown);
-                    break;
-                }
+            if (AccessoryInventoryHelper.consumeOne(player, ModItems.BIOCHEMICAL_SOLUTION.get(), null)) {
+                player.heal(4.0F);
+                player.addEffect(new MobEffectInstance(MobEffects.DIG_SPEED, 200, 0,
+                        true, false, true));
+                player.getCooldowns().addCooldown(ModItems.LIFE_SUPPORT_PACK.get(), Config.packHealCooldown);
             }
         }
-    }
-
-    private static int getHealCooldown(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
-        return tag != null ? tag.getInt(TAG_HEAL_COOLDOWN) : 0;
-    }
-
-    private static void setHealCooldown(ItemStack stack, int cooldown) {
-        stack.getOrCreateTag().putInt(TAG_HEAL_COOLDOWN, cooldown);
     }
 }

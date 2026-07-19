@@ -10,8 +10,9 @@ Cyber-Cultivator: Bio-Synthesis is a Minecraft Forge 1.20.1 mod built with Java 
 - Mappings: Parchment `2023.09.03-1.20.1`
 - Curios API `5.3.5+`: optional accessory integration
 - JEI: compatible
+- KubeJS `2001.6.5-build.16` through `2001.6.5-build.26`: optional scripting integration
 
-Curios is an optional compile-time integration and development-runtime dependency. Keep compatibility code isolated and guard runtime access so the mod starts without optional dependencies.
+Curios and KubeJS are optional compile-time integrations and opt-in development-runtime dependencies. Keep compatibility code isolated and guard runtime access so the mod starts without optional dependencies.
 
 ## Project Structure
 
@@ -43,6 +44,8 @@ Design notes, plans, user documentation, and test records live in `docs/`. Offli
 - Block entities must call `setChanged()` and synchronize relevant state with `sendBlockUpdated(..., 2)`. Preserve the non-empty update-tag sentinel where an empty tag would suppress client `load()`.
 - Keep client-only code out of dedicated-server execution paths.
 - Guard Curios access with the existing compatibility checks. Curios item-to-slot mappings and slot/entity bindings remain data-driven.
+- Keep all KubeJS types under `compat/kubejs`; core recipes, machines, events, and public APIs must not reference KubeJS classes. Enable its development runtime only with `-PenableKubeJSRuntime=true`.
+- Keep recipe selection deterministic: descending `priority`, then ascending recipe ID. Machines, API snapshots, and JEI must use the shared ordering.
 
 ## Build and Development Commands
 
@@ -50,6 +53,8 @@ Design notes, plans, user documentation, and test records live in `docs/`. Offli
 - `./gradlew build` — compile, process resources, test, and create the reobfuscated JAR in `build/libs/`
 - `./gradlew runData` — regenerate resources after datagen changes
 - `./gradlew runGameTestServer` — run registered Forge GameTests; the executed count must be greater than zero
+- `./gradlew -I .github/gradle/exclude-non-kubejs-runtime.init.gradle -PenableKubeJSRuntime=true runGameTestServer` — run the minimum KubeJS smoke profile
+- Add `-Pkubejs_version=2001.6.5-build.26` to the preceding command for the latest verified KubeJS profile
 - `./gradlew runClient` — launch the client for interactive smoke testing
 - `./gradlew runServer` — launch the headless development server
 - `./gradlew reobfJar` — reobfuscate the JAR; already included by `build`
@@ -114,6 +119,6 @@ For every version release, follow this order:
 4. Run `./gradlew build`, plus `runData`, GameTests, and runtime smoke tests when applicable.
 5. Commit with a release subject such as `release: vX.Y.Z 更新与修复` and a body containing only user-visible feature updates and fixes.
 6. Push a version branch and open a PR. Format its body with optional `## 更新` and `## 修复` headings followed only by single-line `- ` items; include at least one item. CI normalizes this body into the annotated tag and GitHub Release notes and rejects any other content. Omit version bumps, README or other documentation synchronization, audit and test processes, internal plans, and deferred work.
-7. Merge only after build, datagen, the Curios runtime smoke test, and the no-optional-dependencies smoke test pass.
+7. Merge only after build, datagen, the Curios, no-optional-dependencies, KubeJS-minimum, and KubeJS-latest runtime smoke tests pass.
 
 After merge, CI uploads `cybercultivator-X.Y.Z.jar`, creates annotated tag `vX.Y.Z`, and creates the matching GitHub Release with the JAR attached. If that release already exists, CI keeps only the workflow artifact; therefore, every real release must use a new version.

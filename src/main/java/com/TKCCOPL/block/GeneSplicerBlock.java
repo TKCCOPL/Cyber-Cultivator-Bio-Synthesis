@@ -2,10 +2,9 @@ package com.TKCCOPL.block;
 
 import com.TKCCOPL.block.entity.GeneSplicerBlockEntity;
 import com.TKCCOPL.init.ModBlockEntities;
-import com.TKCCOPL.item.GeneticSeedItem;
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -17,6 +16,7 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.Nullable;
 
 public class GeneSplicerBlock extends MachineBlock {
@@ -35,8 +35,6 @@ public class GeneSplicerBlock extends MachineBlock {
             return InteractionResult.PASS;
         }
 
-        ItemStack held = player.getItemInHand(hand);
-
         if (level.isClientSide) {
             return InteractionResult.SUCCESS;
         }
@@ -45,40 +43,21 @@ public class GeneSplicerBlock extends MachineBlock {
             ItemStack out = blockEntity.extractOutput();
             if (!out.isEmpty()) {
                 giveToPlayer(player, out);
-                sendStatus(player, Component.translatable("message.cybercultivator.splicer.output_extracted"), blockEntity);
+                player.displayClientMessage(Component.translatable(
+                        "message.cybercultivator.splicer.output_extracted"), true);
                 return InteractionResult.CONSUME;
             }
             ItemStack inputOut = blockEntity.extractLastInput();
             if (!inputOut.isEmpty()) {
                 giveToPlayer(player, inputOut);
-                sendStatus(player, Component.translatable("message.cybercultivator.splicer.input_retrieved"), blockEntity);
+                player.displayClientMessage(Component.translatable(
+                        "message.cybercultivator.splicer.input_retrieved"), true);
                 return InteractionResult.CONSUME;
             }
             return InteractionResult.PASS;
         }
 
-        if (held.getItem() instanceof GeneticSeedItem) {
-            ItemStack one = held.copy();
-            one.setCount(1);
-            if (blockEntity.tryInsertSeed(one, level.getRandom())) {
-                if (!player.getAbilities().instabuild) {
-                    held.shrink(1);
-                }
-                sendStatus(player, Component.translatable("message.cybercultivator.splicer.seed_inserted"), blockEntity);
-                return InteractionResult.CONSUME;
-            }
-        }
-
-        if (held.isEmpty() && blockEntity.hasOutput()) {
-            ItemStack out = blockEntity.extractOutput();
-            if (!out.isEmpty()) {
-                giveToPlayer(player, out);
-                sendStatus(player, Component.translatable("message.cybercultivator.splicer.output_extracted"), blockEntity);
-                return InteractionResult.CONSUME;
-            }
-        }
-
-        sendStatus(player, Component.translatable("message.cybercultivator.splicer.inspect"), blockEntity);
+        NetworkHooks.openScreen((ServerPlayer) player, blockEntity, pos);
         return InteractionResult.CONSUME;
     }
 
@@ -106,7 +85,7 @@ public class GeneSplicerBlock extends MachineBlock {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> blockEntityType) {
-        return null;
+        return createTickerHelper(blockEntityType, ModBlockEntities.GENE_SPLICER.get(), GeneSplicerBlockEntity::tick);
     }
 
     private static void giveToPlayer(Player player, ItemStack stack) {
@@ -115,11 +94,4 @@ public class GeneSplicerBlock extends MachineBlock {
         }
     }
 
-    private static void sendStatus(Player player, Component action, GeneSplicerBlockEntity blockEntity) {
-        Component output = Component.translatable(blockEntity.hasOutput()
-                ? "message.cybercultivator.state.yes"
-                : "message.cybercultivator.state.no");
-        player.displayClientMessage(Component.translatable("message.cybercultivator.splicer.status",
-                action, blockEntity.getInputCount(), output).withStyle(ChatFormatting.GRAY), true);
-    }
 }

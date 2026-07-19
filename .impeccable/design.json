@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-18T17:33:45+08:00",
+  "title": "Design System: Cyber-Cultivator Machine Interface",
+  "extensions": {
+    "colorMeta": {
+      "transparent": {
+        "role": "neutral",
+        "displayName": "Transparent",
+        "canonical": "#00000000",
+        "tonalRamp": ["#00000000", "#00000000", "#00000000", "#00000000", "#00000000", "#00000000", "#00000000", "#00000000"]
+      },
+      "chassis-outline": {
+        "role": "primary",
+        "displayName": "Chassis Outline",
+        "canonical": "#373737",
+        "tonalRamp": ["oklch(15% 0.000 89.9)", "oklch(27% 0.000 89.9)", "oklch(39% 0.000 89.9)", "oklch(51% 0.000 89.9)", "oklch(63% 0.000 89.9)", "oklch(75% 0.000 89.9)", "oklch(87% 0.000 89.9)", "oklch(95% 0.000 89.9)"]
+      },
+      "chassis-shadow": {
+        "role": "primary",
+        "displayName": "Chassis Shadow",
+        "canonical": "#555555",
+        "tonalRamp": ["oklch(15% 0.000 89.9)", "oklch(27% 0.000 89.9)", "oklch(39% 0.000 89.9)", "oklch(51% 0.000 89.9)", "oklch(63% 0.000 89.9)", "oklch(75% 0.000 89.9)", "oklch(87% 0.000 89.9)", "oklch(95% 0.000 89.9)"]
+      },
+      "slot-bed": {
+        "role": "neutral",
+        "displayName": "Slot Bed",
+        "canonical": "#8B8B8B",
+        "tonalRamp": ["oklch(15% 0.000 89.9)", "oklch(27% 0.000 89.9)", "oklch(39% 0.000 89.9)", "oklch(51% 0.000 89.9)", "oklch(63% 0.000 89.9)", "oklch(75% 0.000 89.9)", "oklch(87% 0.000 89.9)", "oklch(95% 0.000 89.9)"]
+      },
+      "chassis-panel": {
+        "role": "primary",
+        "displayName": "Chassis Panel",
+        "canonical": "#C6C6C6",
+        "tonalRamp": ["oklch(15% 0.000 89.9)", "oklch(27% 0.000 89.9)", "oklch(39% 0.000 89.9)", "oklch(51% 0.000 89.9)", "oklch(63% 0.000 89.9)", "oklch(75% 0.000 89.9)", "oklch(87% 0.000 89.9)", "oklch(95% 0.000 89.9)"]
+      },
+      "chassis-highlight": {
+        "role": "primary",
+        "displayName": "Chassis Highlight",
+        "canonical": "#EEEEEE",
+        "tonalRamp": ["oklch(15% 0.000 89.9)", "oklch(27% 0.000 89.9)", "oklch(39% 0.000 89.9)", "oklch(51% 0.000 89.9)", "oklch(63% 0.000 89.9)", "oklch(75% 0.000 89.9)", "oklch(87% 0.000 89.9)", "oklch(95% 0.000 89.9)"]
+      },
+      "process-track": {
+        "role": "neutral",
+        "displayName": "Process Track",
+        "canonical": "#2B3031",
+        "tonalRamp": ["oklch(15% 0.003 211.0)", "oklch(27% 0.006 211.0)", "oklch(39% 0.007 211.0)", "oklch(51% 0.007 211.0)", "oklch(63% 0.007 211.0)", "oklch(75% 0.007 211.0)", "oklch(87% 0.004 211.0)", "oklch(95% 0.002 211.0)"]
+      },
+      "growth-green": {
+        "role": "secondary",
+        "displayName": "Growth Green",
+        "canonical": "#75BD4B",
+        "tonalRamp": ["oklch(15% 0.071 135.7)", "oklch(27% 0.127 135.7)", "oklch(39% 0.165 135.7)", "oklch(51% 0.165 135.7)", "oklch(63% 0.165 135.7)", "oklch(75% 0.165 135.7)", "oklch(87% 0.098 135.7)", "oklch(95% 0.038 135.7)"]
+      },
+      "nutrition-lime": {
+        "role": "secondary",
+        "displayName": "Nutrition Lime",
+        "canonical": "#B7CF45",
+        "tonalRamp": ["oklch(15% 0.069 118.7)", "oklch(27% 0.125 118.7)", "oklch(39% 0.162 118.7)", "oklch(51% 0.162 118.7)", "oklch(63% 0.162 118.7)", "oklch(75% 0.162 118.7)", "oklch(87% 0.096 118.7)", "oklch(95% 0.037 118.7)"]
+      },
+      "purity-cyan": {
+        "role": "secondary",
+        "displayName": "Purity Cyan",
+        "canonical": "#49B8D1",
+        "tonalRamp": ["oklch(15% 0.045 215.4)", "oklch(27% 0.081 215.4)", "oklch(39% 0.105 215.4)", "oklch(51% 0.105 215.4)", "oklch(63% 0.105 215.4)", "oklch(75% 0.105 215.4)", "oklch(87% 0.062 215.4)", "oklch(95% 0.024 215.4)"]
+      },
+      "signal-amber": {
+        "role": "secondary",
+        "displayName": "Signal Amber",
+        "canonical": "#DBB441",
+        "tonalRamp": ["oklch(15% 0.059 89.7)", "oklch(27% 0.105 89.7)", "oklch(39% 0.137 89.7)", "oklch(51% 0.137 89.7)", "oklch(63% 0.137 89.7)", "oklch(75% 0.137 89.7)", "oklch(87% 0.081 89.7)", "oklch(95% 0.031 89.7)"]
+      },
+      "splice-magenta": {
+        "role": "secondary",
+        "displayName": "Splice Magenta",
+        "canonical": "#B868B2",
+        "tonalRamp": ["oklch(15% 0.060 329.8)", "oklch(27% 0.108 329.8)", "oklch(39% 0.140 329.8)", "oklch(51% 0.140 329.8)", "oklch(63% 0.140 329.8)", "oklch(75% 0.140 329.8)", "oklch(87% 0.082 329.8)", "oklch(95% 0.032 329.8)"]
+      },
+      "process-cyan": {
+        "role": "secondary",
+        "displayName": "Process Cyan",
+        "canonical": "#5DB9C7",
+        "tonalRamp": ["oklch(15% 0.038 208.5)", "oklch(27% 0.069 208.5)", "oklch(39% 0.090 208.5)", "oklch(51% 0.090 208.5)", "oklch(63% 0.090 208.5)", "oklch(75% 0.090 208.5)", "oklch(87% 0.053 208.5)", "oklch(95% 0.020 208.5)"]
+      }
+    },
+    "typographyMeta": {
+      "title": {"displayName": "Machine Title", "purpose": "Single-line machine identity within the 194 pixel chassis."},
+      "body": {"displayName": "Machine Information", "purpose": "State, recipe, generation, mutation, stock, and result information."},
+      "label": {"displayName": "Control Label", "purpose": "Slots, resource channels, and native Minecraft buttons."}
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "splicer-flow-pulse",
+        "value": "32-step game-tick loop",
+        "purpose": "Show parent inputs converging on the splice node only while processing."
+      },
+      {
+        "name": "bottler-flow-pulse",
+        "value": "54-step single-packet branch, bus, and inlet loop",
+        "purpose": "Show one material packet traversing one input path at a time, rotating across all three inputs only while processing."
+      },
+      {
+        "name": "condenser-air-scan",
+        "value": "24-step fin scan with pipe pulse",
+        "purpose": "Show active condensation across the intake fins and toward the vertical condenser only while stock has capacity."
+      }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Machine Panel",
+      "kind": "card",
+      "refersTo": "machine-panel",
+      "description": "The shared 194 by 210 pixel chassis with a 178 by 95 pixel work area.",
+      "html": "<section class=\"ds-machine-panel\"><header>基因拼接机</header><div class=\"ds-machine-work-area\"></div></section>",
+      "css": ".ds-machine-panel{width:176px;height:192px;padding:8px;background:#c6c6c6;color:#373737;border:1px solid #373737;box-shadow:inset 1px 1px #eeeeee,inset -1px -1px #555555;font:9px/9px monospace}.ds-machine-panel header{height:10px}.ds-machine-work-area{width:176px;height:93px;background:#c6c6c6;border:1px solid #373737;box-shadow:inset 1px 1px #eeeeee,inset -1px -1px #555555}"
+    },
+    {
+      "name": "Inventory Slot",
+      "kind": "custom",
+      "refersTo": "inventory-slot",
+      "description": "A vanilla-scale 18 pixel inventory slot with a one-pixel recessed bevel.",
+      "html": "<div class=\"ds-inventory-slot\" tabindex=\"0\"></div>",
+      "css": ".ds-inventory-slot{width:16px;height:16px;background:#8b8b8b;border:1px solid #555555;box-shadow:inset 1px 1px #373737,inset -1px -1px #eeeeee}.ds-inventory-slot:hover,.ds-inventory-slot:focus-visible{outline:1px solid #eeeeee;outline-offset:1px}"
+    },
+    {
+      "name": "Standard Action Button",
+      "kind": "button",
+      "refersTo": "standard-action-button",
+      "description": "A preview proxy for native Minecraft controls that remain on manually reversible machine actions, such as condenser mode and collection.",
+      "html": "<button class=\"ds-standard-button\">全部收取</button>",
+      "css": ".ds-standard-button{min-width:56px;height:16px;padding:0 4px;background:#c6c6c6;color:#373737;border:1px solid #373737;border-radius:0;box-shadow:inset 1px 1px #eeeeee,inset -1px -1px #555555;font:9px/14px monospace}.ds-standard-button:hover,.ds-standard-button:focus-visible{background:#eeeeee;outline:1px solid #49b8d1}.ds-standard-button:active{box-shadow:inset 1px 1px #555555}.ds-standard-button:disabled{color:#8b8b8b;background:#555555}"
+    },
+    {
+      "name": "Standard Progress",
+      "kind": "custom",
+      "refersTo": "standard-progress",
+      "description": "A 155 by 5 pixel track with a three-pixel active fill for primary machine progress.",
+      "html": "<div class=\"ds-progress-standard\"><i></i></div>",
+      "css": ".ds-progress-standard{width:153px;height:3px;padding:1px;background:#2b3031}.ds-progress-standard i{display:block;width:62%;height:3px;background:#75bd4b}"
+    },
+    {
+      "name": "Thin Splice Progress",
+      "kind": "custom",
+      "refersTo": "thin-progress",
+      "description": "A 27 by 3 pixel compact progress track used beside the gene-splicing flow.",
+      "html": "<div class=\"ds-progress-thin\"><i></i></div>",
+      "css": ".ds-progress-thin{width:25px;height:1px;padding:1px;background:#2b3031}.ds-progress-thin i{display:block;width:48%;height:1px;background:#b868b2}"
+    },
+    {
+      "name": "Vertical Resource Meter",
+      "kind": "custom",
+      "refersTo": "vertical-meter",
+      "description": "A six-pixel-wide dynamic fill placed directly left of its corresponding resource slot.",
+      "html": "<div class=\"ds-meter-vertical\"><i></i></div>",
+      "css": ".ds-meter-vertical{position:relative;width:6px;height:16px;background:#2b3031}.ds-meter-vertical i{position:absolute;right:1px;bottom:1px;left:1px;height:10px;background:#49b8d1}"
+    },
+    {
+      "name": "Flow Connector",
+      "kind": "custom",
+      "refersTo": "machine-panel",
+      "description": "A hard-edged centerline connector with a machine-colored pulse shown only during processing.",
+      "html": "<div class=\"ds-flow-connector\"><i></i></div>",
+      "css": ".ds-flow-connector{position:relative;width:48px;height:3px;background:#555555}.ds-flow-connector i{position:absolute;left:22px;width:4px;height:3px;background:#b868b2}"
+    },
+    {
+      "name": "Status Text Block",
+      "kind": "custom",
+      "refersTo": "machine-panel",
+      "description": "Three fixed nine-pixel rows for state, generation and mutation information, and result summary.",
+      "html": "<div class=\"ds-status-block\"><span>等待父本</span><span>代数 F3 · 突变概率 4.5%</span><span>子代均值预估 72</span></div>",
+      "css": ".ds-status-block{display:grid;grid-auto-rows:10px;width:164px;color:#373737;font:9px/9px monospace;white-space:nowrap;overflow:hidden}.ds-status-block span{overflow:hidden;text-overflow:ellipsis}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Bio-Industrial Lab Bench / 生物工业实验台",
+    "overview": "界面应像一套耐用、可读、可维护的生物工业实验设备，而不是悬浮全息屏或网页仪表盘。每台机器都必须一眼呈现“输入 → 处理 → 输出”的完整路径，同时保留 Minecraft 原生物品栏的操作习惯。\n\n四台机器共享一张 256×256 RGBA 纹理图集，其中有效窗口为 194×210 px；未使用区域保持透明。机器工作区固定在 `(8, 19)`、尺寸 `178×95 px`，玩家物品栏标签从 `y=116` 开始，三行背包槽位位于 `y=128/146/164`，快捷栏位于 `y=186`。这些坐标是共同骨架，不应因机器主题不同而漂移。\n\n界面的主要特征是紧凑、像素化、工业、临床、精确。静态纹理负责金属面板、槽位、管线和空轨道；Java Screen 负责文字、按钮、进度填充、状态变化和加工动画。所有动态状态都必须来自菜单同步数据，不能烘焙进背景纹理。",
+    "keyCharacteristics": [
+      "194×210 px 紧凑机壳与 178×95 px 固定工作区。",
+      "硬边像素、1 px 斜角和原版 Minecraft 库存交互。",
+      "完整可见的输入、处理、输出与阻塞状态。",
+      "四台机器共享工业语言，各自保留独特流程图。",
+      "动画只说明真实处理，不承担唯一的信息表达。"
+    ],
+    "rules": [
+      {"name": "The Functional Accent Rule", "body": "普通面板、槽位和说明文字保持中性；强调色只进入资源标识、动态填充、连接脉冲或必要的状态文字。培养槽的 N/P/D 三通道是允许并列三种强调色的明确例外。", "section": "colors"},
+      {"name": "The State Redundancy Rule", "body": "颜色不能单独表达状态。运行、等待、阻塞、已完成和不可操作状态还必须通过文字、填充长度、按钮启用状态、图形形状或动画是否播放来区分。", "section": "colors"},
+      {"name": "The Nine-Pixel Rule", "body": "单行界面文字按 9 px 高度规划；中文、英文和数字都必须在相同宽度约束下验证。", "section": "typography"},
+      {"name": "The Fit-or-Truncate Rule", "body": "机器名称、状态、配方、库存、子代预估、代数和突变概率均使用可用宽度计算；超长内容以 `...` 截断并通过悬停提示提供完整文本。禁止让文字穿过按钮、箭头、进度条、槽位或工作区边框。", "section": "typography"},
+      {"name": "The One-Pixel Bevel Rule", "body": "所有面板和槽位的高光、阴影与轮廓只占 1 px，不得放大为厚边框。按钮直接使用 Minecraft 原生 `Button` 渲染和禁用反馈，不在 GUI 纹理中复制静态按钮外观。", "section": "elevation"},
+      {"name": "The Vanilla Inventory Rule", "body": "不改变玩家物品栏的槽位尺寸、排列、点击语义和提示行为；机器特有交互只能增加可理解的流程控制，不能隐藏或劫持原生库存操作。", "section": "components"},
+      {"name": "The Motion Means Work Rule", "body": "动画只在机器确实处理时播放；等待、阻塞和完成状态保持静止，并由文字说明原因。动画按游戏刻度推进，不使用持续装饰性闪烁。", "section": "components"}
+    ],
+    "dos": [
+      "Do 让每台机器在一个视野内展示输入、处理、输出和阻塞原因。",
+      "Do 使用硬边像素、1 px 斜角和有限功能色保持 Industrial Foregoing 式的机械可读性。",
+      "Do 让连接条、箭头、进度条和槽位共享中心线，并为文字预留独立区域。",
+      "Do 对所有动态文字使用宽度测量、截断和完整悬停提示。",
+      "Do 使用文字、形状、填充与按钮状态共同表达运行状态。",
+      "Do 在中文和英文环境下检查标题、按钮、状态、代数、突变概率和配方信息。"
+    ],
+    "donts": [
+      "Don't 使用 glossy gradients、oversized decoration 或 excessive neon。",
+      "Don't 使用 ambiguous icon-only controls，也不要让颜色成为唯一状态信号。",
+      "Don't 隐藏 vanilla inventory behavior 或把自动处理拆成无意义的额外按钮。",
+      "Don't imitate modern SaaS cards、网页仪表盘或悬浮玻璃面板。",
+      "Don't 把动态填充和状态动画烘焙进静态 GUI 纹理。",
+      "Don't 允许文字、按钮、箭头、连接条、进度图像或槽位彼此重叠。"
+    ]
+  }
+}

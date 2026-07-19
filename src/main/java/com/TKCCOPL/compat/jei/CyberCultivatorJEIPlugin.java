@@ -3,6 +3,7 @@ package com.TKCCOPL.compat.jei;
 import com.TKCCOPL.cybercultivator;
 import com.TKCCOPL.init.ModItems;
 import com.TKCCOPL.recipe.ModRecipeTypes;
+import com.TKCCOPL.recipe.RecipeOrdering;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.VanillaTypes;
@@ -16,7 +17,8 @@ import net.minecraft.world.item.ItemStack;
 
 @JeiPlugin
 public class CyberCultivatorJEIPlugin implements IModPlugin {
-    private static final ResourceLocation UID = new ResourceLocation(cybercultivator.MODID, "jei_plugin");
+    private static final ResourceLocation UID =
+            ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID, "jei_plugin");
 
     @Override
     public ResourceLocation getPluginUid() {
@@ -29,7 +31,8 @@ public class CyberCultivatorJEIPlugin implements IModPlugin {
         registration.addRecipeCategories(
                 new SerumBottlingCategory(guiHelper),
                 new GeneSplicingCategory(guiHelper),
-                new IncubatorOutputCategory(guiHelper)
+                new IncubatorOutputCategory(guiHelper),
+                new AtmosphericCondensingCategory(guiHelper)
         );
     }
 
@@ -41,7 +44,7 @@ public class CyberCultivatorJEIPlugin implements IModPlugin {
         // 血清灌装配方
         registration.addRecipes(
                 SerumBottlingCategory.RECIPE_TYPE,
-                level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get())
+                RecipeOrdering.sorted(level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get()))
         );
 
         // 基因拼接配方
@@ -54,6 +57,11 @@ public class CyberCultivatorJEIPlugin implements IModPlugin {
         registration.addRecipes(
                 IncubatorOutputCategory.RECIPE_TYPE,
                 IncubatorOutputCategory.buildRecipes(level)
+        );
+
+        registration.addRecipes(
+                AtmosphericCondensingCategory.RECIPE_TYPE,
+                java.util.List.of(AtmosphericCondensingCategory.RECIPE)
         );
 
         // 物品信息页面
@@ -104,6 +112,16 @@ public class CyberCultivatorJEIPlugin implements IModPlugin {
         );
 
         // 基础材料
+        registration.addIngredientInfo(
+                new ItemStack(ModItems.RAW_SILICON_CRYSTAL.get()),
+                VanillaTypes.ITEM_STACK,
+                Component.translatable("jei.cybercultivator.info.raw_silicon_crystal")
+        );
+        registration.addIngredientInfo(
+                new ItemStack(ModItems.RAW_RARE_EARTH.get()),
+                VanillaTypes.ITEM_STACK,
+                Component.translatable("jei.cybercultivator.info.raw_rare_earth")
+        );
         registration.addIngredientInfo(
                 new ItemStack(ModItems.SILICON_SHARD.get()),
                 VanillaTypes.ITEM_STACK,
@@ -188,6 +206,10 @@ public class CyberCultivatorJEIPlugin implements IModPlugin {
         registration.addRecipeCatalyst(
                 new ItemStack(ModItems.BIO_INCUBATOR_ITEM.get()),
                 IncubatorOutputCategory.RECIPE_TYPE
+        );
+        registration.addRecipeCatalyst(
+                new ItemStack(ModItems.ATMOSPHERIC_CONDENSER_ITEM.get()),
+                AtmosphericCondensingCategory.RECIPE_TYPE
         );
     }
 }

@@ -14,6 +14,8 @@ public class ModItemModelProvider extends ItemModelProvider {
     @Override
     protected void registerModels() {
         // Simple items (generated model with layer0 texture)
+        basicItem(ModItems.RAW_SILICON_CRYSTAL.get());
+        basicItem(ModItems.RAW_RARE_EARTH.get());
         basicItem(ModItems.SILICON_SHARD.get());
         basicItem(ModItems.RARE_EARTH_DUST.get());
         basicItem(ModItems.PLANT_FIBER.get());

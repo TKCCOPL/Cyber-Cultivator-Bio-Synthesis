@@ -20,13 +20,23 @@ public class ModBlockTagProvider extends BlockTagsProvider {
         tag(BlockTags.MINEABLE_WITH_PICKAXE).add(
                 ModBlocks.SILICON_ORE.get(),
                 ModBlocks.RARE_EARTH_ORE.get(),
+                ModBlocks.RAW_SILICON_BLOCK.get(),
+                ModBlocks.RAW_RARE_EARTH_BLOCK.get(),
+                ModBlocks.SILICON_BLOCK.get(),
+                ModBlocks.RARE_EARTH_BLOCK.get(),
                 ModBlocks.BIO_INCUBATOR.get(),
-                ModBlocks.GENE_SPLICER.get()
+                ModBlocks.GENE_SPLICER.get(),
+                ModBlocks.ATMOSPHERIC_CONDENSER.get(),
+                ModBlocks.SERUM_BOTTLER.get()
         );
 
         tag(BlockTags.NEEDS_STONE_TOOL).add(
                 ModBlocks.SILICON_ORE.get(),
-                ModBlocks.RARE_EARTH_ORE.get()
+                ModBlocks.RARE_EARTH_ORE.get(),
+                ModBlocks.RAW_SILICON_BLOCK.get(),
+                ModBlocks.RAW_RARE_EARTH_BLOCK.get(),
+                ModBlocks.SILICON_BLOCK.get(),
+                ModBlocks.RARE_EARTH_BLOCK.get()
         );
 
         tag(BlockTags.CROPS).add(

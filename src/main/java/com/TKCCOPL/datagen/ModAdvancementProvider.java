@@ -4,6 +4,7 @@ import com.TKCCOPL.cybercultivator;
 import com.TKCCOPL.init.ModItems;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.FrameType;
+import net.minecraft.advancements.RequirementsStrategy;
 import net.minecraft.advancements.critereon.InventoryChangeTrigger;
 import net.minecraft.advancements.critereon.ItemPredicate;
 import net.minecraft.core.HolderLookup;
@@ -120,6 +121,7 @@ public class ModAdvancementProvider extends ForgeAdvancementProvider {
                     .addCriterion("has_monocle", InventoryChangeTrigger.TriggerInstance.hasItems(ModItems.SPECTRUM_MONOCLE.get()))
                     .addCriterion("has_belt", InventoryChangeTrigger.TriggerInstance.hasItems(ModItems.BIO_PULSE_BELT.get()))
                     .addCriterion("has_pack", InventoryChangeTrigger.TriggerInstance.hasItems(ModItems.LIFE_SUPPORT_PACK.get()))
+                    .requirements(RequirementsStrategy.OR)
                     .save(saver, cybercultivator.MODID + ":cyber_equip");
         }
     }

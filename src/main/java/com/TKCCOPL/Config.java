@@ -125,7 +125,7 @@ public class Config {
             .comment("数据信号注入阈值")
             .defineInRange("dataSignalThreshold", 25, 0, 100);
     private static final ForgeConfigSpec.IntValue PACK_EFFECT_REDUCTION_RATE = BUILDER
-            .comment("支持箱副作用消减速率")
+            .comment("支持箱每游戏 tick 额外消减的副作用时长（以 10 tick 为批次应用）")
             .defineInRange("effectReductionRate", 2, 1, 10);
     private static final ForgeConfigSpec.DoubleValue PACK_HEAL_THRESHOLD = BUILDER
             .comment("支持箱治疗阈值")
@@ -133,9 +133,6 @@ public class Config {
     private static final ForgeConfigSpec.IntValue PACK_HEAL_COOLDOWN = BUILDER
             .comment("支持箱治疗冷却 tick (1200 = 60s)")
             .defineInRange("healCooldown", 1200, 200, 6000);
-    private static final ForgeConfigSpec.IntValue MONOCLE_HUD_RANGE = BUILDER
-            .comment("单片镜 HUD 距离 (格)")
-            .defineInRange("hudRange", 8, 3, 16);
     static {
         BUILDER.pop();
     }
@@ -179,7 +176,6 @@ public class Config {
     public static volatile int packEffectReductionRate;
     public static volatile float packHealThreshold;
     public static volatile int packHealCooldown;
-    public static volatile int monocleHudRange;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
@@ -220,6 +216,5 @@ public class Config {
         packEffectReductionRate = PACK_EFFECT_REDUCTION_RATE.get();
         packHealThreshold = PACK_HEAL_THRESHOLD.get().floatValue();
         packHealCooldown = PACK_HEAL_COOLDOWN.get();
-        monocleHudRange = MONOCLE_HUD_RANGE.get();
     }
 }

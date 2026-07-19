@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "cybercultivator:rare_earth_block"
+    }
+  ],
+  "result": {
+    "count": 9,
+    "item": "cybercultivator:rare_earth_dust"
+  }
+}

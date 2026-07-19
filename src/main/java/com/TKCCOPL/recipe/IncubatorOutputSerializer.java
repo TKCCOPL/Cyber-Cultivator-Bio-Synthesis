@@ -5,6 +5,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraftforge.common.crafting.CraftingHelper;
 
 import javax.annotation.Nullable;
@@ -12,8 +13,7 @@ import javax.annotation.Nullable;
 public class IncubatorOutputSerializer implements net.minecraft.world.item.crafting.RecipeSerializer<IncubatorOutputRecipe> {
     @Override
     public IncubatorOutputRecipe fromJson(ResourceLocation id, JsonObject json) {
-        JsonObject seedJson = GsonHelper.getAsJsonObject(json, "seed");
-        ItemStack seedItem = CraftingHelper.getItemStack(seedJson, true);
+        Ingredient seed = Ingredient.fromJson(json.get("seed"));
 
         JsonObject outputJson = GsonHelper.getAsJsonObject(json, "output");
         ItemStack outputItem = CraftingHelper.getItemStack(outputJson, true);
@@ -22,31 +22,33 @@ public class IncubatorOutputSerializer implements net.minecraft.world.item.craft
         String qualityTag = GsonHelper.getAsString(json, "quality_tag", "");
         String cropName = GsonHelper.getAsString(json, "crop_name", "");
 
-        JsonObject genesJson = GsonHelper.getAsJsonObject(json, "default_genes");
+        JsonObject genesJson = GsonHelper.getAsJsonObject(json, "default_genes", new JsonObject());
         int[] defaultGenes = {
             GsonHelper.getAsInt(genesJson, "speed", 5),
             GsonHelper.getAsInt(genesJson, "yield", 5),
             GsonHelper.getAsInt(genesJson, "potency", 5)
         };
 
-        return new IncubatorOutputRecipe(id, seedItem, outputItem, countFormula, qualityTag, defaultGenes, cropName);
+        int priority = GsonHelper.getAsInt(json, "priority", 0);
+        return new IncubatorOutputRecipe(id, seed, outputItem, countFormula, qualityTag, defaultGenes, cropName, priority);
     }
 
     @Nullable
     @Override
     public IncubatorOutputRecipe fromNetwork(ResourceLocation id, FriendlyByteBuf buf) {
-        ItemStack seedItem = buf.readItem();
+        Ingredient seed = Ingredient.fromNetwork(buf);
         ItemStack outputItem = buf.readItem();
         String countFormula = buf.readUtf();
         String qualityTag = buf.readUtf();
         String cropName = buf.readUtf();
         int[] defaultGenes = { buf.readVarInt(), buf.readVarInt(), buf.readVarInt() };
-        return new IncubatorOutputRecipe(id, seedItem, outputItem, countFormula, qualityTag, defaultGenes, cropName);
+        int priority = buf.readVarInt();
+        return new IncubatorOutputRecipe(id, seed, outputItem, countFormula, qualityTag, defaultGenes, cropName, priority);
     }
 
     @Override
     public void toNetwork(FriendlyByteBuf buf, IncubatorOutputRecipe recipe) {
-        buf.writeItem(recipe.getSeedItem());
+        recipe.getSeedIngredient().toNetwork(buf);
         buf.writeItem(recipe.getOutputItem());
         buf.writeUtf(recipe.getCountFormula());
         buf.writeUtf(recipe.getQualityTag());
@@ -54,5 +56,6 @@ public class IncubatorOutputSerializer implements net.minecraft.world.item.craft
         for (int gene : recipe.getDefaultGenes()) {
             buf.writeVarInt(gene);
         }
+        buf.writeVarInt(recipe.getPriority());
     }
 }

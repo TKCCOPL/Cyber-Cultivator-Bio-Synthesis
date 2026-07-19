@@ -11,22 +11,30 @@ import net.minecraft.world.level.Level;
  * 血清灌装机配方类（JSON 数据驱动）。
  * 通过 SerumRecipeSerializer 从 JSON 反序列化。
  */
-public class SerumRecipe implements Recipe<Container> {
+public class SerumRecipe implements Recipe<Container>, PrioritizedRecipe {
     private final ResourceLocation id;
     private final Ingredient[] inputs;
     private final ItemStack baseOutput;
     private final int processingTime;
     private final boolean inheritActivity;
     private final boolean inheritMutation;
+    private final int priority;
 
     public SerumRecipe(ResourceLocation id, Ingredient[] inputs, ItemStack baseOutput,
                        int processingTime, boolean inheritActivity, boolean inheritMutation) {
+        this(id, inputs, baseOutput, processingTime, inheritActivity, inheritMutation, 0);
+    }
+
+    public SerumRecipe(ResourceLocation id, Ingredient[] inputs, ItemStack baseOutput,
+                       int processingTime, boolean inheritActivity, boolean inheritMutation,
+                       int priority) {
         this.id = id;
         this.inputs = inputs.clone();
         this.baseOutput = baseOutput.copy();
         this.processingTime = Math.max(1, processingTime);
         this.inheritActivity = inheritActivity;
         this.inheritMutation = inheritMutation;
+        this.priority = priority;
     }
 
     @Override
@@ -88,4 +96,6 @@ public class SerumRecipe implements Recipe<Container> {
     public int getProcessingTime() { return processingTime; }
     public boolean isInheritActivity() { return inheritActivity; }
     public boolean isInheritMutation() { return inheritMutation; }
+    @Override
+    public int getPriority() { return priority; }
 }
