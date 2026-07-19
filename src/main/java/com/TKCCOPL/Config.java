@@ -125,7 +125,7 @@ public class Config {
             .comment("数据信号注入阈值")
             .defineInRange("dataSignalThreshold", 25, 0, 100);
     private static final ForgeConfigSpec.IntValue PACK_EFFECT_REDUCTION_RATE = BUILDER
-            .comment("支持箱副作用消减速率")
+            .comment("支持箱每游戏 tick 额外消减的副作用时长（以 10 tick 为批次应用）")
             .defineInRange("effectReductionRate", 2, 1, 10);
     private static final ForgeConfigSpec.DoubleValue PACK_HEAL_THRESHOLD = BUILDER
             .comment("支持箱治疗阈值")

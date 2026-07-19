@@ -111,7 +111,7 @@ public class ModLangProvider extends LanguageProvider {
         add("advancement.cybercultivator.metabolic_boost.title", "代谢狂飙");
         add("advancement.cybercultivator.metabolic_boost.description", "获得 S-03 代谢加速血清");
         add("advancement.cybercultivator.cyber_equip.title", "赛博装备");
-        add("advancement.cybercultivator.cyber_equip.description", "佩戴一件 Curios 饰品");
+        add("advancement.cybercultivator.cyber_equip.description", "获得任意一件 Curios 饰品");
 
         // Serum quality chain tooltips
         add("tooltip.cybercultivator.serum_activity", "突触活性: %s");

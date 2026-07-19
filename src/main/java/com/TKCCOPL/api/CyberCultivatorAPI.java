@@ -2,7 +2,6 @@ package com.TKCCOPL.api;
 
 import com.TKCCOPL.Config;
 import com.TKCCOPL.block.entity.*;
-import com.TKCCOPL.curios.CuriosCompat;
 import com.TKCCOPL.cybercultivator;
 import com.TKCCOPL.item.GeneticSeedItem;
 import com.TKCCOPL.item.SynapticSerumItem;
@@ -148,6 +147,6 @@ public final class CyberCultivatorAPI {
     }
 
     public static boolean isCuriosLoaded() {
-        return CuriosCompat.isCuriosLoaded();
+        return ModList.get().isLoaded("curios");
     }
 }

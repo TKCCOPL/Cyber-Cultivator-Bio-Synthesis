@@ -1,6 +1,7 @@
 package com.TKCCOPL.curios;
 
 import com.TKCCOPL.init.ModItems;
+import com.mojang.logging.LogUtils;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.LivingEntity;
@@ -13,12 +14,16 @@ import top.theillusivec4.curios.api.CuriosApi;
 import top.theillusivec4.curios.api.CuriosCapability;
 import top.theillusivec4.curios.api.SlotContext;
 import top.theillusivec4.curios.api.type.capability.ICurio;
+import org.slf4j.Logger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class CuriosCompat {
     private static final String CURIOS_MOD_ID = "curios";
+    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final AtomicBoolean QUERY_FAILURE_LOGGED = new AtomicBoolean();
 
     private CuriosCompat() {
     }
@@ -45,7 +50,10 @@ public final class CuriosCompat {
             var inventory = CuriosApi.getCuriosInventory(entity).resolve();
             if (inventory.isEmpty()) return false;
             return inventory.get().findFirstCurio(item).isPresent();
-        } catch (Throwable ignored) {
+        } catch (RuntimeException | LinkageError error) {
+            if (QUERY_FAILURE_LOGGED.compareAndSet(false, true)) {
+                LOGGER.warn("Unable to query the optional Curios inventory; accessory effects are disabled", error);
+            }
             return false;
         }
     }
