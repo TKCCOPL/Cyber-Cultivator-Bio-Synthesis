@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <b>v1.1.6 · Minecraft Forge 1.20.1</b><br>
+  <b>v1.1.7 · Minecraft Forge 1.20.1</b><br>
   遗传育种、自动化培养与生物强化血清
 </p>
 
@@ -28,6 +28,8 @@ Cyber-Cultivator: Bio-Synthesis 是一个围绕生物科技生产链构建的 Fo
 - 三项种子基因与可遗传、可变异的育种系统
 - 培养槽、基因拼接机、血清灌装机和大气冷凝器组成的可交互 GUI 自动化生产链
 - 三类强化血清、Activity 品质缩放与叠加机制
+- 红石控制（忽略/高/低电平）与统一比较器信号，接入红石自动化系统
+- Forge `IItemHandler` 分面能力与跨模组材料标签，兼容 Create、Mekanism、AE2 等物流系统
 - 可选 Curios 种子基因解析、自动注入和生命支持能力
 - 可选 KubeJS 配方 DSL 与可热重载玩法事件
 - 漏斗自动化及公开查询/事件 API

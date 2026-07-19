@@ -15,12 +15,14 @@ import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
-public class GeneSplicerMenu extends MachineMenu {
+public class GeneSplicerMenu extends MachineMenu implements RedstoneMenuAccess {
+    /** v1.1.7 红石模式循环按钮 ID */
+    public static final int BUTTON_CYCLE_REDSTONE = 0;
     private final ContainerData data;
     private final ContainerLevelAccess access;
 
     public GeneSplicerMenu(int containerId, Inventory inventory, FriendlyByteBuf buffer) {
-        this(containerId, inventory, resolve(inventory, buffer), new SimpleContainerData(5),
+        this(containerId, inventory, resolve(inventory, buffer), new SimpleContainerData(8),
                 ContainerLevelAccess.NULL);
     }
 
@@ -67,6 +69,21 @@ public class GeneSplicerMenu extends MachineMenu {
         return stillValid(access, player, ModBlocks.GENE_SPLICER.get());
     }
 
+    @Override
+    public boolean clickMenuButton(Player player, int id) {
+        if (id == BUTTON_CYCLE_REDSTONE && machine instanceof GeneSplicerBlockEntity blockEntity) {
+            if (blockEntity.getRedstoneState().cycleMode()) {
+                blockEntity.setChanged();
+                if (blockEntity.getLevel() != null) {
+                    blockEntity.getLevel().sendBlockUpdated(blockEntity.getBlockPos(),
+                            blockEntity.getBlockState(), blockEntity.getBlockState(), 2);
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
     public int getSpliceProgress() { return data.get(0); }
     public int getSpliceDuration() {
         int duration = data.get(1);
@@ -80,4 +97,12 @@ public class GeneSplicerMenu extends MachineMenu {
         if (!isSplicing()) return 0;
         return Math.max(0, (getSpliceDuration() - getSpliceProgress() + 19) / 20);
     }
+
+    // v1.1.7 红石字段 getter（ContainerData 索引 5/6/7）
+    public int getRedstoneModeOrdinal() { return data.get(5); }
+    public boolean isRedstonePowered() { return data.get(6) != 0; }
+    public boolean isRedstoneProcessingAllowed() { return data.get(7) != 0; }
+
+    @Override
+    public int getRedstoneButtonId() { return BUTTON_CYCLE_REDSTONE; }
 }

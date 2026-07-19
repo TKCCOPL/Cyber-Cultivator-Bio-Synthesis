@@ -30,7 +30,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
-public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyContainer, MenuProvider {
+public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyContainer, MenuProvider, MachineRedstoneBlockEntity, MachineInventoryPolicy {
     private static final String TAG_PROGRESS = "Progress";
     private static final String TAG_MAX_PROGRESS = "MaxProgress";
     private static final String TAG_INPUT = "Input";
@@ -40,6 +40,9 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     private static final int OUTPUT_SLOT = 3;
     private static final String TAG_ACTIVITY = "SynapticActivity";
     private static final String TAG_RECIPE_ID = "RecipeId";
+
+    // ContainerData 索引：0-2 为原有字段，3-5 为红石字段（mode/powered/processingAllowed）
+    private static final int DATA_REDSTONE_BASE = 3;
 
     /**
      * 计算突触活性值。加权平均 (Potency×0.25 + Purity×0.375 + Concentration×0.375)，
@@ -99,6 +102,13 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     private String pendingRecipeId; // 用于 load() 后延迟恢复 cachedRecipe
     private final SimpleContainer recipeContainer = new SimpleContainer(INPUT_SLOTS);
     private boolean inputsDirty = true;
+
+    /** v1.1.7 红石控制状态 */
+    private final MachineRedstoneState redstone = new MachineRedstoneState();
+
+    /** v1.1.7 比较器信号缓存，仅在变化时通知相邻比较器 */
+    private int lastComparatorSignal = 0;
+
     private final ContainerData menuData = new ContainerData() {
         @Override
         public int get(int index) {
@@ -106,6 +116,10 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
                 case 0 -> progress;
                 case 1 -> maxProgress;
                 case 2 -> calculateActivity(inputs);
+                // 红石字段（mode/powered/processingAllowed）
+                case 3 -> redstone.getMenuData(MachineRedstoneState.DATA_MODE);
+                case 4 -> redstone.getMenuData(MachineRedstoneState.DATA_POWERED);
+                case 5 -> redstone.getMenuData(MachineRedstoneState.DATA_PROCESSING_ALLOWED);
                 default -> 0;
             };
         }
@@ -116,7 +130,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
 
         @Override
         public int getCount() {
-            return 3;
+            return 6;
         }
     };
 
@@ -173,8 +187,12 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
             }
         }
 
+        // v1.1.7 红石门控：加工推进受红石模式控制
+        // 红石阻塞时不推进 progress，但保留 cachedRecipe 和 maxProgress（不取消配方）
+        boolean redstoneAllows = blockEntity.redstone.isProcessingAllowed();
+
         // Process current recipe
-        if (!processingCancelled && blockEntity.maxProgress > 0) {
+        if (!processingCancelled && blockEntity.maxProgress > 0 && redstoneAllows) {
             blockEntity.progress++;
             // 每秒同步一次进度到客户端，驱动 HUD 进度条动画
             if (blockEntity.progress % 20 == 0) {
@@ -204,6 +222,9 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         if (changed) {
             blockEntity.syncToClient();
         }
+
+        // v1.1.7 比较器信号变化检测
+        blockEntity.updateComparatorIfChanged(level, pos);
     }
 
     /**
@@ -408,6 +429,54 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         }
     }
 
+    /**
+     * v1.1.7 比较器信号缓存检测：仅在数值变化时通知相邻比较器。
+     * 避免每 tick 更新比较器网络造成的性能开销。
+     */
+    private void updateComparatorIfChanged(Level level, BlockPos pos) {
+        int current = getComparatorSignal();
+        if (current != lastComparatorSignal) {
+            lastComparatorSignal = current;
+            level.updateNeighbourForOutputSignal(pos, getBlockState().getBlock());
+        }
+    }
+
+    // === v1.1.7 MachineRedstoneBlockEntity 接口实现 ===
+
+    @Override
+    public MachineRedstoneState getRedstoneState() {
+        return redstone;
+    }
+
+    /**
+     * v1.1.7 统一比较器三段语义（0/1-14/15）：
+     * <ul>
+     *   <li>{@code 15}：血清产物槽存在可抽取的血清/莓</li>
+     *   <li>{@code 1..14}：灌装中（{@code maxProgress > 0}），按 progress 比例</li>
+     *   <li>{@code 0}：无输入且无产物</li>
+     * </ul>
+     * 输入存在但配方未匹配时返回 0（视为待机）。
+     */
+    @Override
+    public int getComparatorSignal() {
+        if (!output.isEmpty()) return 15;
+        if (maxProgress <= 0) return 0;
+        // 灌装中：按 progress 比例映射到 1..14
+        int max = maxProgress;
+        if (max <= 0) return 1;
+        int raw = (int) Math.ceil((double) progress * 14 / max);
+        return Math.max(1, Math.min(14, raw));
+    }
+
+    /** 区块加载时重新采样红石供电状态。 */
+    @Override
+    public void clearRemoved() {
+        super.clearRemoved();
+        if (level != null && !level.isClientSide) {
+            redstone.resamplePowered(level, worldPosition);
+        }
+    }
+
     // WorldlyContainer implementation
     @Override
     public int getContainerSize() {
@@ -492,11 +561,8 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
 
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
-        if (slot < 0 || slot >= INPUT_SLOTS || stack.isEmpty()) return false;
-        if (level == null) return true;
-        return level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get()).stream()
-                .flatMap(recipe -> java.util.Arrays.stream(recipe.getInputs()))
-                .anyMatch(ingredient -> ingredient.test(stack));
+        // 委托给 policy（不带 side）：保持 Container.canPlaceItem 与 capability 路径一致（§9.9）
+        return canInsert(slot, stack, null);
     }
 
     @Override
@@ -533,19 +599,61 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
 
     @Override
     public int[] getSlotsForFace(Direction side) {
-        if (side == Direction.DOWN) return new int[]{OUTPUT_SLOT};
-        if (side == Direction.UP) return new int[]{0, 1, 2};
-        return new int[]{0, 1, 2}; // Sides also accept input
+        return visibleSlots(side);
     }
 
     @Override
     public boolean canPlaceItemThroughFace(int slot, ItemStack stack, Direction side) {
-        return side != Direction.DOWN && canPlaceItem(slot, stack);
+        return canInsert(slot, stack, side);
     }
 
     @Override
     public boolean canTakeItemThroughFace(int slot, ItemStack stack, Direction side) {
-        return slot == OUTPUT_SLOT && side == Direction.DOWN;
+        return canExtract(slot, stack, side);
+    }
+
+    // === v1.1.7 §9 MachineInventoryPolicy 实现 ===
+    // 分面矩阵（§9.1）：UP/水平面=三个材料槽只入；DOWN=成品只出。
+
+    @Override
+    public int[] visibleSlots(@org.jetbrains.annotations.Nullable Direction side) {
+        if (side == null) {
+            // §9.2 无方向查询：暴露全部槽位
+            return new int[]{0, 1, 2, OUTPUT_SLOT};
+        }
+        if (side == Direction.DOWN) return new int[]{OUTPUT_SLOT};
+        return new int[]{0, 1, 2}; // UP 与四个水平面均接受三个材料槽
+    }
+
+    @Override
+    public boolean canInsert(int slot, ItemStack stack, @org.jetbrains.annotations.Nullable Direction side) {
+        if (stack.isEmpty()) return false;
+        if (slot < 0 || slot >= INPUT_SLOTS) return false;
+        // null side 视为允许（§9.2）；DOWN 拒绝插入
+        if (side == Direction.DOWN) return false;
+        if (level == null) return true;
+        return level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get()).stream()
+                .flatMap(recipe -> java.util.Arrays.stream(recipe.getInputs()))
+                .anyMatch(ingredient -> ingredient.test(stack));
+    }
+
+    @Override
+    public boolean canExtract(int slot, ItemStack stack, @org.jetbrains.annotations.Nullable Direction side) {
+        // null side 或 DOWN 可抽取成品；输入槽拒绝外部抽取（防止漏斗吃掉材料）
+        if (side != null && side != Direction.DOWN) return false;
+        return slot == OUTPUT_SLOT;
+    }
+
+    @Override
+    public ItemStack normalizeInsertedStack(int slot, ItemStack stack) {
+        // 灌装机材料无需 NBT 规范化；保持原样复制
+        return stack.copy();
+    }
+
+    @Override
+    public int getSlotLimit(int slot) {
+        // 输入槽与输出槽默认 64（材料堆叠）
+        return 64;
     }
 
     @Override
@@ -567,6 +675,10 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         }
         output = tag.contains(TAG_OUTPUT) ? ItemStack.of(tag.getCompound(TAG_OUTPUT)) : ItemStack.EMPTY;
         markInputsDirty();
+        // v1.1.7 红石状态（缺失字段默认 IGNORE，不崩溃）
+        redstone.load(tag);
+        // 比较器缓存重置，下次 tick 重新检测
+        lastComparatorSignal = -1;
     }
 
     @Override
@@ -592,6 +704,8 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         } else {
             tag.put(TAG_OUTPUT, new CompoundTag()); // sentinel: ensure tag is non-empty for client sync
         }
+        // v1.1.7 红石状态持久化
+        redstone.save(tag);
     }
 
     @org.jetbrains.annotations.Nullable
@@ -603,5 +717,65 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     @Override
     public CompoundTag getUpdateTag() {
         return saveWithoutMetadata();
+    }
+
+    // === v1.1.7 §9.5 IItemHandler capability（按 face→角色映射缓存，§9.6） ===
+
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> capUp =
+            net.minecraftforge.common.util.LazyOptional.empty();
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> capHorizontal =
+            net.minecraftforge.common.util.LazyOptional.empty();
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> capDown =
+            net.minecraftforge.common.util.LazyOptional.empty();
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> capNull =
+            net.minecraftforge.common.util.LazyOptional.empty();
+
+    @Override
+    public <T> net.minecraftforge.common.util.LazyOptional<T> getCapability(
+            net.minecraftforge.common.capabilities.Capability<T> cap, Direction side) {
+        if (cap == net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER) {
+            net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> handler;
+            if (side == null) {
+                if (!capNull.isPresent()) {
+                    capNull = net.minecraftforge.common.util.LazyOptional.of(
+                            () -> new SidedMachineItemHandler(this, this, null));
+                }
+                handler = capNull;
+            } else if (side == Direction.UP) {
+                if (!capUp.isPresent()) {
+                    capUp = net.minecraftforge.common.util.LazyOptional.of(
+                            () -> new SidedMachineItemHandler(this, this, Direction.UP));
+                }
+                handler = capUp;
+            } else if (side == Direction.DOWN) {
+                if (!capDown.isPresent()) {
+                    capDown = net.minecraftforge.common.util.LazyOptional.of(
+                            () -> new SidedMachineItemHandler(this, this, Direction.DOWN));
+                }
+                handler = capDown;
+            } else {
+                if (!capHorizontal.isPresent()) {
+                    capHorizontal = net.minecraftforge.common.util.LazyOptional.of(
+                            () -> new SidedMachineItemHandler(this, this, side));
+                }
+                handler = capHorizontal;
+            }
+            return handler.cast();
+        }
+        return super.getCapability(cap, side);
+    }
+
+    @Override
+    public void invalidateCaps() {
+        super.invalidateCaps();
+        capUp.invalidate();
+        capHorizontal.invalidate();
+        capDown.invalidate();
+        capNull.invalidate();
+    }
+
+    @Override
+    public void reviveCaps() {
+        super.reviveCaps();
     }
 }

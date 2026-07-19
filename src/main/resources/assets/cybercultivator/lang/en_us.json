@@ -233,5 +233,14 @@
   "gui.cybercultivator.condenser.pause": "Pause",
   "gui.cybercultivator.condenser.resume": "Resume",
   "gui.cybercultivator.condenser.auto_tooltip": "Toggle purity injection into the incubator below",
-  "gui.cybercultivator.condenser.pause_tooltip": "Pause or resume purified water production"
+  "gui.cybercultivator.condenser.pause_tooltip": "Pause or resume purified water production",
+
+  "gui.cybercultivator.redstone.label.ignore": "RS:Ignore",
+  "gui.cybercultivator.redstone.label.high": "RS:High",
+  "gui.cybercultivator.redstone.label.low": "RS:Low",
+  "gui.cybercultivator.redstone.tooltip.ignore": "Ignores redstone signal · Power: %s",
+  "gui.cybercultivator.redstone.tooltip.high": "Active on high signal · Power: %s",
+  "gui.cybercultivator.redstone.tooltip.low": "Active on low signal · Power: %s",
+  "gui.cybercultivator.redstone.powered.yes": "Powered",
+  "gui.cybercultivator.redstone.powered.no": "Unpowered"
 }

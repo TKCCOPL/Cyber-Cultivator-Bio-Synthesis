@@ -283,5 +283,15 @@ public class ModLangProvider extends LanguageProvider {
         add("gui.cybercultivator.condenser.resume", "继续");
         add("gui.cybercultivator.condenser.auto_tooltip", "切换向下方培养槽自动注入纯净度");
         add("gui.cybercultivator.condenser.pause_tooltip", "暂停或继续纯净水生产");
+
+        // v1.1.7 红石控制链路（4 机器共用）
+        add("gui.cybercultivator.redstone.label.ignore", "RS:忽略");
+        add("gui.cybercultivator.redstone.label.high", "RS:高电平");
+        add("gui.cybercultivator.redstone.label.low", "RS:低电平");
+        add("gui.cybercultivator.redstone.tooltip.ignore", "忽略红石信号 · 当前电平：%s");
+        add("gui.cybercultivator.redstone.tooltip.high", "需高电平激活 · 当前电平：%s");
+        add("gui.cybercultivator.redstone.tooltip.low", "需低电平激活 · 当前电平：%s");
+        add("gui.cybercultivator.redstone.powered.yes", "已供电");
+        add("gui.cybercultivator.redstone.powered.no", "未供电");
     }
 }

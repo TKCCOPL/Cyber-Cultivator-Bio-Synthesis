@@ -14,14 +14,16 @@ import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
-public class AtmosphericCondenserMenu extends MachineMenu {
+public class AtmosphericCondenserMenu extends MachineMenu implements RedstoneMenuAccess {
     public static final int BUTTON_TOGGLE_AUTO_INJECT = 0;
     public static final int BUTTON_TOGGLE_PAUSED = 1;
+    /** v1.1.7 红石模式循环按钮 ID（避开现有 0/1） */
+    public static final int BUTTON_CYCLE_REDSTONE = 2;
     private final ContainerData data;
     private final ContainerLevelAccess access;
 
     public AtmosphericCondenserMenu(int containerId, Inventory inventory, FriendlyByteBuf buffer) {
-        this(containerId, inventory, resolve(inventory, buffer), new SimpleContainerData(6), ContainerLevelAccess.NULL);
+        this(containerId, inventory, resolve(inventory, buffer), new SimpleContainerData(9), ContainerLevelAccess.NULL);
     }
 
     public AtmosphericCondenserMenu(int containerId, Inventory inventory, AtmosphericCondenserBlockEntity blockEntity,
@@ -72,6 +74,16 @@ public class AtmosphericCondenserMenu extends MachineMenu {
             blockEntity.togglePaused();
             return true;
         }
+        if (id == BUTTON_CYCLE_REDSTONE) {
+            if (blockEntity.getRedstoneState().cycleMode()) {
+                blockEntity.setChanged();
+                if (blockEntity.getLevel() != null) {
+                    blockEntity.getLevel().sendBlockUpdated(blockEntity.getBlockPos(),
+                            blockEntity.getBlockState(), blockEntity.getBlockState(), 2);
+                }
+            }
+            return true;
+        }
         return false;
     }
 
@@ -86,4 +98,12 @@ public class AtmosphericCondenserMenu extends MachineMenu {
     public boolean isAutoInject() { return data.get(3) != 0; }
     public boolean isDownstreamConnected() { return data.get(4) != 0; }
     public boolean isPaused() { return data.get(5) != 0; }
+
+    // v1.1.7 红石字段 getter（ContainerData 索引 6/7/8）
+    public int getRedstoneModeOrdinal() { return data.get(6); }
+    public boolean isRedstonePowered() { return data.get(7) != 0; }
+    public boolean isRedstoneProcessingAllowed() { return data.get(8) != 0; }
+
+    @Override
+    public int getRedstoneButtonId() { return BUTTON_CYCLE_REDSTONE; }
 }

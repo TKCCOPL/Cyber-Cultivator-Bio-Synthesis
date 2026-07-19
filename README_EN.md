@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <b>v1.1.6 · Minecraft Forge 1.20.1</b><br>
+  <b>v1.1.7 · Minecraft Forge 1.20.1</b><br>
   Genetic breeding, automated cultivation, and bio-enhancement serums
 </p>
 
@@ -28,6 +28,8 @@ Cyber-Cultivator: Bio-Synthesis is a Forge mod built around a biotechnology prod
 - Three inheritable seed genes with mutation-driven breeding
 - An interactive GUI production chain using Incubators, Gene Splicers, Serum Bottlers, and Atmospheric Condensers
 - Three enhancement serums with Activity-based quality scaling and stacking
+- Redstone control (ignore/high/low) and unified comparator output for redstone automation
+- Forge `IItemHandler` sided capabilities and cross-mod material tags, compatible with Create, Mekanism, AE2 logistics
 - Optional Curios accessories for seed analysis, automatic injection, and life support
 - Optional KubeJS recipe DSL and reloadable gameplay events
 - Hopper automation and public query/event APIs
