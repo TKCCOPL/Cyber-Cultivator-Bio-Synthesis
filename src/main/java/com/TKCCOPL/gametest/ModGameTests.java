@@ -13,6 +13,7 @@ import com.TKCCOPL.event.GeneSpliceEvent;
 import com.TKCCOPL.event.SerumConsumeEvent;
 import com.TKCCOPL.event.SerumCraftEvent;
 import com.TKCCOPL.init.ModBlocks;
+import com.TKCCOPL.init.CreativeTabVariants;
 import com.TKCCOPL.init.ModItems;
 import com.TKCCOPL.item.GeneticSeedItem;
 import com.TKCCOPL.item.SynapticSerumItem;
@@ -36,17 +37,23 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.AbstractCookingRecipe;
+import net.minecraft.world.item.crafting.BlastingRecipe;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.ShapedRecipe;
+import net.minecraft.world.item.crafting.ShapelessRecipe;
+import net.minecraft.world.item.crafting.SmeltingRecipe;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 import net.minecraftforge.fml.ModList;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -84,6 +91,84 @@ public final class ModGameTests {
                 "cybercultivator:visual_enhancement");
         assertEffectId(helper, ModItems.SYNAPTIC_SERUM_S03.get().getDefaultInstance(),
                 "cybercultivator:metabolic_boost");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void defaultSeedGenesAndMaterialQuality(GameTestHelper helper) {
+        ItemStack[] seeds = {
+                ModItems.FIBER_REED_SEEDS.get().getDefaultInstance(),
+                ModItems.PROTEIN_SOY_SEEDS.get().getDefaultInstance(),
+                ModItems.ALCOHOL_BLOOM_SEEDS.get().getDefaultInstance()
+        };
+        String[] recipePaths = {
+                "incubator/fiber_reed",
+                "incubator/protein_soy",
+                "incubator/alcohol_bloom"
+        };
+        String[] qualityTags = {"Potency", "Concentration", "Purity"};
+
+        for (int i = 0; i < seeds.length; i++) {
+            ItemStack seed = seeds[i];
+            helper.assertTrue(GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_SPEED) == 5,
+                    "Default seed Speed must be 5");
+            helper.assertTrue(GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_YIELD) == 5,
+                    "Default seed Yield must be 5");
+            helper.assertTrue(GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_POTENCY) == 5,
+                    "Default seed Potency must be 5");
+
+            ResourceLocation recipeId = ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID, recipePaths[i]);
+            Recipe<?> loadedRecipe = helper.getLevel().getRecipeManager().byKey(recipeId).orElse(null);
+            helper.assertTrue(loadedRecipe instanceof IncubatorOutputRecipe,
+                    "Built-in incubator recipe must be loaded: " + recipeId);
+            IncubatorOutputRecipe incubatorRecipe = (IncubatorOutputRecipe) loadedRecipe;
+            int[] displayedGenes = incubatorRecipe.getDefaultGenes();
+            helper.assertTrue(displayedGenes[0] == 5 && displayedGenes[1] == 5 && displayedGenes[2] == 5,
+                    "JEI default genes must match the 5/5/5 seed defaults: " + recipeId);
+
+            ItemStack material = incubatorRecipe.assemble(seed);
+            helper.assertTrue(material.getOrCreateTag().getInt(qualityTags[i]) == 5,
+                    "Default seed must produce quality 5 material: " + recipeId);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void creativeTabQualityVariantsAreCompleteAndOrdered(GameTestHelper helper) {
+        List<ItemStack> seeds = new ArrayList<>();
+        CreativeTabVariants.addBalancedSeedVariants((stack, visibility) -> seeds.add(stack.copy()));
+        helper.assertTrue(seeds.size() == 30, "Quality tab must contain 30 balanced seed variants");
+        for (int geneLevel = 1; geneLevel <= 10; geneLevel++) {
+            int index = (geneLevel - 1) * 3;
+            assertBalancedSeedVariant(helper, seeds.get(index), ModItems.FIBER_REED_SEEDS.get(), geneLevel);
+            assertBalancedSeedVariant(helper, seeds.get(index + 1), ModItems.PROTEIN_SOY_SEEDS.get(), geneLevel);
+            assertBalancedSeedVariant(helper, seeds.get(index + 2), ModItems.ALCOHOL_BLOOM_SEEDS.get(), geneLevel);
+        }
+
+        List<ItemStack> materials = new ArrayList<>();
+        CreativeTabVariants.addMaterialVariants((stack, visibility) -> materials.add(stack.copy()));
+        helper.assertTrue(materials.size() == 30, "Quality tab must contain 30 material variants");
+        for (int quality = 1; quality <= 10; quality++) {
+            int index = (quality - 1) * 3;
+            assertTaggedVariant(helper, materials.get(index), ModItems.PLANT_FIBER.get(), "Potency", quality);
+            assertTaggedVariant(helper, materials.get(index + 1), ModItems.INDUSTRIAL_ETHANOL.get(), "Purity", quality);
+            assertTaggedVariant(helper, materials.get(index + 2), ModItems.BIOCHEMICAL_SOLUTION.get(), "Concentration", quality);
+        }
+
+        List<ItemStack> activityItems = new ArrayList<>();
+        CreativeTabVariants.addActivityVariants((stack, visibility) -> activityItems.add(stack.copy()));
+        helper.assertTrue(activityItems.size() == 60, "Quality tab must contain 60 Activity variants");
+        for (int activity = 1; activity <= 15; activity++) {
+            assertTaggedVariant(helper, activityItems.get(activity - 1), ModItems.SYNAPTIC_NEURAL_BERRY.get(),
+                    TAG_ACTIVITY, activity);
+            int serumIndex = 15 + (activity - 1) * 3;
+            assertTaggedVariant(helper, activityItems.get(serumIndex), ModItems.SYNAPTIC_SERUM_S01.get(),
+                    TAG_ACTIVITY, activity);
+            assertTaggedVariant(helper, activityItems.get(serumIndex + 1), ModItems.SYNAPTIC_SERUM_S02.get(),
+                    TAG_ACTIVITY, activity);
+            assertTaggedVariant(helper, activityItems.get(serumIndex + 2), ModItems.SYNAPTIC_SERUM_S03.get(),
+                    TAG_ACTIVITY, activity);
+        }
         helper.succeed();
     }
 
@@ -389,6 +474,97 @@ public final class ModGameTests {
         helper.assertTrue(ingredients.get(7).test(new ItemStack(Items.IRON_NUGGET)),
                 "Monocle handle must use an iron nugget");
         helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void materialStorageBlocksHaveReversibleRecipes(GameTestHelper helper) {
+        Item[] materials = {
+                ModItems.RAW_SILICON_CRYSTAL.get(), ModItems.SILICON_SHARD.get(),
+                ModItems.RAW_RARE_EARTH.get(), ModItems.RARE_EARTH_DUST.get()
+        };
+        Item[] storageBlocks = {
+                ModItems.RAW_SILICON_BLOCK_ITEM.get(), ModItems.SILICON_BLOCK_ITEM.get(),
+                ModItems.RAW_RARE_EARTH_BLOCK_ITEM.get(), ModItems.RARE_EARTH_BLOCK_ITEM.get()
+        };
+        String[] compressionIds = {
+                "raw_silicon_block", "silicon_block", "raw_rare_earth_block", "rare_earth_block"
+        };
+        String[] unpackIds = {
+                "raw_silicon_crystal_from_block", "silicon_shard_from_block",
+                "raw_rare_earth_from_block", "rare_earth_dust_from_block"
+        };
+
+        for (int index = 0; index < materials.length; index++) {
+            Recipe<?> compression = helper.getLevel().getRecipeManager().byKey(
+                    ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID, compressionIds[index])).orElse(null);
+            helper.assertTrue(compression instanceof ShapedRecipe,
+                    compressionIds[index] + " must use a shaped compression recipe");
+            ShapedRecipe shaped = (ShapedRecipe) compression;
+            helper.assertTrue(shaped.getWidth() == 3 && shaped.getHeight() == 3,
+                    compressionIds[index] + " must consume a full 3x3 material grid");
+            for (Ingredient ingredient : shaped.getIngredients()) {
+                helper.assertTrue(ingredient.test(new ItemStack(materials[index])),
+                        compressionIds[index] + " must use only its matching material");
+            }
+            helper.assertTrue(shaped.getResultItem(helper.getLevel().registryAccess()).is(storageBlocks[index]),
+                    compressionIds[index] + " must output its matching storage block");
+
+            Recipe<?> unpack = helper.getLevel().getRecipeManager().byKey(
+                    ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID, unpackIds[index])).orElse(null);
+            helper.assertTrue(unpack instanceof ShapelessRecipe,
+                    unpackIds[index] + " must use a shapeless unpacking recipe");
+            helper.assertTrue(unpack.getIngredients().size() == 1
+                            && unpack.getIngredients().get(0).test(new ItemStack(storageBlocks[index])),
+                    unpackIds[index] + " must consume its matching storage block");
+            ItemStack unpackResult = unpack.getResultItem(helper.getLevel().registryAccess());
+            helper.assertTrue(unpackResult.is(materials[index]) && unpackResult.getCount() == 9,
+                    unpackIds[index] + " must return nine matching materials");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void rawMineralsRequireRefining(GameTestHelper helper) {
+        Item[] rawMaterials = {ModItems.RAW_SILICON_CRYSTAL.get(), ModItems.RAW_RARE_EARTH.get()};
+        Item[] refinedMaterials = {ModItems.SILICON_SHARD.get(), ModItems.RARE_EARTH_DUST.get()};
+        String[] rawNames = {"raw_silicon_crystal", "raw_rare_earth"};
+        String[] refinedNames = {"silicon_shard", "rare_earth_dust"};
+
+        for (int index = 0; index < rawMaterials.length; index++) {
+            AbstractCookingRecipe smelting = cookingRecipe(helper,
+                    refinedNames[index] + "_from_smelting_" + rawNames[index], SmeltingRecipe.class);
+            assertRefiningRecipe(helper, smelting, rawMaterials[index], refinedMaterials[index], 200);
+
+            AbstractCookingRecipe blasting = cookingRecipe(helper,
+                    refinedNames[index] + "_from_blasting_" + rawNames[index], BlastingRecipe.class);
+            assertRefiningRecipe(helper, blasting, rawMaterials[index], refinedMaterials[index], 100);
+        }
+        helper.succeed();
+    }
+
+    private static AbstractCookingRecipe cookingRecipe(GameTestHelper helper,
+                                                        String recipePath,
+                                                        Class<? extends AbstractCookingRecipe> expectedType) {
+        Recipe<?> recipe = helper.getLevel().getRecipeManager().byKey(
+                ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID, recipePath)).orElse(null);
+        helper.assertTrue(expectedType.isInstance(recipe), recipePath + " must use the expected cooking type");
+        return (AbstractCookingRecipe) recipe;
+    }
+
+    private static void assertRefiningRecipe(GameTestHelper helper,
+                                             AbstractCookingRecipe recipe,
+                                             Item rawMaterial,
+                                             Item refinedMaterial,
+                                             int cookingTime) {
+        helper.assertTrue(recipe.getIngredients().size() == 1
+                        && recipe.getIngredients().get(0).test(new ItemStack(rawMaterial)),
+                "Refining recipe must consume its matching raw mineral");
+        helper.assertTrue(recipe.getResultItem(helper.getLevel().registryAccess()).is(refinedMaterial),
+                "Refining recipe must output its matching refined material");
+        helper.assertTrue(recipe.getCookingTime() == cookingTime,
+                "Refining recipe must use the expected cooking time");
+        helper.assertTrue(Math.abs(recipe.getExperience() - 0.7F) < 0.0001F,
+                "Refining recipe must award 0.7 experience");
     }
 
     @GameTest(template = EMPTY_TEMPLATE, timeoutTicks = 300)
@@ -709,6 +885,22 @@ public final class ModGameTests {
     private static void assertEffectId(GameTestHelper helper, ItemStack serum, String expected) {
         var info = CyberCultivatorAPI.getSerumEffectInfo(serum);
         helper.assertTrue(info != null && expected.equals(info.effectId()), "Unexpected serum effect registry ID");
+    }
+
+    private static void assertTaggedVariant(GameTestHelper helper, ItemStack stack, net.minecraft.world.item.Item item,
+                                            String tagKey, int expectedValue) {
+        helper.assertTrue(stack.is(item), "Creative tab variant item order mismatch");
+        helper.assertTrue(stack.hasTag() && stack.getTag().getInt(tagKey) == expectedValue,
+                "Creative tab variant NBT mismatch for " + tagKey + "=" + expectedValue);
+    }
+
+    private static void assertBalancedSeedVariant(GameTestHelper helper, ItemStack stack,
+                                                  net.minecraft.world.item.Item item, int expectedValue) {
+        helper.assertTrue(stack.is(item), "Creative tab seed order mismatch");
+        helper.assertTrue(GeneticSeedItem.getGene(stack, GeneticSeedItem.GENE_SPEED) == expectedValue
+                        && GeneticSeedItem.getGene(stack, GeneticSeedItem.GENE_YIELD) == expectedValue
+                        && GeneticSeedItem.getGene(stack, GeneticSeedItem.GENE_POTENCY) == expectedValue,
+                "Creative tab seed genes must be balanced at " + expectedValue);
     }
 
     private static final class ConsumeListener {
