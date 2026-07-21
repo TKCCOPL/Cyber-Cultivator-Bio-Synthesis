@@ -1196,8 +1196,9 @@ public final class ModGameTests {
                 "Bottler must accept glass bottle (S-01/S-03)");
 
         // 配方不接受的物品（性能优化后必须仍然拒绝）
-        helper.assertFalse(bottler.canPlaceItem(0, new ItemStack(Items.DIRT)),
-                "Bottler must reject dirt");
+        // 注意：使用 bedrock 而非 dirt，因为 KubeJS 烟雾脚本可能注册 dirt 为血清配方原料
+        helper.assertFalse(bottler.canPlaceItem(0, new ItemStack(Items.BEDROCK)),
+                "Bottler must reject bedrock");
         helper.assertFalse(bottler.canPlaceItem(0, new ItemStack(Items.STONE)),
                 "Bottler must reject stone");
         helper.assertFalse(bottler.canPlaceItem(0, new ItemStack(Items.IRON_INGOT)),
@@ -1207,7 +1208,7 @@ public final class ModGameTests {
         for (int i = 0; i < 5; i++) {
             helper.assertTrue(bottler.canPlaceItem(0, new ItemStack(ModItems.PLANT_FIBER.get())),
                     "Cached canPlaceItem must consistently accept valid items on iteration " + i);
-            helper.assertFalse(bottler.canPlaceItem(0, new ItemStack(Items.DIRT)),
+            helper.assertFalse(bottler.canPlaceItem(0, new ItemStack(Items.BEDROCK)),
                     "Cached canPlaceItem must consistently reject invalid items on iteration " + i);
         }
 
@@ -1235,8 +1236,9 @@ public final class ModGameTests {
             helper.assertTrue(bottler.getMaxProgress() == 0,
                     "Empty bottler must stay idle on iteration " + i);
         }
-        // 放入 dirt（无配方匹配）连续 tick：仍不应启动加工
-        bottler.setItem(0, new ItemStack(Items.DIRT));
+        // 放入 bedrock（无配方匹配）连续 tick：仍不应启动加工
+        // 注意：使用 bedrock 而非 dirt，因为 KubeJS 烟雾脚本可能注册 dirt 为血清配方原料
+        bottler.setItem(0, new ItemStack(Items.BEDROCK));
         for (int i = 0; i < 3; i++) {
             SerumBottlerBlockEntity.tick(helper.getLevel(), pos, bottler.getBlockState(), bottler);
             helper.assertTrue(bottler.getMaxProgress() == 0,

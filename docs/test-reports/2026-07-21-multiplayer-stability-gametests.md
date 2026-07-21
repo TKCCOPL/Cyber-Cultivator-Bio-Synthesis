@@ -5,7 +5,8 @@
 ## 范围
 
 为 `fix/multiplayer-stability` 分支的 10 个修复（Commits 1–10）补充 GameTest 回归测试，
-并在测试过程中发现并修复 Commit #10 perf 优化引入的装瓶机首 tick 配方启动 bug。
+并在测试过程中发现并修复 Commit #10 perf 优化引入的装瓶机首 tick 配方启动 bug，
+以及 KubeJS 烟雾脚本与测试用例的输入物冲突。
 
 ## 检查结果
 
@@ -14,7 +15,9 @@
 | `./gradlew compileJava` | ✅ | 无错误，仅原有 null-safety 与 deprecation 警告 |
 | `./gradlew runData` | ✅ | 无资源漂移，127→128 文件，written=0 |
 | `./gradlew build` | ✅ | 通过 |
-| `./gradlew runGameTestServer` | ✅ | 38/38 全部通过 |
+| `./gradlew runGameTestServer` | ✅ | 38/38 全部通过（无 KubeJS） |
+| `./gradlew -I .github/gradle/exclude-non-kubejs-runtime.init.gradle -PenableKubeJSRuntime=true runGameTestServer` | ✅ | 38/38 全部通过（KubeJS build.16 最低版） |
+| `./gradlew -I .github/gradle/exclude-non-kubejs-runtime.init.gradle -PenableKubeJSRuntime=true -Pkubejs_version=2001.6.5-build.26 runGameTestServer` | ✅ | 38/38 全部通过（KubeJS build.26 最新版） |
 | 资源漂移检查 | ✅ | `git status` 仅显示本次新增的 4 个 Java 文件 |
 
 ## 新增 GameTest 清单（共 16 个）
@@ -58,6 +61,26 @@
 
 **验证**：修复后 `./gradlew runGameTestServer` 全部 38 个测试通过。
 
+### KubeJS 烟雾脚本注册 dirt 配方与测试用例冲突
+
+**症状**：KubeJS 最低版 GameTest 烟雾测试中两个新增测试失败：
+- `bottlercanplaceitemrejectsnonrecipestacks` — `Bottler must reject dirt`
+- `bottlerfindrecipecacheskipsidletraversal` — `Berry synthesis inputs must start processing despite the previous failed-query cache`
+
+**根因**：`src/kubejsTest/resources/kubejs/server_scripts/cybercultivator_smoke.js` 注册了两条以 `minecraft:dirt`
+为原料的 `cybercultivator:serum_bottling` 配方（priority 100 与 0）。
+测试用例将 `dirt` 当作"必然无效的输入"，但 KubeJS 烟雾脚本将其变成"有效配方原料"，
+导致 `canPlaceItem(0, dirt)` 返回 true、`findRecipe(dirt)` 启动加工。
+
+**修复**：将两个测试中的"无效输入"从 `Items.DIRT` 改为 `Items.BEDROCK`
+（原版方块物品，无内置合成/熔炼配方，KubeJS 烟雾脚本也不会将其注册为血清原料）。
+修复同时保持无 KubeJS profile 下测试不变（38/38 通过）。
+
+**验证**：
+- `./gradlew runGameTestServer` — 38/38 通过（无 KubeJS）
+- `./gradlew -I ... -PenableKubeJSRuntime=true runGameTestServer` — 38/38 通过（KubeJS build.16）
+- `./gradlew -I ... -PenableKubeJSRuntime=true -Pkubejs_version=2001.6.5-build.26 runGameTestServer` — 38/38 通过（KubeJS build.26）
+
 ## 测试基础结构改动
 
 ### `BioPulseBeltItem` 重构：提取 `performScan`
@@ -82,9 +105,11 @@
 
 ## 日志路径
 
-- GameTest 输出：`run/logs/latest.log`（运行时）
+- GameTest 输出：`run/logs/latest.log`（无 KubeJS profile）
+- KubeJS 烟雾 profile 输出：`build/kubejs-smoke/logs/latest.log`
 - 关键行：`All 38 required tests passed :)`
 
 ## 修复提交点
 
-本测试报告对应的提交：`test: 补充 GameTest 与生成资源`（Commit #11）
+- 本测试报告对应的提交：`test: 补充 GameTest 与生成资源`（Commit #11）
+- KubeJS 烟雾 profile 适配修复：`fix(test): 适配 KubeJS 烟雾脚本的 dirt 配方`（Commit #12，紧跟 Commit #11 之后）
