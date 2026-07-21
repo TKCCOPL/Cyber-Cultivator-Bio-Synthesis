@@ -148,6 +148,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         int currentRecipeCount = level.getRecipeManager()
                 .getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get()).size();
         if (blockEntity.cachedRecipeCount != currentRecipeCount) {
+            boolean wasProcessing = blockEntity.maxProgress > 0;
             blockEntity.cachedRecipeCount = currentRecipeCount;
             blockEntity.cachedAcceptableIngredients = null;
             // 配方被替换，引用对象已失效
@@ -157,7 +158,9 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
             blockEntity.maxProgress = 0;
             blockEntity.lastRecipeQueryFailed = false; // 配方表已变，需重新查询
             changed = true;
-            processingCancelled = true;
+            // 仅在确有进行中的加工被打断时才跳过本 tick 的配方启动；
+            // 否则首次 tick（cachedRecipeCount 初始值 -1）会错误跳过 findRecipe，导致装瓶机需要 2 tick 才能启动。
+            processingCancelled = wasProcessing;
         }
 
         // Task 1: 延迟恢复 cachedRecipe（load() 时 level 为 null）

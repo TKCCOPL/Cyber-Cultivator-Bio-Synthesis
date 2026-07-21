@@ -14,12 +14,15 @@ import com.TKCCOPL.event.SerumConsumeEvent;
 import com.TKCCOPL.event.SerumCraftEvent;
 import com.TKCCOPL.init.ModBlocks;
 import com.TKCCOPL.init.CreativeTabVariants;
+import com.TKCCOPL.init.ModEffects;
 import com.TKCCOPL.init.ModItems;
 import com.TKCCOPL.item.GeneticSeedItem;
 import com.TKCCOPL.item.SynapticSerumItem;
 import com.TKCCOPL.menu.AtmosphericCondenserMenu;
 import com.TKCCOPL.menu.GeneSplicerMenu;
 import com.TKCCOPL.menu.SerumBottlerMenu;
+import com.TKCCOPL.network.GameplayConfigSnapshot;
+import com.TKCCOPL.network.S02DetectionSyncPacket;
 import com.TKCCOPL.recipe.IncubatorOutputRecipe;
 import com.TKCCOPL.recipe.IncubatorOutputSerializer;
 import com.TKCCOPL.recipe.RecipeOrdering;
@@ -36,6 +39,7 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -879,6 +883,374 @@ public final class ModGameTests {
         legacy.load(new CompoundTag());
         helper.assertTrue(legacy.isAutoInject(), "Legacy NBT without AutoInject must remain enabled");
         helper.assertFalse(legacy.isPaused(), "Legacy NBT without Paused must remain operational");
+        helper.succeed();
+    }
+
+    // ========== v1.1.7 multiplayer-stability fix regression tests ==========
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void neuralOverloadVariantsAreRegistered(GameTestHelper helper) {
+        // 修复 4：神经过载来源丢失和串线 —— 三个独立效果必须全部注册
+        String[] ids = {"neural_overload", "neural_overload_s01", "neural_overload_s02", "neural_overload_s03"};
+        for (String id : ids) {
+            ResourceLocation key = ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID, id);
+            var effect = net.minecraftforge.registries.ForgeRegistries.MOB_EFFECTS.getValue(key);
+            helper.assertTrue(effect != null, "NeuralOverload variant must be registered: " + id);
+        }
+        // 三个子类必须各自是独立类型，而非共享旧 SOURCE_MAP 的旧 NeuralOverloadEffect
+        helper.assertTrue(ModEffects.NEURAL_OVERLOAD_S01.get() != ModEffects.NEURAL_OVERLOAD.get(),
+                "S-01 overload must be a distinct effect instance");
+        helper.assertTrue(ModEffects.NEURAL_OVERLOAD_S02.get() != ModEffects.NEURAL_OVERLOAD.get(),
+                "S-02 overload must be a distinct effect instance");
+        helper.assertTrue(ModEffects.NEURAL_OVERLOAD_S03.get() != ModEffects.NEURAL_OVERLOAD.get(),
+                "S-03 overload must be a distinct effect instance");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void neuralOverloadS01AppliesWitherAndHunger(GameTestHelper helper) {
+        // 修复 4：S-01 过载必须是凋零 + 饥饿，且不得串线到 S-02/S-03 的副作用
+        Player player = helper.makeMockSurvivalPlayer();
+        player.getInventory().clearContent();
+        ModEffects.NEURAL_OVERLOAD_S01.get().applyEffectTick(player, 0);
+        helper.assertTrue(player.getEffect(MobEffects.WITHER) != null, "S-01 overload must apply Wither");
+        helper.assertTrue(player.getEffect(MobEffects.HUNGER) != null, "S-01 overload must apply Hunger");
+        helper.assertTrue(player.getEffect(MobEffects.BLINDNESS) == null, "S-01 overload must not apply Blindness (S-02 crosstalk)");
+        helper.assertTrue(player.getEffect(MobEffects.POISON) == null, "S-01 overload must not apply Poison (S-03 crosstalk)");
+        helper.assertTrue(player.getEffect(MobEffects.MOVEMENT_SLOWDOWN) == null,
+                "S-01 overload must not apply Slowness (legacy overload crosstalk)");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void neuralOverloadS02AppliesBlindnessAndHunger(GameTestHelper helper) {
+        // 修复 4：S-02 过载必须是失明 + 饥饿
+        Player player = helper.makeMockSurvivalPlayer();
+        player.getInventory().clearContent();
+        ModEffects.NEURAL_OVERLOAD_S02.get().applyEffectTick(player, 0);
+        helper.assertTrue(player.getEffect(MobEffects.BLINDNESS) != null, "S-02 overload must apply Blindness");
+        helper.assertTrue(player.getEffect(MobEffects.HUNGER) != null, "S-02 overload must apply Hunger");
+        helper.assertTrue(player.getEffect(MobEffects.WITHER) == null, "S-02 overload must not apply Wither (S-01 crosstalk)");
+        helper.assertTrue(player.getEffect(MobEffects.POISON) == null, "S-02 overload must not apply Poison (S-03 crosstalk)");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void neuralOverloadS03AppliesSlownessAndPoison(GameTestHelper helper) {
+        // 修复 4：S-03 过载必须是缓慢 + 中毒
+        Player player = helper.makeMockSurvivalPlayer();
+        player.getInventory().clearContent();
+        ModEffects.NEURAL_OVERLOAD_S03.get().applyEffectTick(player, 0);
+        helper.assertTrue(player.getEffect(MobEffects.MOVEMENT_SLOWDOWN) != null, "S-03 overload must apply Slowness");
+        helper.assertTrue(player.getEffect(MobEffects.POISON) != null, "S-03 overload must apply Poison");
+        helper.assertTrue(player.getEffect(MobEffects.WITHER) == null, "S-03 overload must not apply Wither (S-01 crosstalk)");
+        helper.assertTrue(player.getEffect(MobEffects.BLINDNESS) == null, "S-03 overload must not apply Blindness (S-02 crosstalk)");
+        helper.assertTrue(player.getEffect(MobEffects.HUNGER) == null,
+                "S-03 overload must not apply Hunger (legacy/S-01/S-02 crosstalk)");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void s02SerumDoesNotApplyGlowingToNearbyEntities(GameTestHelper helper) {
+        // 修复 3：S-02 私有轮廓 —— 不再使用 MobEffects.GLOWING，避免对附近实体造成全服可见的串扰
+        Player drinker = helper.makeMockSurvivalPlayer();
+        net.minecraft.world.entity.animal.Cow nearby = helper.spawn(net.minecraft.world.entity.EntityType.COW,
+                new BlockPos(2, 1, 2));
+        // 直接调用 applyEffectTick 绕过 60-tick 节流，验证 S-02 内部逻辑
+        try {
+            ModEffects.VISUAL_ENHANCEMENT.get().applyEffectTick(drinker, 0);
+        } catch (Exception ignored) {
+            // 模拟玩家可能没有完整网络连接，发包异常不影响 GLOWING 副作用的断言
+        }
+        helper.assertTrue(drinker.getEffect(MobEffects.NIGHT_VISION) != null,
+                "S-02 must still grant Night Vision to the drinker");
+        helper.assertTrue(drinker.getEffect(MobEffects.FIRE_RESISTANCE) != null,
+                "S-02 must still grant Fire Resistance to the drinker");
+        helper.assertTrue(nearby.getEffect(MobEffects.GLOWING) == null,
+                "S-02 must not apply GLOWING to nearby entities (v1.1.7 regression)");
+        helper.assertTrue(drinker.getEffect(MobEffects.GLOWING) == null,
+                "S-02 must not apply GLOWING to the drinker either");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void s02DetectionSyncPacketRoundTrip(GameTestHelper helper) {
+        // 修复 3：S-02 侦测同步包必须能正确编解码，包括空列表（效果结束时使用）
+        int[] original = new int[]{3, 7, 42, 256, 1024, 65535};
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        S02DetectionSyncPacket.encode(new S02DetectionSyncPacket(original), buf);
+        buf.readerIndex(0);
+        int[] decoded = S02DetectionSyncPacket.decode(buf).getEntityIds();
+        helper.assertTrue(decoded.length == original.length, "Round-trip must preserve array length");
+        for (int i = 0; i < original.length; i++) {
+            helper.assertTrue(decoded[i] == original[i], "Round-trip must preserve element at index " + i);
+        }
+        // 空列表用于效果结束/换维度时清理客户端残留
+        FriendlyByteBuf emptyBuf = new FriendlyByteBuf(Unpooled.buffer());
+        S02DetectionSyncPacket.encode(new S02DetectionSyncPacket(new int[0]), emptyBuf);
+        emptyBuf.readerIndex(0);
+        helper.assertTrue(S02DetectionSyncPacket.decode(emptyBuf).getEntityIds().length == 0,
+                "Empty target list must round-trip cleanly");
+        // null 构造必须归一化为空数组（防御性）
+        helper.assertTrue(new S02DetectionSyncPacket(null).getEntityIds().length == 0,
+                "Null entity ID array must normalize to empty");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void gameplayConfigSnapshotDefaultsAndServerConfigMirror(GameTestHelper helper) {
+        // 修复 5：服务端配置迁移 —— 客户端快照默认值必须与 Config 出厂默认一致，
+        // 且 fromServerConfig 必须镜像运行时 Config（GameTest 世界已加载 SERVER 类型 Config）
+        GameplayConfigSnapshot defaults = GameplayConfigSnapshot.empty();
+        helper.assertTrue(defaults.mutationRange() == 2, "Default mutationRange must be 2");
+        helper.assertTrue(defaults.s01BaseDuration() == 500, "Default s01BaseDuration must be 500");
+        helper.assertTrue(defaults.s02BaseDuration() == 600, "Default s02BaseDuration must be 600");
+        helper.assertTrue(defaults.s03BaseDuration() == 300, "Default s03BaseDuration must be 300");
+        helper.assertTrue(defaults.glowScanRangeCap() == 48, "Default glowScanRangeCap must be 48");
+        helper.assertTrue(defaults.beltScanRange() == 3, "Default beltScanRange must be 3");
+        helper.assertTrue(Math.abs(defaults.packHealThreshold() - 6.0F) < 0.001F,
+                "Default packHealThreshold must be 6.0");
+        helper.assertTrue(defaults.packHealCooldown() == 1200, "Default packHealCooldown must be 1200");
+
+        GameplayConfigSnapshot fromServer = GameplayConfigSnapshot.fromServerConfig();
+        helper.assertTrue(fromServer.s01BaseDuration() == Config.s01BaseDuration,
+                "Snapshot.fromServerConfig must mirror Config.s01BaseDuration");
+        helper.assertTrue(fromServer.glowScanRangeCap() == Config.glowScanRangeCap,
+                "Snapshot.fromServerConfig must mirror Config.glowScanRangeCap");
+        helper.assertTrue(fromServer.beltScanRange() == Config.beltScanRange,
+                "Snapshot.fromServerConfig must mirror Config.beltScanRange");
+        helper.assertTrue(fromServer.maturationThreshold() == Config.maturationThreshold,
+                "Snapshot.fromServerConfig must mirror Config.maturationThreshold");
+        helper.assertTrue(fromServer.packHealThreshold() == Config.packHealThreshold,
+                "Snapshot.fromServerConfig must mirror Config.packHealThreshold");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void synapticSerumBaseAmplifierThresholdOverload(GameTestHelper helper) {
+        // 修复 5：新加 threshold 重载供客户端 Tooltip 从快照读取阈值
+        helper.assertTrue(SynapticSerumItem.getBaseAmplifier(7, 8) == 0,
+                "Activity below threshold must produce amplifier 0");
+        helper.assertTrue(SynapticSerumItem.getBaseAmplifier(8, 8) == 1,
+                "Activity at threshold must produce amplifier 1");
+        helper.assertTrue(SynapticSerumItem.getBaseAmplifier(15, 8) == 1,
+                "Activity above threshold must produce amplifier 1");
+        helper.assertTrue(SynapticSerumItem.getBaseAmplifier(0, 8) == 0,
+                "Activity 0 must produce amplifier 0");
+        // 阈值变更必须直接影响 amplifier：阈值=15 时，所有 Activity<15 都返回 0
+        helper.assertTrue(SynapticSerumItem.getBaseAmplifier(14, 15) == 0,
+                "Activity below custom threshold must produce amplifier 0");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void serumRecipesExposeInheritFlags(GameTestHelper helper) {
+        // 修复 6：JEI 使用 isInheritActivity / isInheritMutation 而非物品类型判断 —— 通过 API 校验标志
+        List<SerumRecipe> recipes = CyberCultivatorAPI.getSerumRecipes(helper.getLevel());
+        SerumRecipe berry = recipes.stream()
+                .filter(r -> r.getId().equals(SerumRecipeIds.BERRY_SYNTHESIS))
+                .findFirst().orElse(null);
+        helper.assertTrue(berry != null, "Built-in berry_synthesis recipe must be exposed via API");
+        helper.assertTrue(berry.isInheritActivity(),
+                "Berry synthesis must declare inheritActivity (Activity computed from inputs)");
+        helper.assertTrue(berry.isInheritMutation(),
+                "Berry synthesis must declare inheritMutation (Mutation tag flows through)");
+
+        for (ResourceLocation bottlingId : new ResourceLocation[]{
+                SerumRecipeIds.S01_BOTTLING, SerumRecipeIds.S02_BOTTLING, SerumRecipeIds.S03_BOTTLING}) {
+            SerumRecipe bottling = recipes.stream()
+                    .filter(r -> r.getId().equals(bottlingId))
+                    .findFirst().orElse(null);
+            helper.assertTrue(bottling != null, "Built-in serum bottling recipe must be exposed: " + bottlingId);
+            helper.assertTrue(bottling.isInheritActivity(),
+                    "Serum bottling must inherit Activity from berry input: " + bottlingId);
+            helper.assertFalse(bottling.isInheritMutation(),
+                    "Serum bottling must not re-inherit Mutation (berry already carries it): " + bottlingId);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void incubatorOutputRecipeAssemblePreservesTemplateNbt(GameTestHelper helper) {
+        // 修复 7：培养输出 NBT 丢失 —— outputItem.copy() 必须保留模板 NBT（CustomModelData、显示名等），
+        // 而非旧的 new ItemStack(item, count) 只保留基础物品
+        ResourceLocation recipeId = ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID, "incubator/fiber_reed");
+        Recipe<?> loaded = helper.getLevel().getRecipeManager().byKey(recipeId).orElse(null);
+        helper.assertTrue(loaded instanceof IncubatorOutputRecipe,
+                "fiber_reed incubator recipe must be loaded");
+        IncubatorOutputRecipe recipe = (IncubatorOutputRecipe) loaded;
+
+        ItemStack seed = new ItemStack(ModItems.FIBER_REED_SEEDS.get());
+        GeneticSeedItem.setGene(seed, GeneticSeedItem.GENE_POTENCY, 7);
+        GeneticSeedItem.setGene(seed, GeneticSeedItem.GENE_YIELD, 6);
+
+        ItemStack result = recipe.assemble(seed);
+        helper.assertTrue(result.is(ModItems.PLANT_FIBER.get()), "Result must be plant fiber");
+        CompoundTag resultTag = result.getTag();
+        helper.assertTrue(resultTag != null, "Result must carry NBT (quality + Generation tags)");
+        helper.assertTrue(resultTag.getInt("Potency") == 7,
+                "Result Potency must be derived from the seed's Potency gene (was lost in v1.1.6)");
+        helper.assertTrue(resultTag.contains("Generation"),
+                "Result must carry Generation tag from the seed");
+        helper.assertTrue(result.getCount() >= 1,
+                "Result count must follow the count_formula evaluated with Yield gene");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE, timeoutTicks = 300)
+    public static void cropMatureEventEmptyOutputSoftCancelsPreservingSeed(GameTestHelper helper) {
+        // 修复 7：监听器通过 setOutput(EMPTY) 软取消成熟时，必须保留种子和资源（不消耗成熟成本），
+        // 仅重置进度避免每 tick 重复触发。区别于 setCanceled(true) 的硬取消路径。
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.BIO_INCUBATOR.get());
+        BioIncubatorBlockEntity incubator = (BioIncubatorBlockEntity) helper.getBlockEntity(pos);
+        ItemStack seed = new ItemStack(ModItems.FIBER_REED_SEEDS.get());
+        GeneticSeedItem.setGene(seed, GeneticSeedItem.GENE_SPEED, 10);
+        helper.assertTrue(incubator.tryInsertSeed(seed), "Test seed must be inserted");
+        incubator.addNutrition(100);
+        incubator.addPurity(100);
+        incubator.addDataSignal(100);
+
+        CropListener[] listenerHolder = new CropListener[1];
+        CropListener listener = new CropListener(event -> {
+            if (event.getLevel() != helper.getLevel() || !event.getPos().equals(helper.absolutePos(pos))) return;
+            int nutritionAtEvent = incubator.getNutrition();
+            int purityAtEvent = incubator.getPurity();
+            // 软取消：仅清空输出，不调用 setCanceled(true)
+            event.setOutput(ItemStack.EMPTY);
+            MinecraftForge.EVENT_BUS.unregister(listenerHolder[0]);
+            helper.runAfterDelay(1, () -> {
+                helper.assertTrue(incubator.hasSeed(),
+                        "Soft-cancelled maturity must preserve the seed");
+                helper.assertTrue(incubator.getGrowthPercent() <= 2,
+                        "Soft-cancelled maturity must reset growth progress to avoid re-firing every tick");
+                helper.assertTrue(nutritionAtEvent - incubator.getNutrition() <= 1,
+                        "Soft-cancelled maturity must not deduct the maturity nutrition cost");
+                helper.assertTrue(purityAtEvent - incubator.getPurity() <= 1,
+                        "Soft-cancelled maturity must not deduct the maturity purity cost");
+                helper.assertItemEntityNotPresent(ModItems.PLANT_FIBER.get(), pos, 4.0);
+                helper.succeed();
+            });
+        });
+        listenerHolder[0] = listener;
+        MinecraftForge.EVENT_BUS.register(listener);
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void geneSpliceCompleteAdvancementExistsWithCustomTrigger(GameTestHelper helper) {
+        // 修复 8：新增 gene_splice_complete 进度，使用自定义触发器
+        var advancement = helper.getLevel().getServer().getAdvancements().getAdvancement(
+                ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID, "gene_splice_complete"));
+        helper.assertTrue(advancement != null,
+                "gene_splice_complete advancement must be loaded (v1.1.7 fix)");
+        String[][] requirements = advancement.getRequirements();
+        helper.assertTrue(requirements.length == 1 && requirements[0].length == 1
+                        && "gene_splice_complete".equals(requirements[0][0]),
+                "gene_splice_complete advancement must have a single criterion with matching name");
+        // 触发器必须已注册（ModTriggers 静态字段在 CriteriaTriggers.register() 调用后非空，
+        // 且其 ID 必须与进度触发器 ID 一致）
+        com.TKCCOPL.advancement.GeneSpliceCompleteTrigger trigger =
+                com.TKCCOPL.advancement.ModTriggers.GENE_SPLICE_COMPLETE;
+        helper.assertTrue(trigger != null,
+                "ModTriggers.GENE_SPLICE_COMPLETE must be non-null (initialized via CriteriaTriggers.register)");
+        helper.assertTrue(trigger.getId().equals(
+                        ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID, "gene_splice_complete")),
+                "Trigger ID must match the advancement criterion ID");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void rootAdvancementRequiresRawSiliconCrystal(GameTestHelper helper) {
+        // 修复 8：根进度触发条件改为 raw_silicon_crystal（之前错误地指向 silicon_shard，
+        // 导致玩家必须先合成 silicon_shard 才能开启进度链，绕过了原始矿物阶段）
+        var advancement = helper.getLevel().getServer().getAdvancements().getAdvancement(
+                ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID, "root"));
+        helper.assertTrue(advancement != null, "root advancement must be loaded");
+        String[][] requirements = advancement.getRequirements();
+        helper.assertTrue(requirements.length >= 1 && requirements[0].length >= 1
+                        && "has_raw_silicon_crystal".equals(requirements[0][0]),
+                "root advancement must require the has_raw_silicon_crystal criterion (v1.1.7 fix)");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void bottlerCanPlaceItemRejectsNonRecipeStacks(GameTestHelper helper) {
+        // 修复 10：装瓶机漏斗查询性能优化 —— canPlaceItem 使用缓存的 Ingredient 列表，
+        // 行为必须与遍历 RecipeManager 一致（接受配方原料，拒绝其他）
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.SERUM_BOTTLER.get());
+        SerumBottlerBlockEntity bottler = (SerumBottlerBlockEntity) helper.getBlockEntity(pos);
+
+        // 配方接受的有效原料（覆盖四条配方）
+        helper.assertTrue(bottler.canPlaceItem(0, new ItemStack(ModItems.PLANT_FIBER.get())),
+                "Bottler must accept plant fiber (berry synthesis)");
+        helper.assertTrue(bottler.canPlaceItem(0, new ItemStack(ModItems.INDUSTRIAL_ETHANOL.get())),
+                "Bottler must accept industrial ethanol (berry synthesis / S-03)");
+        helper.assertTrue(bottler.canPlaceItem(0, new ItemStack(ModItems.BIOCHEMICAL_SOLUTION.get())),
+                "Bottler must accept biochemical solution (berry synthesis / S-01)");
+        helper.assertTrue(bottler.canPlaceItem(0, new ItemStack(ModItems.RARE_EARTH_DUST.get())),
+                "Bottler must accept rare earth dust (S-02)");
+        helper.assertTrue(bottler.canPlaceItem(0, new ItemStack(ModItems.SYNAPTIC_NEURAL_BERRY.get())),
+                "Bottler must accept synaptic neural berry (S-01/S-02/S-03)");
+        helper.assertTrue(bottler.canPlaceItem(0, new ItemStack(Items.GLASS_BOTTLE)),
+                "Bottler must accept glass bottle (S-01/S-03)");
+
+        // 配方不接受的物品（性能优化后必须仍然拒绝）
+        helper.assertFalse(bottler.canPlaceItem(0, new ItemStack(Items.DIRT)),
+                "Bottler must reject dirt");
+        helper.assertFalse(bottler.canPlaceItem(0, new ItemStack(Items.STONE)),
+                "Bottler must reject stone");
+        helper.assertFalse(bottler.canPlaceItem(0, new ItemStack(Items.IRON_INGOT)),
+                "Bottler must reject iron ingot");
+
+        // 多次调用以热身 Ingredient 缓存，再验证结果一致（缓存路径不引入回归）
+        for (int i = 0; i < 5; i++) {
+            helper.assertTrue(bottler.canPlaceItem(0, new ItemStack(ModItems.PLANT_FIBER.get())),
+                    "Cached canPlaceItem must consistently accept valid items on iteration " + i);
+            helper.assertFalse(bottler.canPlaceItem(0, new ItemStack(Items.DIRT)),
+                    "Cached canPlaceItem must consistently reject invalid items on iteration " + i);
+        }
+
+        // 越界槽位与空栈必须返回 false
+        helper.assertFalse(bottler.canPlaceItem(-1, new ItemStack(ModItems.PLANT_FIBER.get())),
+                "Negative slot index must be rejected");
+        helper.assertFalse(bottler.canPlaceItem(99, new ItemStack(ModItems.PLANT_FIBER.get())),
+                "Out-of-range slot index must be rejected");
+        helper.assertFalse(bottler.canPlaceItem(0, ItemStack.EMPTY),
+                "Empty stack must be rejected");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void bottlerFindRecipeCacheSkipsIdleTraversal(GameTestHelper helper) {
+        // 修复 10：lastRecipeQueryFailed 缓存 —— 空闲 bottler 输入未变化时跳过 RecipeManager 遍历。
+        // 验证：无输入时 tick 不应启动加工；放入匹配输入后 tick 应启动加工（缓存不会造成 false-negative）
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.SERUM_BOTTLER.get());
+        SerumBottlerBlockEntity bottler = (SerumBottlerBlockEntity) helper.getBlockEntity(pos);
+
+        // 空输入连续 tick：始终空闲
+        for (int i = 0; i < 3; i++) {
+            SerumBottlerBlockEntity.tick(helper.getLevel(), pos, bottler.getBlockState(), bottler);
+            helper.assertTrue(bottler.getMaxProgress() == 0,
+                    "Empty bottler must stay idle on iteration " + i);
+        }
+        // 放入 dirt（无配方匹配）连续 tick：仍不应启动加工
+        bottler.setItem(0, new ItemStack(Items.DIRT));
+        for (int i = 0; i < 3; i++) {
+            SerumBottlerBlockEntity.tick(helper.getLevel(), pos, bottler.getBlockState(), bottler);
+            helper.assertTrue(bottler.getMaxProgress() == 0,
+                    "Non-matching input must not start processing on iteration " + i);
+        }
+        // 清空后放入完整匹配输入：必须启动加工（lastRecipeQueryFailed 不能阻止后续匹配）
+        bottler.setItem(0, ItemStack.EMPTY);
+        SerumBottlerBlockEntity.tick(helper.getLevel(), pos, bottler.getBlockState(), bottler);
+        bottler.setItem(0, new ItemStack(ModItems.PLANT_FIBER.get()));
+        bottler.setItem(1, new ItemStack(ModItems.INDUSTRIAL_ETHANOL.get()));
+        bottler.setItem(2, new ItemStack(ModItems.BIOCHEMICAL_SOLUTION.get()));
+        SerumBottlerBlockEntity.tick(helper.getLevel(), pos, bottler.getBlockState(), bottler);
+        helper.assertTrue(bottler.getMaxProgress() > 0,
+                "Berry synthesis inputs must start processing despite the previous failed-query cache");
         helper.succeed();
     }
 

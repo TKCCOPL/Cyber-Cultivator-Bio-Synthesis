@@ -23,6 +23,16 @@ public class BioPulseBeltItem extends CurioAccessoryItem {
     public static void tick(Player player) {
         Level level = player.level();
         if (level.isClientSide || level.getGameTime() % 100L != 0L) return; // 每 5 秒扫描一次
+        performScan(player);
+    }
+
+    /**
+     * 实际执行扫描与注入。分离出来便于单元测试直接调用，
+     * 避免测试受 5 秒节流影响。生产路径仍由 {@link #tick} 节流后调用。
+     */
+    static void performScan(Player player) {
+        Level level = player.level();
+        if (level.isClientSide) return;
 
         int range = Math.min(Config.beltScanRange, 5); // 硬编码上限 5（11³=1331）
         BlockPos origin = player.blockPosition();
