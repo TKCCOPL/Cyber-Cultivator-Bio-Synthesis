@@ -13,12 +13,14 @@
 | 检查项 | 结果 | 备注 |
 |--------|------|------|
 | `./gradlew compileJava` | ✅ | 无错误，仅原有 null-safety 与 deprecation 警告 |
-| `./gradlew runData` | ✅ | 无资源漂移，127→128 文件，written=0 |
+| `./gradlew runData` | ✅ | 无资源漂移，total files 127→128，written=0 |
 | `./gradlew build` | ✅ | 通过 |
-| `./gradlew runGameTestServer` | ✅ | 38/38 全部通过（无 KubeJS） |
-| `./gradlew -I .github/gradle/exclude-non-kubejs-runtime.init.gradle -PenableKubeJSRuntime=true runGameTestServer` | ✅ | 38/38 全部通过（KubeJS build.16 最低版） |
-| `./gradlew -I .github/gradle/exclude-non-kubejs-runtime.init.gradle -PenableKubeJSRuntime=true -Pkubejs_version=2001.6.5-build.26 runGameTestServer` | ✅ | 38/38 全部通过（KubeJS build.26 最新版） |
-| 资源漂移检查 | ✅ | `git status` 仅显示本次新增的 4 个 Java 文件 |
+| `./gradlew runGameTestServer`（默认含 Curios+JEI） | ✅ | 38/38 全部通过 |
+| `./gradlew -I .github/gradle/exclude-jei-runtime.init.gradle runGameTestServer`（仅 Curios） | ✅ | 38/38 全部通过 |
+| `./gradlew -I .github/gradle/exclude-optional-runtime.init.gradle runGameTestServer`（无可选依赖） | ✅ | 38/38 全部通过 |
+| `./gradlew -I .github/gradle/exclude-non-kubejs-runtime.init.gradle -PenableKubeJSRuntime=true runGameTestServer`（KubeJS build.16） | ✅ | 38/38 全部通过 |
+| `./gradlew -I .github/gradle/exclude-non-kubejs-runtime.init.gradle -PenableKubeJSRuntime=true -Pkubejs_version=2001.6.5-build.26 runGameTestServer`（KubeJS build.26） | ✅ | 38/38 全部通过 |
+| 资源漂移检查 | ✅ | `git status` 显示工作树干净 |
 
 ## 新增 GameTest 清单（共 16 个）
 
@@ -77,9 +79,11 @@
 修复同时保持无 KubeJS profile 下测试不变（38/38 通过）。
 
 **验证**：
-- `./gradlew runGameTestServer` — 38/38 通过（无 KubeJS）
-- `./gradlew -I ... -PenableKubeJSRuntime=true runGameTestServer` — 38/38 通过（KubeJS build.16）
-- `./gradlew -I ... -PenableKubeJSRuntime=true -Pkubejs_version=2001.6.5-build.26 runGameTestServer` — 38/38 通过（KubeJS build.26）
+- `./gradlew runGameTestServer`（默认含 Curios+JEI） — 38/38 通过
+- `./gradlew -I .github/gradle/exclude-jei-runtime.init.gradle runGameTestServer`（仅 Curios） — 38/38 通过
+- `./gradlew -I .github/gradle/exclude-optional-runtime.init.gradle runGameTestServer`（无可选依赖） — 38/38 通过
+- `./gradlew -I .github/gradle/exclude-non-kubejs-runtime.init.gradle -PenableKubeJSRuntime=true runGameTestServer`（KubeJS build.16） — 38/38 通过
+- `./gradlew -I .github/gradle/exclude-non-kubejs-runtime.init.gradle -PenableKubeJSRuntime=true -Pkubejs_version=2001.6.5-build.26 runGameTestServer`（KubeJS build.26） — 38/38 通过
 
 ## 测试基础结构改动
 
@@ -103,6 +107,19 @@
 - **BioIncubatorScreen 缺料提示**：从 `ClientGameplayConfig.getSnapshot()` 读取配置（修复 5 客户端部分）
 - **登录/换维度配置同步**：`GameplayConfigSyncPacket` 推送时机（修复 5 同步部分）
 
+### S-02 双客户端手工验证步骤（修复 3 核心目标，无法自动化）
+
+1. 启动专用服务器（`./gradlew runServer`），两个开发客户端连接。
+2. 玩家 A 饮用 S-02 视觉强化血清（合成或创造取出 `synaptic_serum_s02`，Activity >= 5）。
+3. 在 A 附近（半径 16 格内）放置一头被动实体（牛/羊/猪）或让玩家 B 站到 A 附近。
+4. **验收点 1**：玩家 A 屏幕上看到附近实体/玩家 B 的发光轮廓。
+5. **验收点 2**：玩家 B 屏幕上 **看不到** 任何发光轮廓（包括 B 自己、A 附近的其他实体）。
+6. **验收点 3**：通过 `/effect give @e[...] minecraft:glowing` 验证实体本身 **没有** GLOWING MobEffect（可用 `/effect clear` 后再检查 `/data get entity @e[limit=1] ActiveEffects`）。
+7. 等 S-02 持续时间结束（或用 `/effect clear`），验证副作用 `NeuralOverloadEffectS02` 触发失明+饥饿（修复 4 配套验证）。
+8. 验证不同 Activity 值下发光范围 16–48 格线性变化（修复 3 平衡点）。
+
+通过标准：上述 8 项验收点全部正确，才视为 S-02 私有轮廓修复完成。
+
 ## 日志路径
 
 - GameTest 输出：`run/logs/latest.log`（无 KubeJS profile）
@@ -112,4 +129,53 @@
 ## 修复提交点
 
 - 本测试报告对应的提交：`test: 补充 GameTest 与生成资源`（Commit #11）
-- KubeJS 烟雾 profile 适配修复：`fix(test): 适配 KubeJS 烟雾脚本的 dirt 配方`（Commit #12，紧跟 Commit #11 之后）
+- KubeJS 烟雾 profile 适配修复：`fix(test): 修复 GameTest 与 KubeJS 烟雾脚本的 dirt 冲突`（Commit #12，紧跟 Commit #11 之后）
+
+## 最终验证汇总（PR 合并门槛）
+
+### 自动化门禁（全部 ✅）
+
+| 门禁 | 命令 | 结果 |
+|------|------|------|
+| 编译 | `./gradlew compileJava` | ✅ 通过 |
+| 数据生成 | `./gradlew runData` | ✅ 通过，written=0 无漂移 |
+| 构建 | `./gradlew build` | ✅ 通过 |
+| GameTest（默认 Curios+JEI） | `./gradlew runGameTestServer` | ✅ 38/38 |
+| GameTest（仅 Curios） | `./gradlew -I .github/gradle/exclude-jei-runtime.init.gradle runGameTestServer` | ✅ 38/38 |
+| GameTest（无可选依赖） | `./gradlew -I .github/gradle/exclude-optional-runtime.init.gradle runGameTestServer` | ✅ 38/38 |
+| GameTest（KubeJS build.16） | `./gradlew -I .github/gradle/exclude-non-kubejs-runtime.init.gradle -PenableKubeJSRuntime=true runGameTestServer` | ✅ 38/38 |
+| GameTest（KubeJS build.26） | `./gradlew -I .github/gradle/exclude-non-kubejs-runtime.init.gradle -PenableKubeJSRuntime=true -Pkubejs_version=2001.6.5-build.26 runGameTestServer` | ✅ 38/38 |
+
+### 手工冒烟（未自动化）
+
+| 项 | 状态 | 备注 |
+|----|------|------|
+| S-02 私有轮廓双客户端验证（8 项验收点） | ⬜ 待执行 | 见上方"S-02 双客户端手工验证步骤" |
+| 客户端 Tooltip 显示（材料/营养池/血清活性） | ⬜ 待执行 | 视觉/渲染 |
+| JEI 页面（RecipeManager 真实数据） | ⬜ 待执行 | 视觉/渲染 |
+| BioIncubatorScreen 缺料提示读取客户端快照 | ⬜ 待执行 | 客户端配置链路 |
+| 登录/换维度配置同步时机 | ⬜ 待执行 | 网络链路 |
+
+### PR 合并前的剩余步骤
+
+1. 在专用服务器上执行 S-02 双客户端手工验证（8 项验收点全部通过）。
+2. 视情况补做客户端 Tooltip / JEI / Screen / 网络同步的视觉冒烟（不阻塞 CI）。
+3. 通过后推送 `fix/multiplayer-stability` 分支并创建 PR（按 AGENTS.md 的版本发布流程要求）。
+4. PR 正文中只保留"## 更新"和"## 修复"两节单行列表，不写版本号提升、文档同步或测试过程。
+
+## 提交历史
+
+```
+8ee8fb9 fix(test): 修复 GameTest 与 KubeJS 烟雾脚本的 dirt 冲突
+23baef5 test: 补充 GameTest 与生成资源
+4700ecd perf: 优化装瓶机漏斗查询与饰品扫描路径
+9e57a86 docs: 明确蛋白质豆启动链与培养槽共享池
+1f635f1 fix(advancement): 修复进度条件与触发器
+38c816f fix(incubator): 修复输出 NBT 丢失与成熟事件空输出吞资源
+18c4055 fix(jei): 使用 RecipeManager 真实配方数据
+d937e97 fix(config): 迁移服务端配置并完善同步时机
+3dbba0f fix(effects): 修复神经过载来源丢失和串线
+46702a7 fix(serum): 实现 S-02 私有轮廓
+88a67fe feat(network): 添加网络通道和配置同步基础
+28769f5 fix(ci): 修复 CI 和 Datagen 门禁
+```
