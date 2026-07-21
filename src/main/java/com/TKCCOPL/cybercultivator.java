@@ -1,6 +1,5 @@
 package com.TKCCOPL;
 
-import com.TKCCOPL.effect.NeuralOverloadEffect;
 import com.TKCCOPL.loot.ModLootModifiers;
 import com.TKCCOPL.init.ModBlocks;
 import com.TKCCOPL.init.ModBlockEntities;
@@ -98,13 +97,6 @@ public class cybercultivator {
     public void onServerStarting(ServerStartingEvent event) {
         // Do something when the server starts
         LOGGER.info("HELLO from server starting");
-    }
-
-    @SubscribeEvent
-    public static void onEntityLeaveLevel(net.minecraftforge.event.entity.EntityLeaveLevelEvent event) {
-        if (event.getEntity() instanceof net.minecraft.world.entity.LivingEntity) {
-            NeuralOverloadEffect.cleanupByUUID(event.getEntity().getUUID());
-        }
     }
 
     /**

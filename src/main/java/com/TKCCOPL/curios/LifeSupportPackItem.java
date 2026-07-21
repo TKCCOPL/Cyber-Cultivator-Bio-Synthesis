@@ -3,9 +3,12 @@ package com.TKCCOPL.curios;
 import com.TKCCOPL.Config;
 import com.TKCCOPL.init.ModEffects;
 import com.TKCCOPL.init.ModItems;
+import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
+
+import java.util.List;
 
 public class LifeSupportPackItem extends CurioAccessoryItem {
     public LifeSupportPackItem(Properties properties) {
@@ -22,17 +25,22 @@ public class LifeSupportPackItem extends CurioAccessoryItem {
     public static void tick(Player player) {
         if (player.level().isClientSide || !player.isAlive()) return;
 
-        // Side effect mitigation: reduce NeuralOverload duration (every 10 ticks)
+        // Side effect mitigation: reduce any NeuralOverload variant duration (every 10 ticks)
         if (player.level().getGameTime() % 10L == 0L) {
-            MobEffectInstance overload = player.getEffect(ModEffects.NEURAL_OVERLOAD.get());
-            if (overload != null) {
-                int newDuration = overload.getDuration() - Config.packEffectReductionRate * 10;
+            for (MobEffect overload : List.of(
+                    ModEffects.NEURAL_OVERLOAD.get(),
+                    ModEffects.NEURAL_OVERLOAD_S01.get(),
+                    ModEffects.NEURAL_OVERLOAD_S02.get(),
+                    ModEffects.NEURAL_OVERLOAD_S03.get())) {
+                MobEffectInstance instance = player.getEffect(overload);
+                if (instance == null) continue;
+                int newDuration = instance.getDuration() - Config.packEffectReductionRate * 10;
                 if (newDuration > 0) {
                     player.forceAddEffect(new MobEffectInstance(
-                            ModEffects.NEURAL_OVERLOAD.get(), newDuration, overload.getAmplifier(),
-                            overload.isAmbient(), overload.isVisible(), false), null);
+                            overload, newDuration, instance.getAmplifier(),
+                            instance.isAmbient(), instance.isVisible(), false), null);
                 } else {
-                    player.removeEffect(ModEffects.NEURAL_OVERLOAD.get());
+                    player.removeEffect(overload);
                 }
             }
         }

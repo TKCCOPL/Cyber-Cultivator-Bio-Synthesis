@@ -57,17 +57,15 @@ public class MetabolicBoostEffect extends MobEffect {
             moveAttr.removeModifier(MOVE_SPEED_UUID);
         }
 
-        // NeuralOverload delay application (preserve existing logic)
+        // NeuralOverload delay application (directly use S-03 independent effect)
         if (!entity.level().isClientSide) {
             if (entity.getEffect(this) == null) {
                 entity.level().getServer().tell(new TickTask(
                         entity.level().getServer().getTickCount() + 1,
                         () -> {
                             if (entity.isRemoved() || !entity.isAlive()) return;
-                            // 设置来源为 S-03，amplifier 保持实际效果等级
-                            NeuralOverloadEffect.setSource(entity, 3);
                             entity.addEffect(new MobEffectInstance(
-                                    ModEffects.NEURAL_OVERLOAD.get(),
+                                    ModEffects.NEURAL_OVERLOAD_S03.get(),
                                     20 * (12 + amplifier * 4),
                                     amplifier));
                         }

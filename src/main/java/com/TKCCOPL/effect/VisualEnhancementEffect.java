@@ -76,9 +76,8 @@ public class VisualEnhancementEffect extends MobEffect {
                     entity.level().getServer().getTickCount() + 1,
                     () -> {
                         if (entity.isRemoved() || !entity.isAlive()) return;
-                        // 设置来源为 S-02，amplifier 保持实际效果等级
-                        NeuralOverloadEffect.setSource(entity, 2);
-                        entity.addEffect(new MobEffectInstance(ModEffects.NEURAL_OVERLOAD.get(),
+                        // 直接使用 S-02 独立效果，避免旧 SOURCE_MAP 串线
+                        entity.addEffect(new MobEffectInstance(ModEffects.NEURAL_OVERLOAD_S02.get(),
                                 20 * (12 + amplifier * 4), amplifier));
                     }
                 ));

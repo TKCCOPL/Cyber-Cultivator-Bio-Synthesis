@@ -7,16 +7,12 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 
 /**
- * 旧版神经过载效果（保留注册以兼容旧存档）。
+ * S-03 代谢加速血清的神经过载副作用：缓慢 + 中毒。
  *
- * <p>v1.1.7 之前使用 SOURCE_MAP 按 S-01/S-02/S-03 来源分发不同副作用，存在
- * 多人服务器上来源丢失和串线的问题。新存档使用三个独立子类
- * {@link NeuralOverloadEffectS01}/{@link NeuralOverloadEffectS02}/{@link NeuralOverloadEffectS03}。
- *
- * <p>此旧效果保留默认行为：缓慢 + 饥饿，仅用于已经持有该效果的旧存档玩家。
+ * <p>独立效果，避免旧 SOURCE_MAP 在多人服务器上的来源丢失/串线问题。
  */
-public class NeuralOverloadEffect extends MobEffect {
-    public NeuralOverloadEffect() {
+public class NeuralOverloadEffectS03 extends MobEffect {
+    public NeuralOverloadEffectS03() {
         super(MobEffectCategory.HARMFUL, 0xD94848);
     }
 
@@ -28,6 +24,6 @@ public class NeuralOverloadEffect extends MobEffect {
     @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
         entity.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 1 + Math.min(amplifier, 3), true, false, false));
-        entity.addEffect(new MobEffectInstance(MobEffects.HUNGER, 40, Math.min(amplifier, 3), true, false, false));
+        entity.addEffect(new MobEffectInstance(MobEffects.POISON, 40, Math.min(amplifier, 2), true, false, false));
     }
 }

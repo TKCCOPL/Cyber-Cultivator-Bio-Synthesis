@@ -67,6 +67,9 @@ public class ModLangProvider extends LanguageProvider {
         add("tooltip.cybercultivator.life_support_pack", "缓解血清副作用；低血量时自动注射治疗");
         add("effect.cybercultivator.synaptic_overclock", "突触超频");
         add("effect.cybercultivator.neural_overload", "神经过载");
+        add("effect.cybercultivator.neural_overload_s01", "神经过载（突触）");
+        add("effect.cybercultivator.neural_overload_s02", "神经过载（视觉）");
+        add("effect.cybercultivator.neural_overload_s03", "神经过载（代谢）");
         add("effect.cybercultivator.visual_enhancement", "视觉强化");
         add("effect.cybercultivator.metabolic_boost", "代谢加速");
 

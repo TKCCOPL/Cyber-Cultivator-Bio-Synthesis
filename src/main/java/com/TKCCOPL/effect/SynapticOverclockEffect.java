@@ -59,7 +59,7 @@ public class SynapticOverclockEffect extends MobEffect {
             attackAttr.removeModifier(ATTACK_SPEED_UUID);
         }
 
-        // 神经过载延迟施加（保留现有逻辑）
+        // 神经过载延迟施加（直接使用 S-01 独立效果，避免旧 SOURCE_MAP 串线）
         if (!entity.level().isClientSide) {
             // 只在效果自然过期时施加副作用，叠加替换时跳过
             if (entity.getEffect(this) == null) {
@@ -67,10 +67,8 @@ public class SynapticOverclockEffect extends MobEffect {
                         entity.level().getServer().getTickCount() + 1,
                         () -> {
                             if (entity.isRemoved() || !entity.isAlive()) return;
-                            // 设置来源为 S-01，amplifier 保持实际效果等级
-                            NeuralOverloadEffect.setSource(entity, 1);
                             entity.addEffect(new MobEffectInstance(
-                                    ModEffects.NEURAL_OVERLOAD.get(),
+                                    ModEffects.NEURAL_OVERLOAD_S01.get(),
                                     20 * (12 + amplifier * 4),
                                     amplifier));
                         }
