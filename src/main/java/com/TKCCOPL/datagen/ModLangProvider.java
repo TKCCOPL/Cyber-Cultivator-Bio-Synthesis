@@ -114,6 +114,8 @@ public class ModLangProvider extends LanguageProvider {
         add("advancement.cybercultivator.bio_cultivate.description", "获得生化原液，开启培养之路");
         add("advancement.cybercultivator.gene_code.title", "基因密码");
         add("advancement.cybercultivator.gene_code.description", "通过基因拼接机创造新的种子");
+        add("advancement.cybercultivator.gene_splice_complete.title", "首次拼接");
+        add("advancement.cybercultivator.gene_splice_complete.description", "从基因拼接机中取出第一颗子代种子");
         add("advancement.cybercultivator.serum_path.title", "血清之路");
         add("advancement.cybercultivator.serum_path.description", "制造第一支突触超频血清");
         add("advancement.cybercultivator.visual_enhancement.title", "视觉超越");

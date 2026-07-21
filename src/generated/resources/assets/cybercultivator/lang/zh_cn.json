@@ -5,6 +5,8 @@
   "advancement.cybercultivator.cyber_equip.title": "赛博装备",
   "advancement.cybercultivator.gene_code.description": "通过基因拼接机创造新的种子",
   "advancement.cybercultivator.gene_code.title": "基因密码",
+  "advancement.cybercultivator.gene_splice_complete.description": "从基因拼接机中取出第一颗子代种子",
+  "advancement.cybercultivator.gene_splice_complete.title": "首次拼接",
   "advancement.cybercultivator.metabolic_boost.description": "获得 S-03 代谢加速血清",
   "advancement.cybercultivator.metabolic_boost.title": "代谢狂飙",
   "advancement.cybercultivator.rare_earth.description": "获得稀土粉末，精密机器的核心材料",

@@ -1,5 +1,6 @@
 package com.TKCCOPL;
 
+import com.TKCCOPL.advancement.ModTriggers;
 import com.TKCCOPL.loot.ModLootModifiers;
 import com.TKCCOPL.init.ModBlocks;
 import com.TKCCOPL.init.ModBlockEntities;
@@ -61,6 +62,9 @@ public class cybercultivator {
         ModLootModifiers.register(modEventBus);
         ModRecipeTypes.register(modEventBus);
         ModMenuTypes.register(modEventBus);
+
+        // 注册自定义进度触发器（CriteriaTriggers.register 必须在 mod 构造期间调用一次）
+        ModTriggers.init();
 
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);

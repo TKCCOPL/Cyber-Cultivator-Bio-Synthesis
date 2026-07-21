@@ -101,6 +101,8 @@
   "advancement.cybercultivator.bio_cultivate.description": "Obtain Biochemical Solution to begin cultivation",
   "advancement.cybercultivator.gene_code.title": "Gene Code",
   "advancement.cybercultivator.gene_code.description": "Create new seeds through the Gene Splicer",
+  "advancement.cybercultivator.gene_splice_complete.title": "First Splice",
+  "advancement.cybercultivator.gene_splice_complete.description": "Take your first child seed from the Gene Splicer",
   "advancement.cybercultivator.serum_path.title": "Serum Path",
   "advancement.cybercultivator.serum_path.description": "Craft your first Synaptic Overclock Serum",
   "advancement.cybercultivator.visual_enhancement.title": "Visual Transcendence",
