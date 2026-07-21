@@ -162,7 +162,7 @@ public class ModLangProvider extends LanguageProvider {
         add("jei.cybercultivator.bottler.automatic", "自动灌装 · %s 秒");
         add("jei.cybercultivator.bottler.output", "产出：%s");
         add("jei.cybercultivator.bottler.activity_calculated", "活性由三项原料品质计算");
-        add("jei.cybercultivator.bottler.activity_inherited", "继承神经莓活性与突变信息");
+        add("jei.cybercultivator.bottler.activity_inherited", "继承神经莓活性");
         add("jei.cybercultivator.condenser.cycle", "无输入 · 每 %s 秒产出 1 瓶");
         add("jei.cybercultivator.condenser.stock", "内部库存上限：%s");
         add("jei.cybercultivator.condenser.downstream", "下游培养槽自动注入纯度 +%s");

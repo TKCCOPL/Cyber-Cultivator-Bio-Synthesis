@@ -4,7 +4,9 @@ import com.TKCCOPL.client.ClientGameplayConfig;
 import com.TKCCOPL.cybercultivator;
 import com.TKCCOPL.init.ModItems;
 import com.TKCCOPL.item.GeneticSeedItem;
-import com.TKCCOPL.recipe.ModRecipes;
+import com.TKCCOPL.recipe.IncubatorOutputRecipe;
+import com.TKCCOPL.recipe.ModRecipeTypes;
+import com.TKCCOPL.recipe.RecipeOrdering;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.helpers.IGuiHelper;
@@ -16,6 +18,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -152,11 +155,17 @@ public class GeneSplicingCategory extends MachineRecipeCategory<GeneSplicingCate
         return stack;
     }
 
-    public static List<DisplayRecipe> buildRecipes() {
+    public static List<DisplayRecipe> buildRecipes(Level level) {
         List<DisplayRecipe> recipes = new ArrayList<>();
-        var outputs = ModRecipes.getINCUBATOR_OUTPUTS();
+        if (level == null) return recipes;
+
+        // 使用 RecipeManager 真实配方数据，确保 JEI 与机器实际可用配方一致
+        List<IncubatorOutputRecipe> outputs = RecipeOrdering.sorted(
+                level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.INCUBATOR_OUTPUT.get()));
+
+        // 自交：每个种子类型与自己拼接
         for (var output : outputs) {
-            ItemStack seed = ModRecipes.getSeedItemForType(output.getSeedType());
+            ItemStack seed = firstSeed(output);
             if (seed.isEmpty()) continue;
             int[] genes = output.getDefaultGenes();
             recipes.add(new DisplayRecipe(
@@ -166,12 +175,13 @@ public class GeneSplicingCategory extends MachineRecipeCategory<GeneSplicingCate
                     displayMutationChance(0, 0)));
         }
 
+        // 杂交：不同种子类型两两组合
         for (int i = 0; i < outputs.size(); i++) {
             for (int j = i + 1; j < outputs.size(); j++) {
                 var outA = outputs.get(i);
                 var outB = outputs.get(j);
-                ItemStack seedA = ModRecipes.getSeedItemForType(outA.getSeedType());
-                ItemStack seedB = ModRecipes.getSeedItemForType(outB.getSeedType());
+                ItemStack seedA = firstSeed(outA);
+                ItemStack seedB = firstSeed(outB);
                 if (seedA.isEmpty() || seedB.isEmpty()) continue;
                 int[] genesA = outA.getDefaultGenes();
                 int[] genesB = outB.getDefaultGenes();
@@ -185,5 +195,11 @@ public class GeneSplicingCategory extends MachineRecipeCategory<GeneSplicingCate
             }
         }
         return recipes;
+    }
+
+    /** 获取配方的首个种子物品（Ingredient.getItems() 已处理 tag 匹配） */
+    private static ItemStack firstSeed(IncubatorOutputRecipe recipe) {
+        ItemStack[] items = recipe.getSeedIngredient().getItems();
+        return items.length == 0 ? ItemStack.EMPTY : items[0].copy();
     }
 }

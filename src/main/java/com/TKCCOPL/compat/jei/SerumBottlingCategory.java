@@ -48,12 +48,14 @@ public class SerumBottlingCategory extends MachineRecipeCategory<SerumRecipe> {
         renderFlowPulse(graphics);
 
         ItemStack output = recipe.getBaseOutput();
-        boolean berry = output.is(ModItems.SYNAPTIC_NEURAL_BERRY.get());
+        // 莓合成同时继承 Activity 和 Mutation；血清仅继承 Activity。
+        // 用配方标志位 isInheritMutation() 区分两条链路，避免依赖具体物品类型判断
+        boolean calculatedFromRaw = recipe.isInheritActivity() && recipe.isInheritMutation();
         drawFitted(graphics, Component.translatable("jei.cybercultivator.bottler.automatic",
                 formatSeconds(recipe.getProcessingTime())), 8, 59, 162, 0x2F6F79);
         drawFitted(graphics, Component.translatable("jei.cybercultivator.bottler.output",
                 output.getHoverName()), 8, 71, 162, 0x373737);
-        drawFitted(graphics, Component.translatable(berry
+        drawFitted(graphics, Component.translatable(calculatedFromRaw
                         ? "jei.cybercultivator.bottler.activity_calculated"
                         : "jei.cybercultivator.bottler.activity_inherited"),
                 8, 83, 162, 0x6B4C12);
@@ -63,8 +65,8 @@ public class SerumBottlingCategory extends MachineRecipeCategory<SerumRecipe> {
     public List<Component> getTooltipStrings(SerumRecipe recipe, IRecipeSlotsView recipeSlotsView,
                                              double mouseX, double mouseY) {
         if (mouseX >= 8 && mouseX <= 170 && mouseY >= 69 && mouseY <= 94) {
-            boolean berry = recipe.getBaseOutput().is(ModItems.SYNAPTIC_NEURAL_BERRY.get());
-            return berry
+            boolean calculatedFromRaw = recipe.isInheritActivity() && recipe.isInheritMutation();
+            return calculatedFromRaw
                     ? List.of(
                             Component.translatable("jei.cybercultivator.tooltip.quality_tags")
                                     .withStyle(ChatFormatting.GRAY),

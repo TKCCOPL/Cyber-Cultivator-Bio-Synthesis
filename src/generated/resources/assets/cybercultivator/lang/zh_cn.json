@@ -108,7 +108,7 @@
   "jei.cybercultivator.atmospheric_condensing": "大气冷凝",
   "jei.cybercultivator.berry_chain": "血清链: 种子→作物→莓→血清",
   "jei.cybercultivator.bottler.activity_calculated": "活性由三项原料品质计算",
-  "jei.cybercultivator.bottler.activity_inherited": "继承神经莓活性与突变信息",
+  "jei.cybercultivator.bottler.activity_inherited": "继承神经莓活性",
   "jei.cybercultivator.bottler.automatic": "自动灌装 · %s 秒",
   "jei.cybercultivator.bottler.output": "产出：%s",
   "jei.cybercultivator.condenser.cycle": "无输入 · 每 %s 秒产出 1 瓶",

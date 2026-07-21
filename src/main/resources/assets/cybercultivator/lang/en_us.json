@@ -136,7 +136,7 @@
   "jei.cybercultivator.bottler.automatic": "Automatic bottling · %ss",
   "jei.cybercultivator.bottler.output": "Output: %s",
   "jei.cybercultivator.bottler.activity_calculated": "Activity calculated from three material qualities",
-  "jei.cybercultivator.bottler.activity_inherited": "Inherits berry Activity and mutation data",
+  "jei.cybercultivator.bottler.activity_inherited": "Inherits berry Activity",
   "jei.cybercultivator.condenser.cycle": "No input · 1 bottle every %ss",
   "jei.cybercultivator.condenser.stock": "Internal stock limit: %s",
   "jei.cybercultivator.condenser.downstream": "Auto-injects downstream incubator Purity +%s",

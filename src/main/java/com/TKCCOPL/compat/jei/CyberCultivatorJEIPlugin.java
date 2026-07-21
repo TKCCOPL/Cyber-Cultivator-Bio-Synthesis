@@ -50,7 +50,7 @@ public class CyberCultivatorJEIPlugin implements IModPlugin {
         // 基因拼接配方
         registration.addRecipes(
                 GeneSplicingCategory.RECIPE_TYPE,
-                GeneSplicingCategory.buildRecipes()
+                GeneSplicingCategory.buildRecipes(level)
         );
 
         // 培养槽产出
