@@ -13,6 +13,7 @@ import com.TKCCOPL.client.screen.BioIncubatorScreen;
 import com.TKCCOPL.client.screen.GeneSplicerScreen;
 import com.TKCCOPL.client.screen.SerumBottlerScreen;
 import com.TKCCOPL.curios.CuriosCompat;
+import com.TKCCOPL.network.ModNetwork;
 import com.TKCCOPL.recipe.ModRecipeTypes;
 import com.mojang.logging.LogUtils;
 
@@ -68,6 +69,8 @@ public class cybercultivator {
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
+        // 网络通道必须在 commonSetup 阶段注册，早于任何同步数据包发送
+        ModNetwork.register();
         LOGGER.info("Cyber-Cultivator common setup");
         LOGGER.info("Curios loaded: {}", CuriosCompat.isCuriosLoaded());
     }
