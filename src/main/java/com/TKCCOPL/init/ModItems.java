@@ -32,11 +32,26 @@ public final class ModItems {
 
     public static final RegistryObject<Item> RAW_SILICON_CRYSTAL = ITEMS.register("raw_silicon_crystal", () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> RAW_RARE_EARTH = ITEMS.register("raw_rare_earth", () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> SILICON_SHARD = ITEMS.register("silicon_shard", () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> RARE_EARTH_DUST = ITEMS.register("rare_earth_dust", () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> SILICON_SHARD = ITEMS.register("silicon_shard", () -> new Item(new Item.Properties()) {
+        @Override
+        public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+            // 硅碎片既是培养槽数据信号注入剂（共享池），也是单片镜/拼接机配方的合成材料
+            tooltip.add(Component.translatable("tooltip.cybercultivator.material.silicon_shard")
+                    .withStyle(ChatFormatting.GRAY));
+        }
+    });
+    public static final RegistryObject<Item> RARE_EARTH_DUST = ITEMS.register("rare_earth_dust", () -> new Item(new Item.Properties()) {
+        @Override
+        public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+            tooltip.add(Component.translatable("tooltip.cybercultivator.material.rare_earth_dust")
+                    .withStyle(ChatFormatting.GRAY));
+        }
+    });
     public static final RegistryObject<Item> PLANT_FIBER = ITEMS.register("plant_fiber", () -> new Item(new Item.Properties()) {
         @Override
         public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+            tooltip.add(Component.translatable("tooltip.cybercultivator.material.fiber")
+                    .withStyle(ChatFormatting.GRAY));
             CompoundTag tag = stack.getTag();
             if (tag != null && tag.contains("Potency")) {
                 tooltip.add(Component.translatable("tooltip.cybercultivator.quality_potency", tag.getInt("Potency"))
@@ -47,6 +62,9 @@ public final class ModItems {
     public static final RegistryObject<Item> BIOCHEMICAL_SOLUTION = ITEMS.register("biochemical_solution", () -> new Item(new Item.Properties()) {
         @Override
         public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+            // 生化原液既是培养槽营养度注入剂（共享池），也是莓合成/S-01 血清的配方输入
+            tooltip.add(Component.translatable("tooltip.cybercultivator.material.biochemical_solution")
+                    .withStyle(ChatFormatting.GRAY));
             CompoundTag tag = stack.getTag();
             if (tag != null && tag.contains("Concentration")) {
                 tooltip.add(Component.translatable("tooltip.cybercultivator.quality_concentration", tag.getInt("Concentration"))
@@ -57,6 +75,8 @@ public final class ModItems {
     public static final RegistryObject<Item> INDUSTRIAL_ETHANOL = ITEMS.register("industrial_ethanol", () -> new Item(new Item.Properties()) {
         @Override
         public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+            tooltip.add(Component.translatable("tooltip.cybercultivator.material.industrial_ethanol")
+                    .withStyle(ChatFormatting.GRAY));
             CompoundTag tag = stack.getTag();
             if (tag != null && tag.contains("Purity")) {
                 tooltip.add(Component.translatable("tooltip.cybercultivator.quality_purity", tag.getInt("Purity"))

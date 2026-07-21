@@ -39,6 +39,13 @@ public class ModLangProvider extends LanguageProvider {
         addItem(ModItems.INDUSTRIAL_ETHANOL, "工业乙醇");
         addItem(ModItems.PURIFIED_WATER_BOTTLE, "纯净水瓶");
         addItem(ModItems.SYNAPTIC_NEURAL_BERRY, "突触神经莓");
+        // 原料与中间物品用法说明（澄清共享池与配方输入的区别）
+        add("tooltip.cybercultivator.material.silicon_shard", "培养槽 D 通道注入剂 · 单片镜合成材料");
+        add("tooltip.cybercultivator.material.rare_earth_dust", "用于合成 S-02 血清与单片镜");
+        add("tooltip.cybercultivator.material.fiber", "培养槽产物 · 莓合成配方输入");
+        add("tooltip.cybercultivator.material.biochemical_solution", "培养槽 N 通道注入剂 · 莓合成/S-01 血清配方输入");
+        add("tooltip.cybercultivator.material.industrial_ethanol", "培养槽产物 · 莓合成/S-03 血清配方输入");
+        add("tooltip.cybercultivator.nutrition_pool_hint", "营养度 (N) 是培养槽共享池，任何种子都会消耗同一池");
         addItem(ModItems.SYNAPTIC_SERUM_S01, "S-01 突触超频血清");
         addItem(ModItems.SYNAPTIC_SERUM_S02, "S-02 视觉强化血清");
         addItem(ModItems.SYNAPTIC_SERUM_S03, "S-03 代谢加速血清");
