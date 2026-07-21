@@ -35,6 +35,11 @@ public final class ModNetwork {
                 GameplayConfigSyncPacket::encode,
                 GameplayConfigSyncPacket::decode,
                 GameplayConfigSyncPacket::handle);
-        // S-02 侦测同步包将在后续提交中注册
+        id = nextId++;
+        CHANNEL.registerMessage(id,
+                S02DetectionSyncPacket.class,
+                S02DetectionSyncPacket::encode,
+                S02DetectionSyncPacket::decode,
+                S02DetectionSyncPacket::handle);
     }
 }

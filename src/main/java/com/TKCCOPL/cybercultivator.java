@@ -14,15 +14,18 @@ import com.TKCCOPL.client.screen.GeneSplicerScreen;
 import com.TKCCOPL.client.screen.SerumBottlerScreen;
 import com.TKCCOPL.curios.CuriosCompat;
 import com.TKCCOPL.network.ModNetwork;
+import com.TKCCOPL.network.S02DetectionSyncPacket;
 import com.TKCCOPL.recipe.ModRecipeTypes;
 import com.mojang.logging.LogUtils;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -32,6 +35,7 @@ import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.network.PacketDistributor;
 import org.slf4j.Logger;
 
 // The value here should match an entry in the META-INF/mods.toml file
@@ -100,6 +104,18 @@ public class cybercultivator {
     public static void onEntityLeaveLevel(net.minecraftforge.event.entity.EntityLeaveLevelEvent event) {
         if (event.getEntity() instanceof net.minecraft.world.entity.LivingEntity) {
             NeuralOverloadEffect.cleanupByUUID(event.getEntity().getUUID());
+        }
+    }
+
+    /**
+     * 玩家换维度时清除 S-02 私有轮廓残留目标。新维度中旧实体 ID 全部失效，
+     * 若饮用者在新世界仍有 S-02，下一次 60-tick 扫描会重新填充。
+     */
+    @SubscribeEvent
+    public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (event.getEntity() instanceof ServerPlayer serverPlayer) {
+            S02DetectionSyncPacket packet = new S02DetectionSyncPacket(new int[0]);
+            ModNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> serverPlayer), packet);
         }
     }
 

@@ -167,7 +167,7 @@ public class ModLangProvider extends LanguageProvider {
 
         // JEI 物品信息页面
         add("jei.cybercultivator.info.s01", "S-01 突触超频血清：配方 = 神经莓 + 生化原液 + 玻璃瓶。效果：攻速+力量（随活性缩放），持续 25 秒。副作用：凋零+饥饿。可叠加饮用提升等级（上限 VIII），活性 ≥8 起步 II 级。");
-        add("jei.cybercultivator.info.s02", "S-02 视觉强化血清：配方 = 神经莓 + 稀土粉末 + 玻璃瓶。效果：夜视+发光（范围 16-48 格）+抗火，持续 30 秒。副作用：失明+饥饿。可叠加饮用提升等级（上限 VIII），活性 ≥8 起步 II 级。");
+        add("jei.cybercultivator.info.s02", "S-02 视觉强化血清：配方 = 神经莓 + 稀土粉末 + 玻璃瓶。效果：夜视+侦测附近玩家与生物（范围 16-48 格）+抗火，持续 30 秒。副作用：失明+饥饿。可叠加饮用提升等级（上限 VIII），活性 ≥8 起步 II 级。");
         add("jei.cybercultivator.info.s03", "S-03 代谢加速血清：配方 = 神经莓 + 工业乙醇 + 玻璃瓶。效果：回血+移速+跳跃提升，持续 15 秒。副作用：缓慢+中毒。可叠加饮用提升等级（上限 VIII），活性 ≥8 起步 II 级。");
         add("jei.cybercultivator.info.monocle", "光谱单片镜：佩戴后可在种子提示中解析基因值、代数、协同与突变信息。使用铁粒、玻璃板、硅碎片和稀土粉末合成。");
         add("jei.cybercultivator.info.belt", "生化脉冲腰带：自动扫描附近的培养槽，消耗背包中的材料自动注入营养液、纯净水和数据信号。获取：废弃矿井、要塞、大型海底废墟（20% 掉率）。");
@@ -199,7 +199,7 @@ public class ModLangProvider extends LanguageProvider {
 
         // JEI 血清效果简介
         add("jei.cybercultivator.serum_effect.s01", "攻速+力量 | 副作用: 凋零+饥饿");
-        add("jei.cybercultivator.serum_effect.s02", "夜视+发光 | 副作用: 失明+饥饿");
+        add("jei.cybercultivator.serum_effect.s02", "夜视+侦测附近玩家与生物 | 副作用: 失明+饥饿");
         add("jei.cybercultivator.serum_effect.s03", "回血+移速 | 副作用: 缓慢+中毒");
 
         // JEI 原料品质标签
