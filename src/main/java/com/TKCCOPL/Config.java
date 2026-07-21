@@ -1,9 +1,12 @@
 package com.TKCCOPL;
 
+import com.TKCCOPL.network.GameplayConfigSync;
+import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 @Mod.EventBusSubscriber(modid = cybercultivator.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class Config {
@@ -216,5 +219,13 @@ public class Config {
         packEffectReductionRate = PACK_EFFECT_REDUCTION_RATE.get();
         packHealThreshold = PACK_HEAL_THRESHOLD.get().floatValue();
         packHealCooldown = PACK_HEAL_COOLDOWN.get();
+
+        // 服务端配置重载（非首次加载）时广播给所有在线玩家，确保客户端 Tooltip / JEI 立即同步
+        if (event instanceof ModConfigEvent.Reloading) {
+            MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+            if (server != null) {
+                GameplayConfigSync.broadcastToAll(server);
+            }
+        }
     }
 }

@@ -1,6 +1,6 @@
 package com.TKCCOPL.compat.jei;
 
-import com.TKCCOPL.Config;
+import com.TKCCOPL.client.ClientGameplayConfig;
 import com.TKCCOPL.cybercultivator;
 import com.TKCCOPL.init.ModItems;
 import com.TKCCOPL.item.GeneticSeedItem;
@@ -74,11 +74,12 @@ public class GeneSplicingCategory extends MachineRecipeCategory<GeneSplicingCate
     public List<Component> getTooltipStrings(DisplayRecipe recipe, IRecipeSlotsView recipeSlotsView,
                                              double mouseX, double mouseY) {
         if (mouseX >= 4 && mouseX <= 174 && mouseY >= 60 && mouseY <= 94) {
+            var cfg = ClientGameplayConfig.getSnapshot();
             return List.of(
                     Component.translatable("jei.cybercultivator.tooltip.mutation_formula_config",
-                                    formatPercent(configChance(Config.mutationChanceBase, 0.05D)),
-                                    formatPercent(configChance(Config.mutationChancePerGen, 0.02D)),
-                                    formatPercent(configChance(Config.mutationChancePerGeneDiff, 0.01D)))
+                                    formatPercent(configChance(cfg.mutationChanceBase(), 0.05D)),
+                                    formatPercent(configChance(cfg.mutationChancePerGen(), 0.02D)),
+                                    formatPercent(configChance(cfg.mutationChancePerGeneDiff(), 0.01D)))
                             .withStyle(ChatFormatting.GRAY),
                     Component.translatable("jei.cybercultivator.tooltip.gene_formula")
                             .withStyle(ChatFormatting.GRAY));
@@ -123,7 +124,8 @@ public class GeneSplicingCategory extends MachineRecipeCategory<GeneSplicingCate
     }
 
     private static int mutationRange() {
-        return Config.mutationRange > 0 ? Config.mutationRange : 2;
+        int configured = ClientGameplayConfig.getSnapshot().mutationRange();
+        return configured > 0 ? configured : 2;
     }
 
     private static String formatPercent(double chance) {
@@ -133,13 +135,14 @@ public class GeneSplicingCategory extends MachineRecipeCategory<GeneSplicingCate
     }
 
     private static double configChance(double configured, double fallback) {
-        return Config.geneMax > 0 ? configured : fallback;
+        return ClientGameplayConfig.getSnapshot().geneMax() > 0 ? configured : fallback;
     }
 
     private static double displayMutationChance(int generation, int geneDifference) {
-        return configChance(Config.mutationChanceBase, 0.05D)
-                + generation * configChance(Config.mutationChancePerGen, 0.02D)
-                + geneDifference * configChance(Config.mutationChancePerGeneDiff, 0.01D);
+        var cfg = ClientGameplayConfig.getSnapshot();
+        return configChance(cfg.mutationChanceBase(), 0.05D)
+                + generation * configChance(cfg.mutationChancePerGen(), 0.02D)
+                + geneDifference * configChance(cfg.mutationChancePerGeneDiff(), 0.01D);
     }
 
     private static ItemStack seedWithGenes(ItemStack seed, int speed, int yield, int potency) {

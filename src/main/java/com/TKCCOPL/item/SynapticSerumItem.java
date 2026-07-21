@@ -89,7 +89,14 @@ public class SynapticSerumItem extends Item {
     }
 
     public static int getBaseAmplifier(int activity) {
-        return activity >= Config.activityThresholdForBonus ? 1 : 0;
+        return getBaseAmplifier(activity, Config.activityThresholdForBonus);
+    }
+
+    /**
+     * 客户端 Tooltip 需要从快照读取阈值，避免依赖服务端 Config。
+     */
+    public static int getBaseAmplifier(int activity, int threshold) {
+        return activity >= threshold ? 1 : 0;
     }
 
     /**
@@ -175,8 +182,11 @@ public class SynapticSerumItem extends Item {
         tooltip.add(net.minecraft.network.chat.Component.translatable(
                 "tooltip.cybercultivator.serum_activity", activity).withStyle(net.minecraft.ChatFormatting.GOLD));
 
-        double multiplier = Config.durationMultiplierBase + activity * Config.durationMultiplierPerActivity;
-        int totalAmp = Math.min(getBaseAmplifier(activity) + getActivityBonusAmplifier(activity), Config.stackAmplifierCap);
+        // 客户端从服务端同步快照读取，避免依赖未加载的 SERVER 类型 Config
+        var cfg = com.TKCCOPL.client.ClientGameplayConfig.getSnapshot();
+        double multiplier = cfg.durationMultiplierBase() + activity * cfg.durationMultiplierPerActivity();
+        int totalAmp = Math.min(getBaseAmplifier(activity, cfg.activityThresholdForBonus())
+                + getActivityBonusAmplifier(activity), cfg.stackAmplifierCap());
         String baseLevel = toRoman(totalAmp + 1);
         tooltip.add(net.minecraft.network.chat.Component.translatable(
                 "tooltip.cybercultivator.serum_base_level", baseLevel).withStyle(net.minecraft.ChatFormatting.GRAY));

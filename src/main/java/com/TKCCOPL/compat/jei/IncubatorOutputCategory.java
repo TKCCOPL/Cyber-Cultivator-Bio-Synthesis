@@ -1,6 +1,6 @@
 package com.TKCCOPL.compat.jei;
 
-import com.TKCCOPL.Config;
+import com.TKCCOPL.client.ClientGameplayConfig;
 import com.TKCCOPL.cybercultivator;
 import com.TKCCOPL.init.ModItems;
 import com.TKCCOPL.recipe.ModRecipeTypes;
@@ -41,22 +41,23 @@ public class IncubatorOutputCategory extends MachineRecipeCategory<IncubatorOutp
 
     @Override
     public void setRecipe(IRecipeLayoutBuilder builder, DisplayRecipe recipe, IFocusGroup focuses) {
+        var cfg = ClientGameplayConfig.getSnapshot();
         builder.addSlot(RecipeIngredientRole.INPUT, 22, 31)
                 .addItemStacks(recipe.seeds());
         builder.addSlot(RecipeIngredientRole.INPUT, 56, 31)
                 .addItemStack(new ItemStack(ModItems.BIOCHEMICAL_SOLUTION.get()))
                 .addTooltipCallback((slot, tooltip) -> tooltip.add(Component.translatable(
-                        "jei.cybercultivator.incubator.resource_nutrition", injectAmount(Config.nutritionInjectAmount, 25))
+                        "jei.cybercultivator.incubator.resource_nutrition", injectAmount(cfg.nutritionInjectAmount(), 25))
                         .withStyle(ChatFormatting.GRAY)));
         builder.addSlot(RecipeIngredientRole.INPUT, 86, 31)
                 .addItemStack(new ItemStack(ModItems.PURIFIED_WATER_BOTTLE.get()))
                 .addTooltipCallback((slot, tooltip) -> tooltip.add(Component.translatable(
-                        "jei.cybercultivator.incubator.resource_purity", injectAmount(Config.purityInjectAmount, 20))
+                        "jei.cybercultivator.incubator.resource_purity", injectAmount(cfg.purityInjectAmount(), 20))
                         .withStyle(ChatFormatting.GRAY)));
         builder.addSlot(RecipeIngredientRole.INPUT, 116, 31)
                 .addItemStack(new ItemStack(ModItems.SILICON_SHARD.get()))
                 .addTooltipCallback((slot, tooltip) -> tooltip.add(Component.translatable(
-                        "jei.cybercultivator.incubator.resource_signal", injectAmount(Config.dataSignalInjectAmount, 15))
+                        "jei.cybercultivator.incubator.resource_signal", injectAmount(cfg.dataSignalInjectAmount(), 15))
                         .withStyle(ChatFormatting.GRAY)));
         builder.addSlot(RecipeIngredientRole.OUTPUT, 146, 31)
                 .addItemStack(recipe.output());

@@ -12,6 +12,7 @@ import com.TKCCOPL.client.screen.BioIncubatorScreen;
 import com.TKCCOPL.client.screen.GeneSplicerScreen;
 import com.TKCCOPL.client.screen.SerumBottlerScreen;
 import com.TKCCOPL.curios.CuriosCompat;
+import com.TKCCOPL.network.GameplayConfigSync;
 import com.TKCCOPL.network.ModNetwork;
 import com.TKCCOPL.network.S02DetectionSyncPacket;
 import com.TKCCOPL.recipe.ModRecipeTypes;
@@ -68,7 +69,8 @@ public class cybercultivator {
         modEventBus.addListener(this::addCreative);
 
         // Register our mod's ForgeConfigSpec so that Forge can create and load the config file for us
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        // SERVER 类型保证配置文件随世界走、避免多人服务器与本地客户端配置不一致
+        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, Config.SPEC);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
@@ -100,7 +102,19 @@ public class cybercultivator {
     }
 
     /**
-     * 玩家换维度时清除 S-02 私有轮廓残留目标。新维度中旧实体 ID 全部失效，
+     * 玩家登录时把服务端配置快照推送到客户端，确保 Tooltip / JEI 立即用上权威值。
+     */
+    @SubscribeEvent
+    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer serverPlayer) {
+            GameplayConfigSync.sendTo(serverPlayer);
+        }
+    }
+
+    /**
+     * 玩家换维度时：
+     * 1. 清除 S-02 私有轮廓残留目标（新维度中旧实体 ID 全部失效）；
+     * 2. 重新推送配置快照（防御性同步）。
      * 若饮用者在新世界仍有 S-02，下一次 60-tick 扫描会重新填充。
      */
     @SubscribeEvent
@@ -108,6 +122,7 @@ public class cybercultivator {
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
             S02DetectionSyncPacket packet = new S02DetectionSyncPacket(new int[0]);
             ModNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> serverPlayer), packet);
+            GameplayConfigSync.sendTo(serverPlayer);
         }
     }
 

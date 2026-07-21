@@ -1,6 +1,6 @@
 package com.TKCCOPL.client.screen;
 
-import com.TKCCOPL.Config;
+import com.TKCCOPL.client.ClientGameplayConfig;
 import com.TKCCOPL.cybercultivator;
 import com.TKCCOPL.menu.BioIncubatorMenu;
 import net.minecraft.client.gui.GuiGraphics;
@@ -56,8 +56,9 @@ public class BioIncubatorScreen extends MachineScreen<BioIncubatorMenu> {
 
     private String getMissingResources() {
         StringBuilder missing = new StringBuilder();
-        appendMissing(missing, menu.getNutrition() <= Config.resourceThreshold, "N");
-        appendMissing(missing, menu.getPurity() <= Config.resourceThreshold, "P");
+        int resourceThreshold = ClientGameplayConfig.getSnapshot().resourceThreshold();
+        appendMissing(missing, menu.getNutrition() <= resourceThreshold, "N");
+        appendMissing(missing, menu.getPurity() <= resourceThreshold, "P");
         appendMissing(missing, menu.getDataSignal() <= 0, "D");
         return missing.length() == 0 ? "N/P/D" : missing.toString();
     }

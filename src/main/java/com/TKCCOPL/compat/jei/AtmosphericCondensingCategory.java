@@ -1,6 +1,6 @@
 package com.TKCCOPL.compat.jei;
 
-import com.TKCCOPL.Config;
+import com.TKCCOPL.client.ClientGameplayConfig;
 import com.TKCCOPL.cybercultivator;
 import com.TKCCOPL.init.ModItems;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
@@ -52,7 +52,8 @@ public class AtmosphericCondensingCategory extends MachineRecipeCategory<Atmosph
                 recipe.processingTicks() / 20), 8, 51, 162, 0x2F6F79);
         drawFitted(graphics, Component.translatable("jei.cybercultivator.condenser.stock",
                 recipe.maxStock()), 8, 64, 162, 0x373737);
-        int purity = Config.purityInjectAmount > 0 ? Config.purityInjectAmount : 20;
+        int purity = ClientGameplayConfig.getSnapshot().purityInjectAmount();
+        if (purity <= 0) purity = 20;
         drawFitted(graphics, Component.translatable("jei.cybercultivator.condenser.downstream", purity),
                 8, 78, 162, 0x2F6F79);
     }
