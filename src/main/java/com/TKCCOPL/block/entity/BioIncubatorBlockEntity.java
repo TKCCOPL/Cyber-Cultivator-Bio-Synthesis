@@ -165,7 +165,13 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
                         forceSync = true;
                     } else {
                         cropOutput = cropEvent.getOutput();
-                        if (!blockEntity.canAcceptResourceOutput(cropOutput)) {
+                        // 监听器通过 setOutput(EMPTY) 实现"软取消"：保留种子和资源，
+                        // 仅重置进度避免每 tick 重复触发事件
+                        if (cropOutput.isEmpty()) {
+                            blockEntity.growthProgress = 0;
+                            changed = true;
+                            forceSync = true;
+                        } else if (!blockEntity.canAcceptResourceOutput(cropOutput)) {
                             blockEntity.growthProgress = Config.maturationThreshold;
                         } else {
                             blockEntity.seed = ItemStack.EMPTY;
