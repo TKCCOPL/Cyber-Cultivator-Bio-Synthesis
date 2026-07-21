@@ -30,6 +30,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyContainer, MenuProvider {
     private static final String TAG_PROGRESS = "Progress";
     private static final String TAG_MAX_PROGRESS = "MaxProgress";
@@ -99,6 +102,13 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     private String pendingRecipeId; // 用于 load() 后延迟恢复 cachedRecipe
     private final SimpleContainer recipeContainer = new SimpleContainer(INPUT_SLOTS);
     private boolean inputsDirty = true;
+
+    // 可接受原料缓存：避免 canPlaceItem 每次都被漏斗触发而重复查询 RecipeManager
+    private List<Ingredient> cachedAcceptableIngredients;
+    private int cachedRecipeCount = -1; // 用于检测配方数量变化（datapack/KubeJS 重载）
+    // 上次 findRecipe 因「输入不匹配任何配方」返回 null 的标记；
+    // 输入未变化时跳过 RecipeManager 查询，避免空闲 bottler 每 tick 都遍历配方表
+    private boolean lastRecipeQueryFailed = false;
     private final ContainerData menuData = new ContainerData() {
         @Override
         public int get(int index) {
@@ -133,18 +143,21 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         boolean changed = false;
         boolean processingCancelled = false;
 
-        // RecipeManager replaces recipe objects on datapack/KubeJS reload.
-        // Cancel stale work without consuming inputs.
-        if (blockEntity.cachedRecipe != null) {
-            var currentRecipe = level.getRecipeManager().byKey(blockEntity.cachedRecipe.getId()).orElse(null);
-            if (currentRecipe != blockEntity.cachedRecipe) {
-                blockEntity.cachedRecipe = null;
-                blockEntity.pendingRecipeId = null;
-                blockEntity.progress = 0;
-                blockEntity.maxProgress = 0;
-                changed = true;
-                processingCancelled = true;
-            }
+        // Task: 配方缓存失效检测。RecipeManager 在 datapack/KubeJS 重载时整体替换内部 Map，
+        // 通过观察配方数量变化即可检测到（无需每 tick 执行 byKey 查找）。
+        int currentRecipeCount = level.getRecipeManager()
+                .getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get()).size();
+        if (blockEntity.cachedRecipeCount != currentRecipeCount) {
+            blockEntity.cachedRecipeCount = currentRecipeCount;
+            blockEntity.cachedAcceptableIngredients = null;
+            // 配方被替换，引用对象已失效
+            blockEntity.cachedRecipe = null;
+            blockEntity.pendingRecipeId = null;
+            blockEntity.progress = 0;
+            blockEntity.maxProgress = 0;
+            blockEntity.lastRecipeQueryFailed = false; // 配方表已变，需重新查询
+            changed = true;
+            processingCancelled = true;
         }
 
         // Task 1: 延迟恢复 cachedRecipe（load() 时 level 为 null）
@@ -211,6 +224,8 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
      */
     private SerumRecipe findRecipe() {
         if (level == null) return null;
+        // 输入未变化且上次查询无匹配：跳过 RecipeManager 查询，避免空闲 bottler 每 tick 遍历配方表
+        if (lastRecipeQueryFailed && !inputsDirty) return null;
         refreshRecipeContainer();
         SerumRecipe recipe = RecipeOrdering.sorted(level.getRecipeManager()
                 .getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get()))
@@ -218,7 +233,12 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
                 .filter(r -> r.matches(recipeContainer, level))
                 .findFirst()
                 .orElse(null);
-        if (recipe == null) return null;
+        if (recipe == null) {
+            lastRecipeQueryFailed = true;
+            return null;
+        }
+        lastRecipeQueryFailed = false;
+        // 输出阻塞的情况不缓存 null：下次输出槽腾空时需重新评估
         return canAcceptOutput(createRecipeResult(recipe)) ? recipe : null;
     }
 
@@ -494,9 +514,31 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     public boolean canPlaceItem(int slot, ItemStack stack) {
         if (slot < 0 || slot >= INPUT_SLOTS || stack.isEmpty()) return false;
         if (level == null) return true;
-        return level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get()).stream()
-                .flatMap(recipe -> java.util.Arrays.stream(recipe.getInputs()))
-                .anyMatch(ingredient -> ingredient.test(stack));
+        // 使用缓存的 Ingredient 列表，避免每次漏斗探测都查询 RecipeManager
+        List<Ingredient> ingredients = getAcceptableIngredients();
+        for (Ingredient ingredient : ingredients) {
+            if (ingredient.test(stack)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * 获取所有血清配方可接受的 Ingredient 列表（缓存）。
+     * 失效由 tick() 中的配方数量变化检测触发；clearContent/load 也会清空。
+     */
+    private List<Ingredient> getAcceptableIngredients() {
+        if (cachedAcceptableIngredients != null) return cachedAcceptableIngredients;
+        List<Ingredient> all = new ArrayList<>();
+        if (level != null) {
+            for (SerumRecipe recipe : RecipeOrdering.sorted(level.getRecipeManager()
+                    .getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get()))) {
+                for (Ingredient ingredient : recipe.getInputs()) {
+                    all.add(ingredient);
+                }
+            }
+        }
+        cachedAcceptableIngredients = all;
+        return all;
     }
 
     @Override
@@ -517,6 +559,8 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         pendingRecipeId = null;
         progress = 0;
         maxProgress = 0;
+        // 不重置 cachedRecipeCount 与 cachedAcceptableIngredients：这两者与配方表挂钩，
+        // 与本方块的内部状态无关；下次 tick 会检测配方数量变化决定是否失效。
         syncToClient();
     }
 
