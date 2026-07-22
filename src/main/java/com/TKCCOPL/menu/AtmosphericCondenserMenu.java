@@ -16,13 +16,11 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 public class AtmosphericCondenserMenu extends MachineMenu {
-    public static final int BUTTON_TOGGLE_AUTO_INJECT = 0;
-    public static final int BUTTON_TOGGLE_PAUSED = 1;
     private final ContainerData data;
     private final ContainerLevelAccess access;
 
     public AtmosphericCondenserMenu(int containerId, Inventory inventory, FriendlyByteBuf buffer) {
-        this(containerId, inventory, resolve(inventory, buffer), new SimpleContainerData(7), ContainerLevelAccess.NULL);
+        this(containerId, inventory, resolve(inventory, buffer), new SimpleContainerData(5), ContainerLevelAccess.NULL);
     }
 
     public AtmosphericCondenserMenu(int containerId, Inventory inventory, AtmosphericCondenserBlockEntity blockEntity,
@@ -36,7 +34,7 @@ public class AtmosphericCondenserMenu extends MachineMenu {
         super(ModMenuTypes.ATMOSPHERIC_CONDENSER.get(), containerId, machine, 2);
         this.data = data;
         this.access = access;
-        addSlot(new Slot(machine, AtmosphericCondenserBlockEntity.BOTTLE_INPUT_SLOT, 10, 50) {
+        addSlot(new Slot(machine, AtmosphericCondenserBlockEntity.BOTTLE_INPUT_SLOT, 18, 50) {
             @Override
             public boolean mayPlace(ItemStack stack) {
                 return stack.is(Items.GLASS_BOTTLE);
@@ -69,20 +67,6 @@ public class AtmosphericCondenserMenu extends MachineMenu {
     }
 
     @Override
-    public boolean clickMenuButton(Player player, int id) {
-        if (!(machine instanceof AtmosphericCondenserBlockEntity blockEntity)) return false;
-        if (id == BUTTON_TOGGLE_AUTO_INJECT) {
-            blockEntity.toggleAutoInject();
-            return true;
-        }
-        if (id == BUTTON_TOGGLE_PAUSED) {
-            blockEntity.togglePaused();
-            return true;
-        }
-        return false;
-    }
-
-    @Override
     public boolean stillValid(Player player) {
         return stillValid(access, player, ModBlocks.ATMOSPHERIC_CONDENSER.get());
     }
@@ -90,9 +74,7 @@ public class AtmosphericCondenserMenu extends MachineMenu {
     public int getProgress() { return data.get(0); }
     public int getMaxProgress() { return data.get(1); }
     public int getStock() { return data.get(2); }
-    public boolean isAutoInject() { return data.get(3) != 0; }
-    public boolean isDownstreamConnected() { return data.get(4) != 0; }
-    public boolean isPaused() { return data.get(5) != 0; }
-    public int getBottleCount() { return data.get(6); }
+    public boolean isDownstreamConnected() { return data.get(3) != 0; }
+    public int getBottleCount() { return data.get(4); }
     public boolean hasBottle() { return getBottleCount() > 0; }
 }

@@ -150,7 +150,7 @@
   "jei.cybercultivator.condenser.cycle": "Uses 1 glass bottle · 1 output every %ss",
   "jei.cybercultivator.condenser.stock": "Internal stock limit: %s",
   "jei.cybercultivator.condenser.downstream": "Auto-injects downstream incubator Purity +%s",
-  "jei.cybercultivator.condenser.tooltip": "Insert glass bottles from top/sides and extract output from bottom/sides; production and injection can be paused",
+  "jei.cybercultivator.condenser.tooltip": "Insert glass bottles from top/sides and extract output from bottom/sides; an incubator below receives Purity automatically",
   "jei.cybercultivator.info.s01": "S-01 Synaptic Overclock Serum: Recipe = Berry + Biochemical Solution + Glass Bottle. Effects: Atk Speed + Strength (scaled by Activity), 25s duration. Side effect: Wither + Hunger. Stackable (max VIII), Activity ≥8 starts at level II.",
   "jei.cybercultivator.info.s02": "S-02 Visual Enhancement Serum: Recipe = Berry + Rare Earth Dust + Glass Bottle. Effects: Night Vision + Detect nearby players and mobs (16-48 range) + Fire Resistance, 30s duration. Side effect: Blindness + Hunger. Stackable (max VIII), Activity ≥8 starts at level II.",
   "jei.cybercultivator.info.s03": "S-03 Metabolic Boost Serum: Recipe = Berry + Industrial Ethanol + Glass Bottle. Effects: Regen + Speed + Jump Boost, 15s duration. Side effect: Slowness + Poison. Stackable (max VIII), Activity ≥8 starts at level II.",
@@ -237,15 +237,7 @@
   "gui.cybercultivator.incubator.status_complete": "Product ready · next seed",
   "gui.cybercultivator.condenser.status_condensing": "Condensing · %s%% · %ss left",
   "gui.cybercultivator.condenser.status_waiting_bottle": "Waiting for glass bottle · insert to continue",
-  "gui.cybercultivator.condenser.status_paused": "Production paused · %s%% complete",
   "gui.cybercultivator.condenser.status_full": "Stock full · collect to continue",
-  "gui.cybercultivator.condenser.stock_manual": "Stock %s/%s · manual mode",
   "gui.cybercultivator.condenser.stock_connected": "Stock %s/%s · downstream ready",
-  "gui.cybercultivator.condenser.stock_waiting_downstream": "Stock %s/%s · no downstream",
-  "gui.cybercultivator.condenser.auto_on": "Downstream: On",
-  "gui.cybercultivator.condenser.auto_off": "Downstream: Off",
-  "gui.cybercultivator.condenser.pause": "Pause",
-  "gui.cybercultivator.condenser.resume": "Resume",
-  "gui.cybercultivator.condenser.auto_tooltip": "Toggle purity injection into the incubator below",
-  "gui.cybercultivator.condenser.pause_tooltip": "Pause or resume purified water production"
+  "gui.cybercultivator.condenser.stock_waiting_downstream": "Stock %s/%s · no downstream"
 }

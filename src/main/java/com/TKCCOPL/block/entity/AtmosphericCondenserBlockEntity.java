@@ -27,8 +27,6 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
     private static final String TAG_PROGRESS = "Progress";
     private static final String TAG_BOTTLE_INPUT = "BottleInput";
     private static final String TAG_OUTPUT = "Output";
-    private static final String TAG_AUTO_INJECT = "AutoInject";
-    private static final String TAG_PAUSED = "Paused";
 
     private static final int PRODUCTION_TIME = 600; // 30 seconds
     private static final int MAX_STACK = 32; // was 16
@@ -41,8 +39,6 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
     private int progress;
     private ItemStack bottleInput = ItemStack.EMPTY;
     private ItemStack output = ItemStack.EMPTY;
-    private boolean autoInject = true;
-    private boolean paused;
     private final ContainerData menuData = new ContainerData() {
         @Override
         public int get(int index) {
@@ -50,11 +46,9 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
                 case 0 -> progress;
                 case 1 -> PRODUCTION_TIME;
                 case 2 -> output.getCount();
-                case 3 -> autoInject ? 1 : 0;
-                case 4 -> level != null
+                case 3 -> level != null
                         && level.getBlockEntity(worldPosition.below()) instanceof BioIncubatorBlockEntity ? 1 : 0;
-                case 5 -> paused ? 1 : 0;
-                case 6 -> bottleInput.getCount();
+                case 4 -> bottleInput.getCount();
                 default -> 0;
             };
         }
@@ -65,7 +59,7 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
 
         @Override
         public int getCount() {
-            return 7;
+            return 5;
         }
     };
 
@@ -79,8 +73,7 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
         boolean changed = false;
 
         // 只有空玻璃瓶可用且输出库存未满时才推进冷凝周期。
-        if (!blockEntity.paused && blockEntity.hasBottleInput()
-                && blockEntity.output.getCount() < MAX_STACK) {
+        if (blockEntity.hasBottleInput() && blockEntity.output.getCount() < MAX_STACK) {
             blockEntity.progress++;
             // 每 20 tick 同步一次进度，用于客户端 HUD 进度条动画
             if (blockEntity.progress % 20 == 0) {
@@ -102,7 +95,7 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
         }
 
         // Auto-transfer purity to incubator below
-        if (blockEntity.autoInject && level.getGameTime() % 20L == 0L) {
+        if (level.getGameTime() % 20L == 0L) {
             BlockPos below = pos.below();
             if (level.getBlockEntity(below) instanceof BioIncubatorBlockEntity incubator) {
                 if (blockEntity.output.getCount() > 0 && incubator.getPurity() < 80) {
@@ -159,24 +152,6 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
 
     public boolean hasOutput() {
         return !output.isEmpty();
-    }
-
-    public boolean isAutoInject() {
-        return autoInject;
-    }
-
-    public void toggleAutoInject() {
-        autoInject = !autoInject;
-        syncToClient();
-    }
-
-    public boolean isPaused() {
-        return paused;
-    }
-
-    public void togglePaused() {
-        paused = !paused;
-        syncToClient();
     }
 
     public ItemStack extractOutput() {
@@ -314,16 +289,12 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
         bottleInput = tag.contains(TAG_BOTTLE_INPUT)
                 ? ItemStack.of(tag.getCompound(TAG_BOTTLE_INPUT)) : ItemStack.EMPTY;
         output = tag.contains(TAG_OUTPUT) ? ItemStack.of(tag.getCompound(TAG_OUTPUT)) : ItemStack.EMPTY;
-        autoInject = !tag.contains(TAG_AUTO_INJECT) || tag.getBoolean(TAG_AUTO_INJECT);
-        paused = tag.getBoolean(TAG_PAUSED);
     }
 
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
         tag.putInt(TAG_PROGRESS, progress);
-        tag.putBoolean(TAG_AUTO_INJECT, autoInject);
-        tag.putBoolean(TAG_PAUSED, paused);
         if (!bottleInput.isEmpty()) {
             tag.put(TAG_BOTTLE_INPUT, bottleInput.save(new CompoundTag()));
         }

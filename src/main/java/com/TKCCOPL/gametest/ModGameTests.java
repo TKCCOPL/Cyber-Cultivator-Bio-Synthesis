@@ -856,47 +856,29 @@ public final class ModGameTests {
         helper.setBlock(condenserPos, ModBlocks.ATMOSPHERIC_CONDENSER.get());
         AtmosphericCondenserBlockEntity condenser =
                 (AtmosphericCondenserBlockEntity) helper.getBlockEntity(condenserPos);
-        helper.assertTrue(condenser.isAutoInject(), "Existing and new condensers must default auto injection to on");
-        helper.assertFalse(condenser.isPaused(), "New condensers must start production unpaused");
         CompoundTag inProgress = new CompoundTag();
         inProgress.putInt("Progress", 10);
+        inProgress.putBoolean("AutoInject", false);
+        inProgress.putBoolean("Paused", true);
         condenser.load(inProgress);
-        Player player = helper.makeMockSurvivalPlayer();
-        AtmosphericCondenserMenu condenserMenu =
-                (AtmosphericCondenserMenu) condenser.createMenu(4, player.getInventory(), player);
-        helper.assertTrue(condenserMenu.clickMenuButton(player, AtmosphericCondenserMenu.BUTTON_TOGGLE_PAUSED),
-                "Pause button must be handled by the condenser menu");
-        helper.assertTrue(condenser.isPaused(), "Pause button must pause condenser production");
-        AtmosphericCondenserBlockEntity.tick(helper.getLevel(), condenserPos, condenser.getBlockState(), condenser);
-        helper.assertTrue(condenser.getProgress() == 10, "Paused condensers must not advance production");
-        condenser.toggleAutoInject();
-        CompoundTag saved = condenser.saveWithoutMetadata();
-        AtmosphericCondenserBlockEntity restored =
-                new AtmosphericCondenserBlockEntity(condenser.getBlockPos(), condenser.getBlockState());
-        restored.load(saved);
-        helper.assertFalse(restored.isAutoInject(), "Auto injection mode must survive NBT round-trip");
-        helper.assertTrue(restored.isPaused(), "Paused production state must survive NBT round-trip");
-        helper.assertTrue(condenserMenu.clickMenuButton(player, AtmosphericCondenserMenu.BUTTON_TOGGLE_PAUSED),
-                "Resume button must be handled by the condenser menu");
-        AtmosphericCondenserBlockEntity.tick(helper.getLevel(), condenserPos, condenser.getBlockState(), condenser);
-        helper.assertTrue(condenser.getProgress() == 10,
-                "Resumed condensers without a glass bottle must wait without losing progress");
         condenser.setItem(AtmosphericCondenserBlockEntity.BOTTLE_INPUT_SLOT,
                 new ItemStack(Items.GLASS_BOTTLE, 2));
         AtmosphericCondenserBlockEntity.tick(helper.getLevel(), condenserPos, condenser.getBlockState(), condenser);
         helper.assertTrue(condenser.getProgress() == 11,
-                "Supplying a glass bottle must resume production from stored progress");
-        CompoundTag supplied = condenser.saveWithoutMetadata();
-        AtmosphericCondenserBlockEntity restoredSupply =
+                "Legacy pause state must be ignored after condenser controls are removed");
+        CompoundTag saved = condenser.saveWithoutMetadata();
+        helper.assertFalse(saved.contains("AutoInject") || saved.contains("Paused"),
+                "Removed condenser controls must not be written back to NBT");
+        AtmosphericCondenserBlockEntity restored =
                 new AtmosphericCondenserBlockEntity(condenser.getBlockPos(), condenser.getBlockState());
-        restoredSupply.load(supplied);
-        helper.assertTrue(restoredSupply.getBottleCount() == 2,
+        restored.load(saved);
+        helper.assertTrue(restored.getProgress() == 11 && restored.getBottleCount() == 2,
                 "Glass bottle input must survive an NBT round-trip");
         AtmosphericCondenserBlockEntity legacy =
                 new AtmosphericCondenserBlockEntity(condenser.getBlockPos(), condenser.getBlockState());
         legacy.load(new CompoundTag());
-        helper.assertTrue(legacy.isAutoInject(), "Legacy NBT without AutoInject must remain enabled");
-        helper.assertFalse(legacy.isPaused(), "Legacy NBT without Paused must remain operational");
+        helper.assertTrue(legacy.getProgress() == 0 && legacy.getBottleInput().isEmpty(),
+                "Legacy NBT without condenser controls must remain loadable");
         helper.succeed();
     }
 

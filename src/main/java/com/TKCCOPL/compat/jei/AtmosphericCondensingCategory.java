@@ -39,7 +39,7 @@ public class AtmosphericCondensingCategory extends MachineRecipeCategory<Atmosph
 
     @Override
     public void setRecipe(IRecipeLayoutBuilder builder, DisplayRecipe recipe, IFocusGroup focuses) {
-        builder.addSlot(RecipeIngredientRole.INPUT, 2, 31)
+        builder.addSlot(RecipeIngredientRole.INPUT, 10, 31)
                 .addItemStack(new ItemStack(Items.GLASS_BOTTLE));
         builder.addSlot(RecipeIngredientRole.OUTPUT, 150, 31)
                 .addItemStack(new ItemStack(ModItems.PURIFIED_WATER_BOTTLE.get()));
@@ -48,7 +48,7 @@ public class AtmosphericCondensingCategory extends MachineRecipeCategory<Atmosph
     @Override
     public void draw(DisplayRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphics graphics,
                      double mouseX, double mouseY) {
-        verticalBar(graphics, 109, 9, 32, 0xFF5DB9C7);
+        verticalBar(graphics, 103, 20, 30, 0xFF5DB9C7);
         renderCondensationScan(graphics);
 
         drawFitted(graphics, Component.translatable("jei.cybercultivator.condenser.cycle",
@@ -79,13 +79,13 @@ public class AtmosphericCondensingCategory extends MachineRecipeCategory<Atmosph
     private void renderCondensationScan(GuiGraphics graphics) {
         float animationTick = animationValue();
         int activeFin = (int) (animationTick / 4.0F) % 6;
-        graphics.fill(24 + activeFin * 10, 14, 26 + activeFin * 10, 38, 0xFF5DB9C7);
+        graphics.fill(46 + activeFin * 8, 24, 48 + activeFin * 8, 44, 0xFF5DB9C7);
 
         int pipeOffset = (int) (animationTick % 30.0F);
         if (pipeOffset < 20) {
-            graphics.fill(93, 15 + pipeOffset, 96, 18 + pipeOffset, 0xFF5DB9C7);
+            graphics.fill(104, 21 + pipeOffset, 107, 24 + pipeOffset, 0xFF5DB9C7);
         } else {
-            graphics.fill(95 + pipeOffset - 20, 32, 98 + pipeOffset - 20, 35, 0xFF5DB9C7);
+            graphics.fill(116 + pipeOffset - 20, 34, 119 + pipeOffset - 20, 37, 0xFF5DB9C7);
         }
     }
 }

@@ -177,7 +177,7 @@ public class ModLangProvider extends LanguageProvider {
         add("jei.cybercultivator.condenser.cycle", "消耗 1 个玻璃瓶 · 每 %s 秒产出 1 瓶");
         add("jei.cybercultivator.condenser.stock", "内部库存上限：%s");
         add("jei.cybercultivator.condenser.downstream", "下游培养槽自动注入纯度 +%s");
-        add("jei.cybercultivator.condenser.tooltip", "顶部/侧面输入玻璃瓶，底部/侧面抽取产物；可暂停生产或关闭下游自动注入");
+        add("jei.cybercultivator.condenser.tooltip", "顶部/侧面输入玻璃瓶，底部/侧面抽取产物；下方培养槽会自动接收纯净度");
 
         // JEI 物品信息页面
         add("jei.cybercultivator.info.s01", "S-01 突触超频血清：配方 = 神经莓 + 生化原液 + 玻璃瓶。效果：攻速+力量（随活性缩放），持续 25 秒。副作用：凋零+饥饿。可叠加饮用提升等级（上限 VIII），活性 ≥8 起步 II 级。");
@@ -287,16 +287,8 @@ public class ModLangProvider extends LanguageProvider {
         add("gui.cybercultivator.incubator.status_complete", "产物就绪 · 可放入下一颗种子");
         add("gui.cybercultivator.condenser.status_condensing", "冷凝中 · %s%% · 剩余 %s 秒");
         add("gui.cybercultivator.condenser.status_waiting_bottle", "等待玻璃瓶 · 放入后继续冷凝");
-        add("gui.cybercultivator.condenser.status_paused", "生产已暂停 · 当前进度 %s%%");
         add("gui.cybercultivator.condenser.status_full", "库存已满 · 收取后继续");
-        add("gui.cybercultivator.condenser.stock_manual", "库存 %s/%s · 手动模式");
         add("gui.cybercultivator.condenser.stock_connected", "库存 %s/%s · 下游已连接");
         add("gui.cybercultivator.condenser.stock_waiting_downstream", "库存 %s/%s · 等待下游");
-        add("gui.cybercultivator.condenser.auto_on", "下游注入：开");
-        add("gui.cybercultivator.condenser.auto_off", "下游注入：关");
-        add("gui.cybercultivator.condenser.pause", "暂停");
-        add("gui.cybercultivator.condenser.resume", "继续");
-        add("gui.cybercultivator.condenser.auto_tooltip", "切换向下方培养槽自动注入纯净度");
-        add("gui.cybercultivator.condenser.pause_tooltip", "暂停或继续纯净水生产");
     }
 }
