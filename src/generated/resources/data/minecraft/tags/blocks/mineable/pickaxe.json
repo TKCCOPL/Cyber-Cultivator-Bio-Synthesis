@@ -2,6 +2,8 @@
   "values": [
     "cybercultivator:silicon_ore",
     "cybercultivator:rare_earth_ore",
+    "cybercultivator:deepslate_silicon_ore",
+    "cybercultivator:deepslate_rare_earth_ore",
     "cybercultivator:raw_silicon_block",
     "cybercultivator:raw_rare_earth_block",
     "cybercultivator:silicon_block",

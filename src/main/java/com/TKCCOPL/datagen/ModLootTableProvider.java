@@ -39,6 +39,10 @@ public class ModLootTableProvider extends LootTableProvider {
                     ModBlocks.SILICON_ORE.get(), ModItems.RAW_SILICON_CRYSTAL.get()));
             add(ModBlocks.RARE_EARTH_ORE.get(), createOreDrop(
                     ModBlocks.RARE_EARTH_ORE.get(), ModItems.RAW_RARE_EARTH.get()));
+            add(ModBlocks.DEEPSLATE_SILICON_ORE.get(), createOreDrop(
+                    ModBlocks.DEEPSLATE_SILICON_ORE.get(), ModItems.RAW_SILICON_CRYSTAL.get()));
+            add(ModBlocks.DEEPSLATE_RARE_EARTH_ORE.get(), createOreDrop(
+                    ModBlocks.DEEPSLATE_RARE_EARTH_ORE.get(), ModItems.RAW_RARE_EARTH.get()));
             dropSelf(ModBlocks.RAW_SILICON_BLOCK.get());
             dropSelf(ModBlocks.RAW_RARE_EARTH_BLOCK.get());
             dropSelf(ModBlocks.SILICON_BLOCK.get());

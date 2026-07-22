@@ -128,6 +128,8 @@ public final class ModItems {
 
     public static final RegistryObject<Item> SILICON_ORE_ITEM = registerBlockItem("silicon_ore", ModBlocks.SILICON_ORE);
     public static final RegistryObject<Item> RARE_EARTH_ORE_ITEM = registerBlockItem("rare_earth_ore", ModBlocks.RARE_EARTH_ORE);
+    public static final RegistryObject<Item> DEEPSLATE_SILICON_ORE_ITEM = registerBlockItem("deepslate_silicon_ore", ModBlocks.DEEPSLATE_SILICON_ORE);
+    public static final RegistryObject<Item> DEEPSLATE_RARE_EARTH_ORE_ITEM = registerBlockItem("deepslate_rare_earth_ore", ModBlocks.DEEPSLATE_RARE_EARTH_ORE);
     public static final RegistryObject<Item> RAW_SILICON_BLOCK_ITEM = registerBlockItem("raw_silicon_block", ModBlocks.RAW_SILICON_BLOCK);
     public static final RegistryObject<Item> RAW_RARE_EARTH_BLOCK_ITEM = registerBlockItem("raw_rare_earth_block", ModBlocks.RAW_RARE_EARTH_BLOCK);
     public static final RegistryObject<Item> SILICON_BLOCK_ITEM = registerBlockItem("silicon_block", ModBlocks.SILICON_BLOCK);

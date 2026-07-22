@@ -18,6 +18,8 @@ public class ModLangProvider extends LanguageProvider {
 
         addBlock(ModBlocks.SILICON_ORE, "硅晶矿石");
         addBlock(ModBlocks.RARE_EARTH_ORE, "稀土矿石");
+        addBlock(ModBlocks.DEEPSLATE_SILICON_ORE, "深板岩硅晶矿石");
+        addBlock(ModBlocks.DEEPSLATE_RARE_EARTH_ORE, "深板岩稀土矿石");
         addBlock(ModBlocks.RAW_SILICON_BLOCK, "粗硅晶块");
         addBlock(ModBlocks.RAW_RARE_EARTH_BLOCK, "粗稀土块");
         addBlock(ModBlocks.SILICON_BLOCK, "硅晶块");

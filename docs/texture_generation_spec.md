@@ -39,6 +39,8 @@
 |--------|--------|----------|------|------|
 | silicon_ore | 硅晶矿石 | textures/block/silicon_ore.png | ✓ 已优化 | 16x16 |
 | rare_earth_ore | 稀土矿石 | textures/block/rare_earth_ore.png | ✓ 已优化 | 16x16 |
+| deepslate_silicon_ore | 深板岩硅晶矿石 | textures/block/deepslate_silicon_ore.png | ✓ 已完成 | 16x16 |
+| deepslate_rare_earth_ore | 深板岩稀土矿石 | textures/block/deepslate_rare_earth_ore.png | ✓ 已完成 | 16x16 |
 
 #### 材料储存方块（cube_all，单面贴图）
 
@@ -104,6 +106,7 @@
 截至 v1.1.6，已无已知占位贴图。本轮重新绘制 2 张矿石和 13 张旧物品贴图，统一为 16×16、硬边透明和有限色板；其中矿石、矿物与 Curios 饰品又根据原版贴图基线完成第二轮校正。机器方块贴图已在此前完成，不再列为占位。
 
 - 矿石：基底使用原版石头的 4 个精确灰阶（`#686868`、`#747474`、`#7F7F7F`、`#8F8F8F`）及其 16×16 明暗分布；每面只保留 4 组约 3–6px 宽的非对称连片矿簇。矿物使用 5–6 色，整体 9–10 色，避免细碎散点、规则点阵和缩放噪点。
+- 深板岩矿石：底材复用 Minecraft 1.20.1 客户端的 `minecraft:textures/block/deepslate.png` 深板岩材质，叠加现有硅晶/稀土矿脉色板，保持与普通矿石的矿簇形状一致；两张最终贴图均为 16×16、不透明 PNG。
 - 材料储存块：粗块与精炼块使用不同表面语言。粗硅晶块采用 7 色青灰碎晶、短折线高光和非对称晶簇；粗稀土块采用 6 色橙褐矿团、短暗缝与少量淡金亮点。精炼硅晶块按用户指定的 Thermal 风格内嵌矿物块模板重配为 10 色青蓝—冰青色板，保留包边、内嵌晶面和斜向细高光；精炼稀土块按用户指定的 Modern Industrialization 风格烧结块模板重配为 8 色橙褐—琥珀色板，保留细颗粒面、斜向暗带和四角压痕。四者均为全不透明的原生 16×16 `cube_all` 贴图。
 - 基础材料：粗硅晶矿和粗稀土矿按原版粗铁、粗铜、粗金的 16×16 多瓣紧凑轮廓设计，使用 2–4px 连片色块、左上高光和右下阴影，并分别继承硅晶与稀土色板；精炼硅碎片保留既有轮廓，仅将内部色块整理为连续晶面。植物纤维使用纤维草种子的同源青蓝—深青色板，以 14×14 多股交错束替代简化单枝。
 - 瓶装材料：三种材料共用用户确认的圆形实验瓶模板；在原生 16×16 网格中使用 12×14 有效轮廓，固定保留灰白瓶塞、蓝色封带、透明上腔、左上玻璃高光、水平液面和灰色圆底，只以三档液体色区分生化原液、工业乙醇与纯净水。液面以上空腔使用 48 Alpha，次级折光 104，高光 192，玻璃边缘 208；液体和主轮廓保持 255。
@@ -141,7 +144,7 @@
 
 所有方块状态（blockstates）、方块模型（block models）和物品模型（item models）均由 datagen 自动生成：
 
-- `ModBlockStateProvider`：生成 9 个方块的 blockstate + block model + item model
+- `ModBlockStateProvider`：生成 11 个方块的 blockstate + block model + item model
 - `ModItemModelProvider`：生成 16 个物品的 item model
 
 运行 `./gradlew runData` 即可重新生成。生成文件位于 `src/generated/resources/assets/cybercultivator/`。

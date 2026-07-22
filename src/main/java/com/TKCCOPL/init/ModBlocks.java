@@ -33,6 +33,20 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.STONE)));
 
+    public static final RegistryObject<Block> DEEPSLATE_SILICON_ORE = BLOCKS.register("deepslate_silicon_ore",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.DEEPSLATE)
+                    .strength(4.5F, 3.0F)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.DEEPSLATE)));
+
+    public static final RegistryObject<Block> DEEPSLATE_RARE_EARTH_ORE = BLOCKS.register("deepslate_rare_earth_ore",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.DEEPSLATE)
+                    .strength(4.5F, 3.5F)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.DEEPSLATE)));
+
     public static final RegistryObject<Block> RAW_SILICON_BLOCK = BLOCKS.register("raw_silicon_block",
             () -> new Block(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_CYAN)

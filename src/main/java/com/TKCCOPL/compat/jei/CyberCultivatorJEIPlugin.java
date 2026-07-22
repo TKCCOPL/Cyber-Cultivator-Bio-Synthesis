@@ -191,6 +191,16 @@ public class CyberCultivatorJEIPlugin implements IModPlugin {
                 VanillaTypes.ITEM_STACK,
                 Component.translatable("jei.cybercultivator.info.rare_earth_ore")
         );
+        registration.addIngredientInfo(
+                new ItemStack(ModItems.DEEPSLATE_SILICON_ORE_ITEM.get()),
+                VanillaTypes.ITEM_STACK,
+                Component.translatable("jei.cybercultivator.info.silicon_ore")
+        );
+        registration.addIngredientInfo(
+                new ItemStack(ModItems.DEEPSLATE_RARE_EARTH_ORE_ITEM.get()),
+                VanillaTypes.ITEM_STACK,
+                Component.translatable("jei.cybercultivator.info.rare_earth_ore")
+        );
     }
 
     @Override

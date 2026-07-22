@@ -35,12 +35,14 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -887,6 +889,33 @@ public final class ModGameTests {
     }
 
     // ========== v1.1.7 multiplayer-stability fix regression tests ==========
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void deepslateOreVariantsAreRegistered(GameTestHelper helper) {
+        var blocks = new net.minecraft.world.level.block.Block[]{
+                ModBlocks.DEEPSLATE_SILICON_ORE.get(),
+                ModBlocks.DEEPSLATE_RARE_EARTH_ORE.get()
+        };
+        var items = new BlockItem[]{
+                (BlockItem) ModItems.DEEPSLATE_SILICON_ORE_ITEM.get(),
+                (BlockItem) ModItems.DEEPSLATE_RARE_EARTH_ORE_ITEM.get()
+        };
+        for (int i = 0; i < blocks.length; i++) {
+            helper.assertTrue(blocks[i].defaultBlockState().is(BlockTags.MINEABLE_WITH_PICKAXE),
+                    "Deepslate ore must be mineable with a pickaxe");
+            helper.assertTrue(blocks[i].defaultBlockState().is(BlockTags.NEEDS_STONE_TOOL),
+                    "Deepslate ore must require a stone tool");
+            helper.assertTrue(items[i].getBlock() == blocks[i],
+                    "Deepslate ore BlockItem must point at its registered block");
+        }
+        helper.assertTrue(ModBlocks.SILICON_ORE.getId().equals(
+                        ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID, "silicon_ore")),
+                "Existing silicon ore ID must remain unchanged");
+        helper.assertTrue(ModBlocks.RARE_EARTH_ORE.getId().equals(
+                        ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID, "rare_earth_ore")),
+                "Existing rare earth ore ID must remain unchanged");
+        helper.succeed();
+    }
 
     @GameTest(template = EMPTY_TEMPLATE)
     public static void neuralOverloadVariantsAreRegistered(GameTestHelper helper) {

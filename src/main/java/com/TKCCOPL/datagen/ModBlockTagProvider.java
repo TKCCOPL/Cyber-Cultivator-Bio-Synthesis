@@ -20,6 +20,8 @@ public class ModBlockTagProvider extends BlockTagsProvider {
         tag(BlockTags.MINEABLE_WITH_PICKAXE).add(
                 ModBlocks.SILICON_ORE.get(),
                 ModBlocks.RARE_EARTH_ORE.get(),
+                ModBlocks.DEEPSLATE_SILICON_ORE.get(),
+                ModBlocks.DEEPSLATE_RARE_EARTH_ORE.get(),
                 ModBlocks.RAW_SILICON_BLOCK.get(),
                 ModBlocks.RAW_RARE_EARTH_BLOCK.get(),
                 ModBlocks.SILICON_BLOCK.get(),
@@ -33,6 +35,8 @@ public class ModBlockTagProvider extends BlockTagsProvider {
         tag(BlockTags.NEEDS_STONE_TOOL).add(
                 ModBlocks.SILICON_ORE.get(),
                 ModBlocks.RARE_EARTH_ORE.get(),
+                ModBlocks.DEEPSLATE_SILICON_ORE.get(),
+                ModBlocks.DEEPSLATE_RARE_EARTH_ORE.get(),
                 ModBlocks.RAW_SILICON_BLOCK.get(),
                 ModBlocks.RAW_RARE_EARTH_BLOCK.get(),
                 ModBlocks.SILICON_BLOCK.get(),

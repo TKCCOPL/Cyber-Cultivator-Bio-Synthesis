@@ -26,6 +26,8 @@ public class ModBlockStateProvider extends BlockStateProvider {
         // Ore blocks — simple cube_all
         simpleBlockWithItem(ModBlocks.SILICON_ORE.get(), cubeAll(ModBlocks.SILICON_ORE.get()));
         simpleBlockWithItem(ModBlocks.RARE_EARTH_ORE.get(), cubeAll(ModBlocks.RARE_EARTH_ORE.get()));
+        simpleBlockWithItem(ModBlocks.DEEPSLATE_SILICON_ORE.get(), cubeAll(ModBlocks.DEEPSLATE_SILICON_ORE.get()));
+        simpleBlockWithItem(ModBlocks.DEEPSLATE_RARE_EARTH_ORE.get(), cubeAll(ModBlocks.DEEPSLATE_RARE_EARTH_ORE.get()));
 
         // Material storage blocks — simple cube_all
         simpleBlockWithItem(ModBlocks.RAW_SILICON_BLOCK.get(), cubeAll(ModBlocks.RAW_SILICON_BLOCK.get()));
