@@ -819,7 +819,7 @@ public final class ModGameTests {
         condenser.load(condenserState);
         AtmosphericCondenserMenu condenserMenu =
                 (AtmosphericCondenserMenu) condenser.createMenu(3, player.getInventory(), player);
-        ItemStack water = condenserMenu.quickMoveStack(player, 0);
+        ItemStack water = condenserMenu.quickMoveStack(player, AtmosphericCondenserBlockEntity.OUTPUT_SLOT);
         helper.assertTrue(water.getCount() == 4 && condenser.getOutput().isEmpty(),
                 "Shift-moving condenser stock must transfer the complete output");
         helper.assertTrue(condenser.getProgress() == 0,
@@ -879,12 +879,73 @@ public final class ModGameTests {
         helper.assertTrue(condenserMenu.clickMenuButton(player, AtmosphericCondenserMenu.BUTTON_TOGGLE_PAUSED),
                 "Resume button must be handled by the condenser menu");
         AtmosphericCondenserBlockEntity.tick(helper.getLevel(), condenserPos, condenser.getBlockState(), condenser);
-        helper.assertTrue(condenser.getProgress() == 11, "Resumed condensers must continue from stored progress");
+        helper.assertTrue(condenser.getProgress() == 10,
+                "Resumed condensers without a glass bottle must wait without losing progress");
+        condenser.setItem(AtmosphericCondenserBlockEntity.BOTTLE_INPUT_SLOT,
+                new ItemStack(Items.GLASS_BOTTLE, 2));
+        AtmosphericCondenserBlockEntity.tick(helper.getLevel(), condenserPos, condenser.getBlockState(), condenser);
+        helper.assertTrue(condenser.getProgress() == 11,
+                "Supplying a glass bottle must resume production from stored progress");
+        CompoundTag supplied = condenser.saveWithoutMetadata();
+        AtmosphericCondenserBlockEntity restoredSupply =
+                new AtmosphericCondenserBlockEntity(condenser.getBlockPos(), condenser.getBlockState());
+        restoredSupply.load(supplied);
+        helper.assertTrue(restoredSupply.getBottleCount() == 2,
+                "Glass bottle input must survive an NBT round-trip");
         AtmosphericCondenserBlockEntity legacy =
                 new AtmosphericCondenserBlockEntity(condenser.getBlockPos(), condenser.getBlockState());
         legacy.load(new CompoundTag());
         helper.assertTrue(legacy.isAutoInject(), "Legacy NBT without AutoInject must remain enabled");
         helper.assertFalse(legacy.isPaused(), "Legacy NBT without Paused must remain operational");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void atmosphericCondenserConsumesGlassBottle(GameTestHelper helper) {
+        BlockPos condenserPos = new BlockPos(1, 1, 1);
+        helper.setBlock(condenserPos, ModBlocks.ATMOSPHERIC_CONDENSER.get());
+        AtmosphericCondenserBlockEntity condenser =
+                (AtmosphericCondenserBlockEntity) helper.getBlockEntity(condenserPos);
+
+        AtmosphericCondenserBlockEntity.tick(helper.getLevel(), condenserPos, condenser.getBlockState(), condenser);
+        helper.assertTrue(condenser.getProgress() == 0 && condenser.getOutput().isEmpty(),
+                "A condenser without a glass bottle must not start production");
+        helper.assertTrue(condenser.canPlaceItem(AtmosphericCondenserBlockEntity.BOTTLE_INPUT_SLOT,
+                        new ItemStack(Items.GLASS_BOTTLE))
+                        && !condenser.canPlaceItem(AtmosphericCondenserBlockEntity.BOTTLE_INPUT_SLOT,
+                        new ItemStack(Items.DIRT)),
+                "Only glass bottles may enter the condenser input slot");
+        helper.assertTrue(condenser.getSlotsForFace(Direction.UP).length == 1
+                        && condenser.getSlotsForFace(Direction.UP)[0]
+                        == AtmosphericCondenserBlockEntity.BOTTLE_INPUT_SLOT,
+                "Top automation must expose only the glass bottle input");
+        helper.assertTrue(condenser.getSlotsForFace(Direction.DOWN).length == 1
+                        && condenser.getSlotsForFace(Direction.DOWN)[0]
+                        == AtmosphericCondenserBlockEntity.OUTPUT_SLOT,
+                "Bottom automation must expose only purified water output");
+        helper.assertTrue(condenser.canPlaceItemThroughFace(AtmosphericCondenserBlockEntity.BOTTLE_INPUT_SLOT,
+                        new ItemStack(Items.GLASS_BOTTLE), Direction.NORTH)
+                        && !condenser.canPlaceItemThroughFace(AtmosphericCondenserBlockEntity.BOTTLE_INPUT_SLOT,
+                        new ItemStack(Items.GLASS_BOTTLE), Direction.DOWN),
+                "Side and top automation may insert bottles, while bottom automation may not");
+
+        CompoundTag ready = new CompoundTag();
+        ready.putInt("Progress", 599);
+        ready.put("BottleInput", new ItemStack(Items.GLASS_BOTTLE, 2).save(new CompoundTag()));
+        condenser.load(ready);
+        AtmosphericCondenserBlockEntity.tick(helper.getLevel(), condenserPos, condenser.getBlockState(), condenser);
+        helper.assertTrue(condenser.getProgress() == 0,
+                "Completing a bottle-backed condensing cycle must reset progress");
+        helper.assertTrue(condenser.getBottleCount() == 1,
+                "Completing a condensing cycle must consume exactly one glass bottle");
+        helper.assertTrue(condenser.getOutput().is(ModItems.PURIFIED_WATER_BOTTLE.get())
+                        && condenser.getOutput().getCount() == 1,
+                "Completing a condensing cycle must produce exactly one purified water bottle");
+        helper.assertTrue(condenser.canTakeItemThroughFace(AtmosphericCondenserBlockEntity.OUTPUT_SLOT,
+                        condenser.getItem(AtmosphericCondenserBlockEntity.OUTPUT_SLOT), Direction.DOWN)
+                        && !condenser.canTakeItemThroughFace(AtmosphericCondenserBlockEntity.OUTPUT_SLOT,
+                        condenser.getItem(AtmosphericCondenserBlockEntity.OUTPUT_SLOT), Direction.UP),
+                "Bottom and side automation may extract water, while top automation may not");
         helper.succeed();
     }
 

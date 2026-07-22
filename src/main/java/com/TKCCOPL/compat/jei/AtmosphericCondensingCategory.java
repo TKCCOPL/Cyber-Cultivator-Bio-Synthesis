@@ -14,6 +14,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 import java.util.List;
 
@@ -38,6 +39,8 @@ public class AtmosphericCondensingCategory extends MachineRecipeCategory<Atmosph
 
     @Override
     public void setRecipe(IRecipeLayoutBuilder builder, DisplayRecipe recipe, IFocusGroup focuses) {
+        builder.addSlot(RecipeIngredientRole.INPUT, 2, 31)
+                .addItemStack(new ItemStack(Items.GLASS_BOTTLE));
         builder.addSlot(RecipeIngredientRole.OUTPUT, 150, 31)
                 .addItemStack(new ItemStack(ModItems.PURIFIED_WATER_BOTTLE.get()));
     }

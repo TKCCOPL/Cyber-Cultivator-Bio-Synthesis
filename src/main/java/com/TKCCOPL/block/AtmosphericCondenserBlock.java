@@ -56,6 +56,10 @@ public class AtmosphericCondenserBlock extends MachineBlock {
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof AtmosphericCondenserBlockEntity blockEntity) {
+            ItemStack bottles = blockEntity.extractBottleInput();
+            if (!bottles.isEmpty()) {
+                popResource(level, pos, bottles);
+            }
             ItemStack out = blockEntity.extractOutput();
             if (!out.isEmpty()) {
                 popResource(level, pos, out);

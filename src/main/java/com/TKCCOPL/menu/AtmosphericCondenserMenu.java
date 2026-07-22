@@ -13,6 +13,7 @@ import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 public class AtmosphericCondenserMenu extends MachineMenu {
     public static final int BUTTON_TOGGLE_AUTO_INJECT = 0;
@@ -21,7 +22,7 @@ public class AtmosphericCondenserMenu extends MachineMenu {
     private final ContainerLevelAccess access;
 
     public AtmosphericCondenserMenu(int containerId, Inventory inventory, FriendlyByteBuf buffer) {
-        this(containerId, inventory, resolve(inventory, buffer), new SimpleContainerData(6), ContainerLevelAccess.NULL);
+        this(containerId, inventory, resolve(inventory, buffer), new SimpleContainerData(7), ContainerLevelAccess.NULL);
     }
 
     public AtmosphericCondenserMenu(int containerId, Inventory inventory, AtmosphericCondenserBlockEntity blockEntity,
@@ -32,16 +33,22 @@ public class AtmosphericCondenserMenu extends MachineMenu {
 
     private AtmosphericCondenserMenu(int containerId, Inventory inventory, Container machine, ContainerData data,
                                      ContainerLevelAccess access) {
-        super(ModMenuTypes.ATMOSPHERIC_CONDENSER.get(), containerId, machine, 1);
+        super(ModMenuTypes.ATMOSPHERIC_CONDENSER.get(), containerId, machine, 2);
         this.data = data;
         this.access = access;
+        addSlot(new Slot(machine, AtmosphericCondenserBlockEntity.BOTTLE_INPUT_SLOT, 10, 50) {
+            @Override
+            public boolean mayPlace(ItemStack stack) {
+                return stack.is(Items.GLASS_BOTTLE);
+            }
+        });
         addSlot(outputSlot(machine, 158, 50));
         addPlayerInventory(inventory);
         addDataSlots(data);
     }
 
     private static Slot outputSlot(Container container, int x, int y) {
-        return new Slot(container, 0, x, y) {
+        return new Slot(container, AtmosphericCondenserBlockEntity.OUTPUT_SLOT, x, y) {
             @Override public boolean mayPlace(ItemStack stack) { return false; }
 
             @Override
@@ -58,7 +65,7 @@ public class AtmosphericCondenserMenu extends MachineMenu {
         if (inventory.player.level().getBlockEntity(buffer.readBlockPos()) instanceof AtmosphericCondenserBlockEntity blockEntity) {
             return blockEntity;
         }
-        return new SimpleContainer(1);
+        return new SimpleContainer(2);
     }
 
     @Override
@@ -86,4 +93,6 @@ public class AtmosphericCondenserMenu extends MachineMenu {
     public boolean isAutoInject() { return data.get(3) != 0; }
     public boolean isDownstreamConnected() { return data.get(4) != 0; }
     public boolean isPaused() { return data.get(5) != 0; }
+    public int getBottleCount() { return data.get(6); }
+    public boolean hasBottle() { return getBottleCount() > 0; }
 }

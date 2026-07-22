@@ -70,7 +70,7 @@ public class ModLangProvider extends LanguageProvider {
         add("tooltip.cybercultivator.mutation_synergy", "⚡ 突变: 协同基因 %s");
         add("tooltip.cybercultivator.bio_incubator", "放入种子后，可注入纯净水/营养液/数据信号进行培养");
         add("tooltip.cybercultivator.gene_splicer", "放入两颗基因种子后自动拼接，等待 5 秒完成；潜行可取回输入或输出");
-        add("tooltip.cybercultivator.atmospheric_condenser", "自动凝结纯净水；下方放置培养槽可自动注入纯净度");
+        add("tooltip.cybercultivator.atmospheric_condenser", "消耗玻璃瓶凝结纯净水；下方放置培养槽可自动注入纯净度");
         add("tooltip.cybercultivator.serum_bottler", "将突触神经莓加工为高级血清；支持漏斗自动化");
         add("tooltip.cybercultivator.bio_pulse_belt", "自动为附近培养槽注入营养液/纯净水/数据信号");
         add("tooltip.cybercultivator.life_support_pack", "缓解血清副作用；低血量时自动注射治疗");
@@ -174,10 +174,10 @@ public class ModLangProvider extends LanguageProvider {
         add("jei.cybercultivator.bottler.output", "产出：%s");
         add("jei.cybercultivator.bottler.activity_calculated", "活性由三项原料品质计算");
         add("jei.cybercultivator.bottler.activity_inherited", "继承神经莓活性");
-        add("jei.cybercultivator.condenser.cycle", "无输入 · 每 %s 秒产出 1 瓶");
+        add("jei.cybercultivator.condenser.cycle", "消耗 1 个玻璃瓶 · 每 %s 秒产出 1 瓶");
         add("jei.cybercultivator.condenser.stock", "内部库存上限：%s");
         add("jei.cybercultivator.condenser.downstream", "下游培养槽自动注入纯度 +%s");
-        add("jei.cybercultivator.condenser.tooltip", "可暂停生产或关闭下游自动注入；产物支持漏斗抽取");
+        add("jei.cybercultivator.condenser.tooltip", "顶部/侧面输入玻璃瓶，底部/侧面抽取产物；可暂停生产或关闭下游自动注入");
 
         // JEI 物品信息页面
         add("jei.cybercultivator.info.s01", "S-01 突触超频血清：配方 = 神经莓 + 生化原液 + 玻璃瓶。效果：攻速+力量（随活性缩放），持续 25 秒。副作用：凋零+饥饿。可叠加饮用提升等级（上限 VIII），活性 ≥8 起步 II 级。");
@@ -198,13 +198,13 @@ public class ModLangProvider extends LanguageProvider {
         add("jei.cybercultivator.info.plant_fiber", "植物纤维：由纤维草在培养槽中培育产出。品质（Potency）继承自种子基因，影响血清活性。用于合成突触神经莓。");
         add("jei.cybercultivator.info.biochemical_solution", "生化原液：由蛋白质豆在培养槽中培育产出。品质（Concentration）继承自种子基因，影响血清活性。用于合成突触神经莓和 S-01 血清。");
         add("jei.cybercultivator.info.industrial_ethanol", "工业乙醇：由酒精花在培养槽中培育产出。品质（Purity）继承自种子基因，影响血清活性。用于合成突触神经莓和 S-03 血清。");
-        add("jei.cybercultivator.info.purified_water", "纯净水瓶：由大气冷凝器自动生产（每 30 秒 1 瓶），用于注入培养槽提升纯净度（Purity）。冷凝器放置在培养槽上方时可自动注入。");
+        add("jei.cybercultivator.info.purified_water", "纯净水瓶：大气冷凝器消耗玻璃瓶生产（每 30 秒 1 瓶），用于注入培养槽提升纯净度（Purity）。冷凝器放置在培养槽上方时可自动注入。");
         add("jei.cybercultivator.info.neural_berry", "突触神经莓：血清链核心中间产物。配方：植物纤维 + 工业乙醇 + 生化原液 → 神经莓。突触活性 = Potency×0.25 + Purity×0.375 + Concentration×0.375。活性越高，血清效果越强。可用于合成 S-01/S-02/S-03 血清。");
 
         // JEI 机器信息
         add("jei.cybercultivator.info.bio_incubator", "生物培养槽：放入基因种子后，可注入纯净水（提升纯度）、生化原液（提升营养）、硅碎片（提升数据信号）进行培养。三项数值影响作物产出品质。");
         add("jei.cybercultivator.info.gene_splicer", "基因拼接机：放入两颗基因种子后自动开始，等待 5 秒完成拼接。子代基因 = (父本+母本)/2 ± 随机变异。同类拼接突变率 5%，跨类型拼接突变率 9%。");
-        add("jei.cybercultivator.info.atmospheric_condenser", "大气冷凝器：每 30 秒自动生产 1 纯净水瓶，库存上限 32。下方放置培养槽时自动注入纯净度 +20。支持漏斗自动化。");
+        add("jei.cybercultivator.info.atmospheric_condenser", "大气冷凝器：消耗 1 个玻璃瓶，等待 30 秒生产 1 瓶纯净水，库存上限 32。下方放置培养槽时自动注入纯净度 +20。支持漏斗自动化。");
         add("jei.cybercultivator.info.serum_bottler", "血清灌装机：将突触神经莓加工为高级血清（S-01/S-02/S-03）。支持漏斗自动化（顶部/侧面注入，底部抽取）。");
 
         // JEI 矿石信息
@@ -286,6 +286,7 @@ public class ModLangProvider extends LanguageProvider {
         add("gui.cybercultivator.incubator.status_output_blocked", "已成熟 · 输出槽已满");
         add("gui.cybercultivator.incubator.status_complete", "产物就绪 · 可放入下一颗种子");
         add("gui.cybercultivator.condenser.status_condensing", "冷凝中 · %s%% · 剩余 %s 秒");
+        add("gui.cybercultivator.condenser.status_waiting_bottle", "等待玻璃瓶 · 放入后继续冷凝");
         add("gui.cybercultivator.condenser.status_paused", "生产已暂停 · 当前进度 %s%%");
         add("gui.cybercultivator.condenser.status_full", "库存已满 · 收取后继续");
         add("gui.cybercultivator.condenser.stock_manual", "库存 %s/%s · 手动模式");

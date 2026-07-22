@@ -62,6 +62,9 @@ public class AtmosphericCondenserScreen extends MachineScreen<AtmosphericCondens
 
     @Override
     protected void renderMachineState(GuiGraphics graphics, float partialTick) {
+        // 复用纹理中现有的原版风格槽位边框，为玻璃瓶输入补充第二个槽位。
+        graphics.blit(TEXTURE, leftPos + 9, topPos + 49,
+                157, 49, 18, 18, 256, 256);
         verticalBar(graphics, 117, 28, 32, menu.getProgress(), menu.getMaxProgress(), 0xFF5DB9C7);
         renderCondensationScan(graphics, partialTick);
     }
@@ -84,6 +87,9 @@ public class AtmosphericCondenserScreen extends MachineScreen<AtmosphericCondens
         if (menu.getStock() >= MAX_STOCK) {
             return Component.translatable("gui.cybercultivator.condenser.status_full");
         }
+        if (!menu.hasBottle()) {
+            return Component.translatable("gui.cybercultivator.condenser.status_waiting_bottle");
+        }
         int maximum = menu.getMaxProgress();
         int percent = maximum <= 0 ? 0 : Math.min(100, menu.getProgress() * 100 / maximum);
         int remainingSeconds = Math.max(0,
@@ -105,7 +111,7 @@ public class AtmosphericCondenserScreen extends MachineScreen<AtmosphericCondens
     }
 
     private void renderCondensationScan(GuiGraphics graphics, float partialTick) {
-        if (menu.isPaused() || menu.getStock() >= MAX_STOCK) return;
+        if (menu.isPaused() || menu.getStock() >= MAX_STOCK || !menu.hasBottle()) return;
 
         float animationTick = menu.getProgress() + partialTick;
         int activeFin = (int) (animationTick / 4.0F) % 6;
