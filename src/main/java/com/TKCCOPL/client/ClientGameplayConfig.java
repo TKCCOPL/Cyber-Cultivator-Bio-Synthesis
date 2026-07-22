@@ -27,6 +27,10 @@ public final class ClientGameplayConfig {
         }
     }
 
+    public static void reset() {
+        snapshot = GameplayConfigSnapshot.empty();
+    }
+
     public static GameplayConfigSnapshot getSnapshot() {
         return snapshot;
     }

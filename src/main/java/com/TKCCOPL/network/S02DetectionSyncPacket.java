@@ -22,11 +22,11 @@ public class S02DetectionSyncPacket {
     private final int[] entityIds;
 
     public S02DetectionSyncPacket(int[] entityIds) {
-        this.entityIds = entityIds == null ? new int[0] : entityIds;
+        this.entityIds = entityIds == null ? new int[0] : entityIds.clone();
     }
 
     public int[] getEntityIds() {
-        return entityIds;
+        return entityIds.clone();
     }
 
     public static void encode(S02DetectionSyncPacket pkt, FriendlyByteBuf buf) {

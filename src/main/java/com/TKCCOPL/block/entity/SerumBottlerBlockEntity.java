@@ -31,7 +31,9 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyContainer, MenuProvider {
     private static final String TAG_PROGRESS = "Progress";
@@ -105,7 +107,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
 
     // 可接受原料缓存：避免 canPlaceItem 每次都被漏斗触发而重复查询 RecipeManager
     private List<Ingredient> cachedAcceptableIngredients;
-    private int cachedRecipeCount = -1; // 用于检测配方数量变化（datapack/KubeJS 重载）
+    private Map<ResourceLocation, SerumRecipe> cachedRecipeTable;
     // 上次 findRecipe 因「输入不匹配任何配方」返回 null 的标记；
     // 输入未变化时跳过 RecipeManager 查询，避免空闲 bottler 每 tick 都遍历配方表
     private boolean lastRecipeQueryFailed = false;
@@ -143,24 +145,30 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         boolean changed = false;
         boolean processingCancelled = false;
 
-        // Task: 配方缓存失效检测。RecipeManager 在 datapack/KubeJS 重载时整体替换内部 Map，
-        // 通过观察配方数量变化即可检测到（无需每 tick 执行 byKey 查找）。
-        int currentRecipeCount = level.getRecipeManager()
-                .getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get()).size();
-        if (blockEntity.cachedRecipeCount != currentRecipeCount) {
+        // 配方缓存失效检测。RecipeManager 在 datapack/KubeJS 重载时会替换配方对象，
+        // 即使配方数量不变也必须失效旧的 cachedRecipe / Ingredient 缓存。
+        List<SerumRecipe> currentRecipes = level.getRecipeManager()
+                .getAllRecipesFor(ModRecipeTypes.SERUM_BOTTLING.get());
+        if (blockEntity.recipeTableChanged(currentRecipes)) {
             boolean wasProcessing = blockEntity.maxProgress > 0;
-            blockEntity.cachedRecipeCount = currentRecipeCount;
+            boolean firstRecipeTableObservation = blockEntity.cachedRecipeTable == null;
+            blockEntity.cachedRecipeTable = new HashMap<>();
+            for (SerumRecipe recipe : currentRecipes) {
+                blockEntity.cachedRecipeTable.put(recipe.getId(), recipe);
+            }
             blockEntity.cachedAcceptableIngredients = null;
-            // 配方被替换，引用对象已失效
-            blockEntity.cachedRecipe = null;
-            blockEntity.pendingRecipeId = null;
-            blockEntity.progress = 0;
-            blockEntity.maxProgress = 0;
-            blockEntity.lastRecipeQueryFailed = false; // 配方表已变，需重新查询
+            // 首次观察可能紧跟世界重载；此时保留 pendingRecipeId / progress，
+            // 让后续延迟恢复逻辑验证持久化的活动配方。真正的 datapack reload 才取消旧加工。
+            if (!firstRecipeTableObservation) {
+                blockEntity.cachedRecipe = null;
+                blockEntity.pendingRecipeId = null;
+                blockEntity.progress = 0;
+                blockEntity.maxProgress = 0;
+                blockEntity.lastRecipeQueryFailed = false;
+            }
             changed = true;
-            // 仅在确有进行中的加工被打断时才跳过本 tick 的配方启动；
-            // 否则首次 tick（cachedRecipeCount 初始值 -1）会错误跳过 findRecipe，导致装瓶机需要 2 tick 才能启动。
-            processingCancelled = wasProcessing;
+            // 仅在已有缓存且确有进行中的加工被打断时才跳过本 tick 的配方启动。
+            processingCancelled = !firstRecipeTableObservation && wasProcessing;
         }
 
         // Task 1: 延迟恢复 cachedRecipe（load() 时 level 为 null）
@@ -220,6 +228,14 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         if (changed) {
             blockEntity.syncToClient();
         }
+    }
+
+    private boolean recipeTableChanged(List<SerumRecipe> currentRecipes) {
+        if (cachedRecipeTable == null || cachedRecipeTable.size() != currentRecipes.size()) return true;
+        for (SerumRecipe recipe : currentRecipes) {
+            if (cachedRecipeTable.get(recipe.getId()) != recipe) return true;
+        }
+        return false;
     }
 
     /**
@@ -562,8 +578,8 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         pendingRecipeId = null;
         progress = 0;
         maxProgress = 0;
-        // 不重置 cachedRecipeCount 与 cachedAcceptableIngredients：这两者与配方表挂钩，
-        // 与本方块的内部状态无关；下次 tick 会检测配方数量变化决定是否失效。
+        // 不重置 cachedRecipeTable 与 cachedAcceptableIngredients：这两者与配方表挂钩，
+        // 与本方块的内部状态无关；下次 tick 会检测配方对象变化决定是否失效。
         syncToClient();
     }
 

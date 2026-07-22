@@ -17,10 +17,9 @@ public final class ModNetwork {
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(cybercultivator.MODID, "main"),
             () -> PROTOCOL_VERSION,
-            // 客户端连服务端时校验：服务端协议版本必须匹配（或服务端未安装本模组）
-            remoteVersion -> remoteVersion.equals(PROTOCOL_VERSION) || !remoteVersion.equals("MISSING"),
-            // 服务端连客户端时校验：客户端协议版本必须匹配（或客户端未安装本模组）
-            localVersion -> localVersion.equals(PROTOCOL_VERSION) || !localVersion.equals("MISSING")
+            // 配置快照与 S-02 目标包都依赖固定字段布局；版本不一致必须拒绝连接。
+            PROTOCOL_VERSION::equals,
+            PROTOCOL_VERSION::equals
     );
 
     private static int nextId = 0;

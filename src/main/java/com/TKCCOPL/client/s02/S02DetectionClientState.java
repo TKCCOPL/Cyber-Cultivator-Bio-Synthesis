@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.OutlineBufferSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -51,6 +52,18 @@ public final class S02DetectionClientState {
 
     public static boolean isEmpty() {
         return TARGETS.isEmpty();
+    }
+
+    @SubscribeEvent
+    public static void onLoggingIn(ClientPlayerNetworkEvent.LoggingIn event) {
+        clear();
+        com.TKCCOPL.client.ClientGameplayConfig.reset();
+    }
+
+    @SubscribeEvent
+    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        clear();
+        com.TKCCOPL.client.ClientGameplayConfig.reset();
     }
 
     @SubscribeEvent

@@ -20,7 +20,7 @@
 | `./gradlew -I .github/gradle/exclude-optional-runtime.init.gradle runGameTestServer`（无可选依赖） | ✅ | 38/38 全部通过 |
 | `./gradlew -I .github/gradle/exclude-non-kubejs-runtime.init.gradle -PenableKubeJSRuntime=true runGameTestServer`（KubeJS build.16） | ✅ | 38/38 全部通过 |
 | `./gradlew -I .github/gradle/exclude-non-kubejs-runtime.init.gradle -PenableKubeJSRuntime=true -Pkubejs_version=2001.6.5-build.26 runGameTestServer`（KubeJS build.26） | ✅ | 38/38 全部通过 |
-| 资源漂移检查 | ✅ | `git status` 显示工作树干净 |
+| 资源漂移检查 | ✅ | `runData` 后生成资源无差异 |
 
 ## 新增 GameTest 清单（共 16 个）
 
@@ -130,6 +130,16 @@
 
 - 本测试报告对应的提交：`test: 补充 GameTest 与生成资源`（Commit #11）
 - KubeJS 烟雾 profile 适配修复：`fix(test): 修复 GameTest 与 KubeJS 烟雾脚本的 dirt 冲突`（Commit #12，紧跟 Commit #11 之后）
+
+## 审查后追加修复与验证（2026-07-22）
+
+本轮分支审查补充修复了以下稳定性问题：
+
+- 网络协议版本改为严格匹配，避免不同数据包布局的客户端与服务端误连。
+- S-02 同步包复制实体 ID 数组，并在客户端登录/退出时清理目标集合和服务端配置快照，避免跨服务器状态泄漏。
+- 装瓶机配方缓存改为按配方 ID 和对象变化失效，覆盖同数量 datapack/KubeJS 重载；首次世界加载观察时保留持久化中的活动配方与进度。
+
+追加验证结果：`compileJava`、`build`、默认/仅 Curios/无可选依赖及 KubeJS build.16/build.26 的 GameTest 均通过（38/38）；客户端启动至资源加载完成，未发现模组异常。`runData` 已验证无生成资源漂移。S-02 双客户端轮廓、Tooltip、JEI 和界面视觉验收仍待手工执行。
 
 ## 最终验证汇总（PR 合并门槛）
 
