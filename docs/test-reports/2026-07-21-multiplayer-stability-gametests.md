@@ -141,6 +141,8 @@
 
 追加验证结果：`compileJava`、`build`、默认/仅 Curios/无可选依赖及 KubeJS build.16/build.26 的 GameTest 均通过（38/38）；客户端启动至资源加载完成，未发现模组异常。`runData` 已验证无生成资源漂移。S-02 双客户端轮廓、Tooltip、JEI 和界面视觉验收仍待手工执行。
 
+版本准备：`gradle.properties`、`README.md` 与 `README_EN.md` 已统一更新为 `1.1.7`。当前按要求暂不创建版本 PR，保留本分支等待后续发布确认。
+
 ## 最终验证汇总（PR 合并门槛）
 
 ### 自动化门禁（全部 ✅）

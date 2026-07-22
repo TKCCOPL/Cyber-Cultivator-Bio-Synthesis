@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <b>v1.1.6 · Minecraft Forge 1.20.1</b><br>
+  <b>v1.1.7 · Minecraft Forge 1.20.1</b><br>
   Genetic breeding, automated cultivation, and bio-enhancement serums
 </p>
 
