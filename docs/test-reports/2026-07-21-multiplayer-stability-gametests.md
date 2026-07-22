@@ -143,6 +143,8 @@
 
 版本准备：`gradle.properties`、`README.md` 与 `README_EN.md` 已统一更新为 `1.1.7`。当前按要求暂不创建版本 PR，保留本分支等待后续发布确认。
 
+S-02 原版轮廓追加修复：客户端不再重复调用实体渲染器，也不修改实体的 glowing 同步标志；改为仅在饮用者客户端扩展原版 `Minecraft.shouldEntityAppearGlowing` 判断，由原版管线处理轮廓、穿墙显示和队伍颜色。Mixin 注解处理器已生成发布用 SRG refmap，成品 JAR 包含 Mixin 配置、refmap 及 `MixinConfigs` 清单项。`compileJava`、`build` 和 GameTest（39/39）通过；客户端日志确认 Mixin 成功注入 `net.minecraft.client.Minecraft`，资源与渲染初始化无错误。双客户端画面可见性仍待手工验证。
+
 ## 最终验证汇总（PR 合并门槛）
 
 ### 自动化门禁（全部 ✅）

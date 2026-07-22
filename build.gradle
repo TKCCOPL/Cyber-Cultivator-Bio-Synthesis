@@ -3,6 +3,7 @@ plugins {
     id 'idea'
     id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
     id 'org.parchmentmc.librarian.forgegradle' version '1.+'
+    id 'org.spongepowered.mixin' version '0.7.38'
 }
 
 
@@ -82,6 +83,8 @@ repositories {
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+
     compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}:api")
     runtimeOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}")
 
@@ -100,6 +103,11 @@ dependencies {
         runtimeOnly fg.deobf("dev.latvian.mods:rhino-forge:${rhino_version}") { transitive = false }
         runtimeOnly fg.deobf("dev.architectury:architectury-forge:${architectury_version}") { transitive = false }
     }
+}
+
+mixin {
+    add sourceSets.main, 'cybercultivator.refmap.json'
+    config 'cybercultivator.mixins.json'
 }
 
 tasks.register('prepareKubeJSSmoke', Sync) {

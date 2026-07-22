@@ -12,8 +12,9 @@ import java.util.function.Supplier;
  * <p>
  * 服务端在饮用者身上每 60 tick 扫描附近 LivingEntity，
  * 排除饮用者本人、死亡/已移除实体，按距离排序最多 256 个，
- * 通过此包只发给饮用者。饮用者客户端据此绘制私有轮廓，
- * 不再使用 {@code MobEffects.GLOWING}、{@code setGlowingTag()} 或记分板队伍。
+ * 通过此包只发给饮用者。饮用者客户端据此扩展原版的 glowing 渲染判断，
+ * 不修改实体状态；服务端不使用 {@code MobEffects.GLOWING}，其他玩家因此
+ * 不会看到 S-02 轮廓。
  * <p>
  * 当效果结束、换维度或玩家断线时，服务端发送空列表让客户端清理。
  */
