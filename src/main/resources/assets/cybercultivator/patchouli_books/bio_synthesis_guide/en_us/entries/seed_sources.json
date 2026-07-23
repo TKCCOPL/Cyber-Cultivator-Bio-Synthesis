@@ -1,0 +1,18 @@
+{
+  "name": "Finding Seeds",
+  "icon": "cybercultivator:protein_soy_seeds",
+  "category": "cybercultivator:getting_started",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "Three Seed Paths",
+      "text": "$(bold)Fiber Reed$()$(br)$(li)10% chance from grass or tall grass.$(br2)$(bold)Protein Soy and Alcohol Bloom$()$(br)$(li)Found in exploration chests.$(br)$(li)Also available from apprentice villagers."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Village Trades",
+      "text": "$(li)$(thing)Farmer$(): 2 Protein Soy Seeds for 3 emeralds.$(br)$(li)$(thing)Cleric$(): 2 Alcohol Bloom Seeds for 3 emeralds.$(br2)Trades are selected from a pool. Check several villagers if a trade does not appear."
+    }
+  ]
+}

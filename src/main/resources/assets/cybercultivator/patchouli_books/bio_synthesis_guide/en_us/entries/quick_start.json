@@ -1,0 +1,18 @@
+{
+  "name": "Quick Start",
+  "icon": "cybercultivator:raw_silicon_crystal",
+  "category": "cybercultivator:getting_started",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "Start Here",
+      "text": "$(bold)The survival loop$()$(br)$(li)Find $(item)Fiber Reed Seeds$() in grass.$(br)$(li)Mine silicon and rare earth.$(br)$(li)Build the four machines.$(br)$(li)Breed better seeds, then bottle serums."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "First Production Chain",
+      "text": "$(bold)Recommended order$()$(br)$(li)$(thing)Atmospheric Condenser$()$(br)$(li)$(thing)Bio Incubator$()$(br)$(li)$(thing)Gene Splicer$()$(br)$(li)$(thing)Serum Bottler$()$(br2)$(bold)Core loop$()$(br)Glass bottles → purified water → incubation resources → synaptic berries → serum."
+    }
+  ]
+}

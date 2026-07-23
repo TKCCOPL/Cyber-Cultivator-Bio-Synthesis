@@ -1,0 +1,18 @@
+{
+  "name": "神经过载",
+  "icon": "cybercultivator:synaptic_serum_s03",
+  "category": "cybercultivator:serums",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "触发时机",
+      "text": "$(li)强化主效果自然结束或被提前清除。$(br)$(li)一 tick 后开始对应的神经过载。$(br)$(li)持续时间会按效果等级从8秒到22秒变化。$(br)$(li)三种血清来源具有不同惩罚和独立警告图标。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "如何恢复",
+      "text": "$(li)牛奶可以清除强化主效果。$(br)$(li)牛奶仍会触发对应的神经过载。$(br)$(li)神经过载本身不能被牛奶清除。$(br)$(li)装备$(item)生命支持箱$()可使过载默认约 3 倍速度消退。$(br2)支持箱不会阻止过载，只会缩短已经触发的持续时间。"
+    }
+  ]
+}

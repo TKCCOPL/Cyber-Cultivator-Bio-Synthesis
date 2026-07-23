@@ -1,0 +1,37 @@
+{
+  "name": "Bottling & Serums",
+  "icon": "cybercultivator:synaptic_neural_berry",
+  "category": "cybercultivator:serums",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "cybercultivator:synaptic_neural_berry",
+      "title": "Synaptic Neural Berry",
+      "text": "$(bold)Bottler recipe$()$(br)Plant Fiber + Industrial Ethanol + Biochemical Solution$(br2)Processes for 15 seconds. The berry calculates Activity from all three ingredient qualities and inherits the highest Synergy gene. It is the shared core material for all advanced serums."
+    },
+    {
+      "type": "patchouli:spotlight",
+      "item": "cybercultivator:synaptic_serum_s01",
+      "title": "S-01 Synaptic Overclock",
+      "text": "$(bold)Berry + Biochemical Solution + Glass Bottle$()$(br2)Grants attack speed, strength, and knockback resistance. Base 15 seconds; stacked duration cap 90 seconds. S-01 overload causes weakness and mining fatigue, adding wither at high levels."
+    },
+    {
+      "type": "patchouli:spotlight",
+      "item": "cybercultivator:synaptic_serum_s02",
+      "title": "S-02 Visual Enhancement",
+      "text": "$(bold)Berry + Rare Earth Dust + Glass Bottle$()$(br2)Grants night vision and private entity outlines. Higher levels scan farther and refresh faster. Base 20 seconds; cap 120 seconds. Overload causes blindness, adding nausea and slowness at high levels."
+    },
+    {
+      "type": "patchouli:spotlight",
+      "item": "cybercultivator:synaptic_serum_s03",
+      "title": "S-03 Metabolic Boost",
+      "text": "$(bold)Berry + Industrial Ethanol + Glass Bottle$()$(br2)Heals while food is above 6 and boosts movement and jumping. Base 10 seconds; cap 60 seconds. Overload causes slowness and hunger, adding poison at high levels."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Use & Empty Bottles",
+      "text": "All three serum types can coexist. Repeated doses of the same serum raise its level and add duration, up to level VIII. Once both level and duration are capped, further use is blocked without consuming the serum.$(br2)Successful use returns a glass bottle, dropping it nearby if inventory is full."
+    }
+  ]
+}

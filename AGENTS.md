@@ -11,8 +11,9 @@ Cyber-Cultivator: Bio-Synthesis is a Minecraft Forge 1.20.1 mod built with Java 
 - Curios API `5.3.5+`: optional accessory integration
 - JEI: compatible
 - KubeJS `2001.6.5-build.16` through `2001.6.5-build.26`: optional scripting integration
+- Patchouli `1.20.1-85-FORGE`: optional in-game guide integration
 
-Curios and KubeJS are optional compile-time integrations and opt-in development-runtime dependencies. Keep compatibility code isolated and guard runtime access so the mod starts without optional dependencies.
+Curios, KubeJS, and Patchouli are optional integrations. Keep compatibility code isolated and guard runtime access so the mod starts without optional dependencies.
 
 ## Project Structure
 
@@ -52,8 +53,9 @@ Design notes, plans, user documentation, and test records live in `docs/`. Offli
 - `./gradlew compileJava` — fast Java compilation check
 - `./gradlew build` — compile, process resources, test, and create the reobfuscated JAR in `build/libs/`
 - `./gradlew runData` — regenerate resources after datagen changes
-- `./gradlew runGameTestServer` — run registered Forge GameTests; the executed count must be greater than zero
-- `./gradlew -I .github/gradle/exclude-non-kubejs-runtime.init.gradle -PenableKubeJSRuntime=true runGameTestServer` — run the minimum KubeJS smoke profile
+- `./gradlew runGameTestServer` — run registered Forge GameTests with the default Patchouli development profile
+- `./gradlew -PenablePatchouliRuntime=false runGameTestServer` — run GameTests without Patchouli
+- `./gradlew -I .github/gradle/exclude-non-kubejs-runtime.init.gradle -PenablePatchouliRuntime=false -PenableKubeJSRuntime=true runGameTestServer` — run the minimum KubeJS smoke profile
 - Add `-Pkubejs_version=2001.6.5-build.26` to the preceding command for the latest verified KubeJS profile
 - `./gradlew runClient` — launch the client for interactive smoke testing
 - `./gradlew runServer` — launch the headless development server

@@ -13,6 +13,9 @@ version = mod_version
 def enableKubeJSRuntime = providers.gradleProperty('enableKubeJSRuntime')
         .map(String::toBoolean)
         .getOrElse(false)
+def enablePatchouliRuntime = providers.gradleProperty('enablePatchouliRuntime')
+        .map(String::toBoolean)
+        .getOrElse(true)
 
 base {
     archivesName = mod_id
@@ -56,6 +59,8 @@ minecraft {
             property 'forge.enabledGameTestNamespaces', mod_id
             if (enableKubeJSRuntime) {
                 workingDirectory layout.buildDirectory.dir('kubejs-smoke').get().asFile
+            } else if (enablePatchouliRuntime) {
+                workingDirectory layout.buildDirectory.dir('patchouli-smoke').get().asFile
             }
         }
 
@@ -91,6 +96,11 @@ dependencies {
     compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}")
     compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}")
     runtimeOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge:${jei_version}")
+
+    compileOnly fg.deobf("vazkii.patchouli:Patchouli:${patchouli_version}")
+    if (enablePatchouliRuntime) {
+        runtimeOnly fg.deobf("vazkii.patchouli:Patchouli:${patchouli_version}")
+    }
 
     // KubeJS integration is compile-only and isolated under compat/kubejs.
     // Enable the full development runtime explicitly with -PenableKubeJSRuntime=true.

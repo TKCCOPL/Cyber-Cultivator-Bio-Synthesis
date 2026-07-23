@@ -1,0 +1,29 @@
+{
+  "name": "Life Support Pack",
+  "icon": "cybercultivator:life_support_pack",
+  "category": "cybercultivator:accessories",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "cybercultivator:life_support_pack",
+      "title": "Overload & First Aid",
+      "text": "Equip it in the $(bold)back slot$() to gain both Neural Overload mitigation and low-health emergency healing.$(br2)The abilities are independent: first aid works without overload, and overload mitigation continues during the healing cooldown."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Overload Mitigation",
+      "text": "Every 10 ticks, the pack checks all Neural Overload variants. By default it removes 2 extra duration ticks per game tick; together with natural countdown, overload expires at roughly 3x speed.$(br2)It does not prevent overload or remove the beneficial serum effect. It only shortens overload that already exists."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Emergency Healing",
+      "text": "By default, at 6 health or lower (3 hearts):$(br2)$(li)Consumes 1 Biochemical Solution from inventory.$(br)$(li)Heals 4 health (2 hearts).$(br)$(li)Grants Haste I for 10 seconds.$(br)$(li)Starts a 60-second cooldown.$(br2)Without Biochemical Solution, no healing occurs and no cooldown starts."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Chest Sources",
+      "text": "Each matching chest has a 20% chance to gain one pack:$(br2)$(li)Abandoned mineshaft$(br)$(li)Simple dungeon$(br)$(li)Pillager outpost$(br2)The pack has no crafting recipe. Its reduction rate, heal threshold, and cooldown are configurable."
+    }
+  ]
+}

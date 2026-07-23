@@ -1,0 +1,23 @@
+{
+  "name": "品质与活性链",
+  "icon": "cybercultivator:synaptic_serum_s01",
+  "category": "cybercultivator:serums",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "原料品质",
+      "text": "培养槽成熟产物的品质来自种子的 $(bold)Potency$()：$(br2)$(li)植物纤维 → Potency$(br)$(li)工业乙醇 → Purity$(br)$(li)生化原液 → Concentration$(br2)缺少品质数据时按 5 处理。这里的 Purity 是乙醇品质，不是种子的 Synergy 基因。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Activity 计算",
+      "text": "$(bold)基础活性$()$(br)round(Potency×0.25 + Purity×0.375 + Concentration×0.375)$(br2)再取三项原料中最高的 Synergy，增加 floor(Synergy÷2)，最终限制在 1～15。由莓加工血清时，血清直接继承莓的 Activity。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "效果缩放",
+      "text": "$(li)时长倍率 = 0.5 + Activity×0.1。$(br)$(li)Activity 1～15 对应 0.6～2.0 倍。$(br)$(li)Activity≥8 时首次饮用从 II 级起步。$(br)$(li)Activity＞10 后，每超出 2 点再提升 1 个初始等级。$(br)$(li)所有等级仍受 VIII 级上限约束。"
+    }
+  ]
+}

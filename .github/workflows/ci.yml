@@ -77,6 +77,7 @@ jobs:
         run: >-
           ./gradlew
           -I .github/gradle/exclude-optional-runtime.init.gradle
+          -PenablePatchouliRuntime=false
           runGameTestServer
           --no-daemon
           --stacktrace
@@ -91,7 +92,7 @@ jobs:
           grep -E "All [1-9][0-9]* required tests passed" "$log_path"
 
   # Full build for main pushes: regen data, check resources, build the JAR,
-  # then run all four runtime smoke profiles before releasing.
+  # then run all five runtime smoke profiles before releasing.
   build:
     name: Build and verify generated data
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -195,6 +196,7 @@ jobs:
         profile:
           - curios
           - no-optional-dependencies
+          - patchouli
           - kubejs-min
           - kubejs-latest
 
@@ -228,6 +230,7 @@ jobs:
         run: >-
           ./gradlew
           -I .github/gradle/exclude-jei-runtime.init.gradle
+          -PenablePatchouliRuntime=false
           runGameTestServer
           --no-daemon
           --stacktrace
@@ -237,6 +240,16 @@ jobs:
         run: >-
           ./gradlew
           -I .github/gradle/exclude-optional-runtime.init.gradle
+          -PenablePatchouliRuntime=false
+          runGameTestServer
+          --no-daemon
+          --stacktrace
+
+      - name: Start GameTest server with Patchouli
+        if: matrix.profile == 'patchouli'
+        run: >-
+          ./gradlew
+          -PenablePatchouliRuntime=true
           runGameTestServer
           --no-daemon
           --stacktrace
@@ -246,6 +259,7 @@ jobs:
         run: >-
           ./gradlew
           -I .github/gradle/exclude-non-kubejs-runtime.init.gradle
+          -PenablePatchouliRuntime=false
           -PenableKubeJSRuntime=true
           runGameTestServer
           --no-daemon
@@ -256,6 +270,7 @@ jobs:
         run: >-
           ./gradlew
           -I .github/gradle/exclude-non-kubejs-runtime.init.gradle
+          -PenablePatchouliRuntime=false
           -PenableKubeJSRuntime=true
           -Pkubejs_version=${{ steps.kubejs.outputs.latest }}
           runGameTestServer
@@ -269,6 +284,8 @@ jobs:
           log_path="run/logs/latest.log"
           if [[ "${{ matrix.profile }}" == kubejs-* ]]; then
             log_path="build/kubejs-smoke/logs/latest.log"
+          elif [[ "${{ matrix.profile }}" == "patchouli" ]]; then
+            log_path="build/patchouli-smoke/logs/latest.log"
           fi
           test -f "$log_path"
           ! grep -F "Failed to start the minecraft server" "$log_path"

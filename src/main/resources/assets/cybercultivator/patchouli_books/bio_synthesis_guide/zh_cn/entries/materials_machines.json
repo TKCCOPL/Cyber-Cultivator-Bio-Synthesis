@@ -1,0 +1,37 @@
+{
+  "name": "矿物与机器配方",
+  "icon": "cybercultivator:silicon_shard",
+  "category": "cybercultivator:getting_started",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "基础矿物",
+      "text": "$(li)硅晶矿石 → 粗硅晶矿 → 硅碎片。$(br)$(li)稀土矿石 → 粗稀土矿 → 稀土粉末。$(br2)两种矿石在石头层生成普通变种，在负高度生成深板岩变种，需要石镐或更高等级工具。粗矿可用熔炉或高炉精炼，高炉速度更快。"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "cybercultivator:atmospheric_condenser",
+      "title": "大气冷凝器",
+      "text": "消耗玻璃瓶制造纯净水，是培养槽 P 通道的稳定来源。"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "cybercultivator:bio_incubator",
+      "title": "生物培养槽",
+      "text": "使用 N、P、D 三项共享资源培养基因种子并产出高品质原料。"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "cybercultivator:gene_splicer",
+      "title": "基因拼接机",
+      "text": "消耗两颗亲本种子，培育具有新基因、突变或双生结果的子代。"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "cybercultivator:serum_bottler",
+      "title": "血清灌装机",
+      "text": "将三项输入加工为突触神经莓或 S-01、S-02、S-03 血清。"
+    }
+  ]
+}

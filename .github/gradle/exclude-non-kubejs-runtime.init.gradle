@@ -3,6 +3,7 @@ allprojects {
         if (name == "runtimeClasspath") {
             exclude group: "top.theillusivec4.curios"
             exclude group: "mezz.jei"
+            exclude group: "vazkii.patchouli"
         }
     }
 }

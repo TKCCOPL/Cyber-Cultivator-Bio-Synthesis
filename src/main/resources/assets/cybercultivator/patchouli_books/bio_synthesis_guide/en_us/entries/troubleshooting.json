@@ -1,0 +1,18 @@
+{
+  "name": "Troubleshooting",
+  "icon": "minecraft:redstone_torch",
+  "category": "cybercultivator:automation",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "No Growth or Output",
+      "text": "$(li)$(bold)No growth$(): N and P must exceed the configured threshold; D must be above zero.$(br)$(li)$(bold)No output$(): clear or merge the output stack.$(br)$(li)$(bold)Slow growth$(): improve Speed, N, P, and D."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "No Splice or Manual",
+      "text": "$(li)$(bold)No splice$(): insert two seeds and empty the child slot.$(br)$(li)$(bold)Manual lost$(): craft a vanilla book with one $(item)Silicon Shard$().$(br)$(li)$(bold)No Patchouli$(): the manual is unavailable, but all core gameplay still works."
+    }
+  ]
+}

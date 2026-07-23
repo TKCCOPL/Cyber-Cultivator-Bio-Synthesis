@@ -1,0 +1,9 @@
+{
+  "name": "item.cybercultivator.bio_synthesis_guide",
+  "landing_text": "book.cybercultivator.landing",
+  "subtitle": "book.cybercultivator.subtitle",
+  "creative_tab": "cybercultivator:cyber_cultivator_tab",
+  "model": "cybercultivator:bio_synthesis_guide",
+  "show_progress": false,
+  "use_resource_pack": true
+}

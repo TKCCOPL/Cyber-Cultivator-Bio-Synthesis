@@ -1,0 +1,37 @@
+{
+  "name": "灌装配方与血清",
+  "icon": "cybercultivator:synaptic_neural_berry",
+  "category": "cybercultivator:serums",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "cybercultivator:synaptic_neural_berry",
+      "title": "突触神经莓",
+      "text": "$(bold)灌装机配方$()$(br)植物纤维 + 工业乙醇 + 生化原液$(br2)加工 15 秒。莓会按三种原料品质计算 Activity，并继承最高的协同基因。它也是三种高级血清的共同核心材料。"
+    },
+    {
+      "type": "patchouli:spotlight",
+      "item": "cybercultivator:synaptic_serum_s01",
+      "title": "S-01 突触超频",
+      "text": "$(bold)莓 + 生化原液 + 玻璃瓶$()$(br2)攻击速度、力量和击退抗性。基础 15 秒，叠加时长上限 90 秒。结束后触发 S-01 过载：弱化、挖掘疲劳，高等级追加凋零。"
+    },
+    {
+      "type": "patchouli:spotlight",
+      "item": "cybercultivator:synaptic_serum_s02",
+      "title": "S-02 视觉强化",
+      "text": "$(bold)莓 + 稀土粉末 + 玻璃瓶$()$(br2)提供夜视和仅饮用者可见的生物轮廓，等级越高范围越大、刷新越快。基础 20 秒，上限 120 秒。过载造成失明，高等级追加恶心与缓慢。"
+    },
+    {
+      "type": "patchouli:spotlight",
+      "item": "cybercultivator:synaptic_serum_s03",
+      "title": "S-03 代谢加速",
+      "text": "$(bold)莓 + 工业乙醇 + 玻璃瓶$()$(br2)食物值高于 6 时持续治疗，同时提升移动和跳跃。基础 10 秒，上限 60 秒。过载造成缓慢与饥饿，高等级追加中毒。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "使用与空瓶",
+      "text": "三种血清可同时存在，同种血清可提升等级并累加持续时间，等级上限均为 VIII。等级与时长同时达到上限后，继续饮用会被阻止且不消耗血清。$(br2)成功饮用会返还玻璃瓶；背包已满时空瓶掉落在附近。"
+    }
+  ]
+}

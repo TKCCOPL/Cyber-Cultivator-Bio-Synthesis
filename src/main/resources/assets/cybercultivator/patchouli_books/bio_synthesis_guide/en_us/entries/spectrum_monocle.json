@@ -1,0 +1,25 @@
+{
+  "name": "Spectrum Monocle",
+  "icon": "cybercultivator:spectrum_monocle",
+  "category": "cybercultivator:accessories",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "cybercultivator:spectrum_monocle",
+      "title": "Seed Analyzer",
+      "text": "Equip it in the $(bold)head slot$(), then hover over a gene seed to read its hidden data.$(br2)It only changes seed item tooltips and does not provide a machine HUD. Open each machine GUI to inspect machine state."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "cybercultivator:spectrum_monocle",
+      "title": "Crafting",
+      "text": "Requires iron nuggets, a glass pane, silicon shards, and rare earth dust. The monocle is crafted only and is not added to chest loot."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Readable Data",
+      "text": "$(li)$(bold)Speed$(): cultivation speed.$(br)$(li)$(bold)Yield$(): mature output count.$(br)$(li)$(bold)Potency$(): output quality.$(br)$(li)$(bold)Generation$(): breeding generation.$(br)$(li)$(bold)Synergy$(): processing synergy bonus.$(br)$(li)$(bold)Mutation$(): value breakthrough or synergy mutation details."
+    }
+  ]
+}

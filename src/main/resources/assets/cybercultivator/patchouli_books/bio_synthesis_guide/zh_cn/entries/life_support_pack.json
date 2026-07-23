@@ -1,0 +1,29 @@
+{
+  "name": "生命支持箱",
+  "icon": "cybercultivator:life_support_pack",
+  "category": "cybercultivator:accessories",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "cybercultivator:life_support_pack",
+      "title": "过载与急救",
+      "text": "装备在$(bold)背部槽位$()后，支持箱同时提供神经过载缓解和低血量应急治疗。$(br2)两项能力彼此独立：没有神经过载时仍可急救，急救冷却期间仍会继续缩短过载。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "过载缓解",
+      "text": "每 10 tick 检查一次所有神经过载变体。默认每个游戏 tick 额外消减 2 tick 持续时间；算上自然倒计时，总消退速度约为 3 倍。$(br2)它不会阻止过载触发，也不会清除血清主效果，只负责缩短已经存在的过载。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "低血量急救",
+      "text": "默认在生命值不高于 6（3 颗心）时：$(br2)$(li)消耗背包中 1 份生化原液。$(br)$(li)恢复 4 点生命值（2 颗心）。$(br)$(li)获得 10 秒急迫 I。$(br)$(li)进入 60 秒冷却。$(br2)没有生化原液时不会治疗，也不会进入冷却。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "战利品来源",
+      "text": "以下每个匹配宝箱都有 20% 概率加入 1 个支持箱：$(br2)$(li)废弃矿井$(br)$(li)地牢$(br)$(li)掠夺者前哨站$(br2)支持箱没有工作台配方。过载消减率、治疗阈值和冷却时间均可配置。"
+    }
+  ]
+}
