@@ -7,6 +7,7 @@ import com.TKCCOPL.item.GeneticSeedItem;
 import com.TKCCOPL.recipe.IncubatorOutputRecipe;
 import com.TKCCOPL.recipe.ModRecipeTypes;
 import com.TKCCOPL.recipe.RecipeOrdering;
+import com.TKCCOPL.recipe.GeneSpliceRules;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.helpers.IGuiHelper;
@@ -34,7 +35,7 @@ public class GeneSplicingCategory extends MachineRecipeCategory<GeneSplicingCate
     public record DisplayRecipe(ItemStack seedA, ItemStack seedB,
                                 int speedA, int yieldA, int potencyA,
                                 int speedB, int yieldB, int potencyB,
-                                double mutationChance) {
+                                double mutationChance, double twinChance) {
     }
 
     public GeneSplicingCategory(IGuiHelper guiHelper) {
@@ -52,65 +53,50 @@ public class GeneSplicingCategory extends MachineRecipeCategory<GeneSplicingCate
     @Override
     public void draw(DisplayRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphics graphics,
                      double mouseX, double mouseY) {
-        drawFitted(graphics, Component.translatable("gui.cybercultivator.splicer.parent_a"),
-                30, 19, 28, 0x4B3D4A);
-        drawFitted(graphics, Component.translatable("gui.cybercultivator.splicer.parent_b"),
-                66, 19, 28, 0x4B3D4A);
+        drawCentered(graphics, Component.translatable("gui.cybercultivator.splicer.parent_a"),
+                39, 19, 0x4B3D4A);
+        drawCentered(graphics, Component.translatable("gui.cybercultivator.splicer.parent_b"),
+                75, 19, 0x4B3D4A);
         drawFitted(graphics, Component.translatable("gui.cybercultivator.splicer.offspring"),
                 136, 19, 34, 0x4B3D4A);
-
-        thinHorizontalBar(graphics, 94, 35, 27, 0xFFB868B2);
-        renderConnectorAnimation(graphics);
 
         int avgSpeed = average(recipe.speedA(), recipe.speedB());
         int avgYield = average(recipe.yieldA(), recipe.yieldB());
         int avgPotency = average(recipe.potencyA(), recipe.potencyB());
-        drawFitted(graphics, Component.translatable("jei.cybercultivator.splicer.automatic", 5),
-                4, 49, 170, 0x78406F);
         drawFitted(graphics, Component.translatable("jei.cybercultivator.splicer.meta",
-                1, formatPercent(recipe.mutationChance())), 4, 62, 170, 0x5C3D58);
-        drawFitted(graphics, Component.translatable("jei.cybercultivator.splicer.average",
-                avgSpeed, avgYield, avgPotency, mutationRange()), 4, 77, 170, 0x78406F);
+                1, formatPercent(recipe.mutationChance()), formatPercent(recipe.twinChance())),
+                4, 54, 170, 0x5C3D58);
+        int range = mutationRange();
+        var cfg = ClientGameplayConfig.getSnapshot();
+        drawFitted(graphics, Component.translatable("jei.cybercultivator.splicer.range",
+                Math.max(cfg.geneMin(), avgSpeed - range), Math.min(cfg.geneMax(), avgSpeed + range),
+                Math.max(cfg.geneMin(), avgYield - range), Math.min(cfg.geneMax(), avgYield + range),
+                Math.max(cfg.geneMin(), avgPotency - range), Math.min(cfg.geneMax(), avgPotency + range)),
+                4, 69, 170, 0x78406F);
     }
 
     @Override
     public List<Component> getTooltipStrings(DisplayRecipe recipe, IRecipeSlotsView recipeSlotsView,
                                              double mouseX, double mouseY) {
-        if (mouseX >= 4 && mouseX <= 174 && mouseY >= 60 && mouseY <= 94) {
+        if (mouseX >= 4 && mouseX <= 174 && mouseY >= 52 && mouseY <= 84) {
             var cfg = ClientGameplayConfig.getSnapshot();
             return List.of(
                     Component.translatable("jei.cybercultivator.tooltip.mutation_formula_config",
                                     formatPercent(configChance(cfg.mutationChanceBase(), 0.05D)),
-                                    formatPercent(configChance(cfg.mutationChancePerGen(), 0.02D)),
-                                    formatPercent(configChance(cfg.mutationChancePerGeneDiff(), 0.01D)))
+                                    formatPercent(configChance(cfg.mutationChancePerGen(), 0.005D)),
+                                    formatPercent(configChance(cfg.mutationChancePerGeneDiff(), 0.01D)),
+                                    cfg.mutationGenerationCap(),
+                                    formatPercent(configChance(cfg.mutationChanceCap(), 0.25D)))
+                            .withStyle(ChatFormatting.GRAY),
+                    Component.translatable("jei.cybercultivator.tooltip.twin_formula",
+                                    formatPercent(configChance(cfg.twinChanceBase(), 0.10D)),
+                                    formatPercent(configChance(cfg.twinChancePerGen(), 0.02D)),
+                                    formatPercent(configChance(cfg.twinChanceCap(), 0.60D)))
                             .withStyle(ChatFormatting.GRAY),
                     Component.translatable("jei.cybercultivator.tooltip.gene_formula")
                             .withStyle(ChatFormatting.GRAY));
         }
         return List.of();
-    }
-
-    private void renderConnectorAnimation(GuiGraphics graphics) {
-        float phase = animationValue() * 0.32F;
-        drawConnectorPulse(graphics, phase % 32.0F, true);
-        drawConnectorPulse(graphics, phase % 32.0F, false);
-        drawConnectorPulse(graphics, (phase + 16.0F) % 32.0F, true);
-        drawConnectorPulse(graphics, (phase + 16.0F) % 32.0F, false);
-    }
-
-    private void drawConnectorPulse(GuiGraphics graphics, float phase, boolean leftBranch) {
-        int step = (int) phase;
-        int x;
-        int y;
-        if (step < 14) {
-            x = leftBranch ? 39 : 75;
-            y = 26 - step;
-        } else {
-            int horizontalStep = Math.min(17, step - 14);
-            x = leftBranch ? 39 + horizontalStep : 75 - horizontalStep;
-            y = 12;
-        }
-        graphics.fill(x - 1, y - 1, x + 2, y + 2, 0xFFB868B2);
     }
 
     private static ItemStack createOutput(DisplayRecipe recipe) {
@@ -143,9 +129,22 @@ public class GeneSplicingCategory extends MachineRecipeCategory<GeneSplicingCate
 
     private static double displayMutationChance(int generation, int geneDifference) {
         var cfg = ClientGameplayConfig.getSnapshot();
-        return configChance(cfg.mutationChanceBase(), 0.05D)
-                + generation * configChance(cfg.mutationChancePerGen(), 0.02D)
-                + geneDifference * configChance(cfg.mutationChancePerGeneDiff(), 0.01D);
+        return GeneSpliceRules.mutationChance(generation, geneDifference,
+                configChance(cfg.mutationChanceBase(), 0.05D),
+                configChance(cfg.mutationChancePerGen(), 0.005D),
+                cfg.mutationGenerationCap(),
+                configChance(cfg.mutationChancePerGeneDiff(), 0.01D),
+                configChance(cfg.mutationChanceCap(), 0.25D));
+    }
+
+    private static double displayTwinChance(int generation, int geneDifference) {
+        var cfg = ClientGameplayConfig.getSnapshot();
+        double mutation = displayMutationChance(generation, geneDifference);
+        double normalTwin = GeneSpliceRules.normalTwinChance(generation,
+                configChance(cfg.twinChanceBase(), 0.10D),
+                configChance(cfg.twinChancePerGen(), 0.02D),
+                configChance(cfg.twinChanceCap(), 0.60D));
+        return GeneSpliceRules.totalTwinChance(mutation, normalTwin);
     }
 
     private static ItemStack seedWithGenes(ItemStack seed, int speed, int yield, int potency) {
@@ -172,7 +171,7 @@ public class GeneSplicingCategory extends MachineRecipeCategory<GeneSplicingCate
                     seedWithGenes(seed, genes[0], genes[1], genes[2]),
                     seedWithGenes(seed, genes[0], genes[1], genes[2]),
                     genes[0], genes[1], genes[2], genes[0], genes[1], genes[2],
-                    displayMutationChance(0, 0)));
+                    displayMutationChance(0, 0), displayTwinChance(0, 0)));
         }
 
         // 杂交：不同种子类型两两组合
@@ -191,7 +190,7 @@ public class GeneSplicingCategory extends MachineRecipeCategory<GeneSplicingCate
                         seedWithGenes(seedA, genesA[0], genesA[1], genesA[2]),
                         seedWithGenes(seedB, genesB[0], genesB[1], genesB[2]),
                         genesA[0], genesA[1], genesA[2], genesB[0], genesB[1], genesB[2],
-                        displayMutationChance(0, geneDiff)));
+                        displayMutationChance(0, geneDiff), displayTwinChance(0, geneDiff)));
             }
         }
         return recipes;

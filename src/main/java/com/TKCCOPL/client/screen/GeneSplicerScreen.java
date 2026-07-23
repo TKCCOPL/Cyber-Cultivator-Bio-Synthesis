@@ -10,6 +10,10 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 
 public class GeneSplicerScreen extends MachineScreen<GeneSplicerMenu> {
+    private static final int PROGRESS_START_X = 99;
+    private static final int PROGRESS_WIDTH = 42;
+    private static final int PROGRESS_ARROW_HEAD_X = 133;
+    private static final int PROGRESS_COLOR = 0xFFB868B2;
     private static final ResourceLocation TEXTURE =
             ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID, "textures/gui/gene_splicer.png");
 
@@ -19,39 +23,30 @@ public class GeneSplicerScreen extends MachineScreen<GeneSplicerMenu> {
 
     @Override
     protected void renderMachineState(GuiGraphics graphics, float partialTick) {
-        ItemStack first = menu.getSlot(0).getItem();
-        ItemStack second = menu.getSlot(1).getItem();
         ItemStack output = menu.getSlot(2).getItem();
         boolean hasOutput = !output.isEmpty();
 
         int progress = hasOutput ? menu.getSpliceDuration() : menu.getSpliceProgress();
-        thinHorizontalBar(graphics, 102, 54, 27, progress, menu.getSpliceDuration(), 0xFFB868B2);
-        renderConnectorAnimation(graphics, partialTick);
+        renderProgressArrow(graphics, progress, menu.getSpliceDuration());
     }
 
-    private void renderConnectorAnimation(GuiGraphics graphics, float partialTick) {
-        if (!menu.isSplicing()) return;
-        float phase = ((menu.getSpliceProgress() + partialTick) * 0.8F) % 32.0F;
-        drawConnectorPulse(graphics, phase, true);
-        drawConnectorPulse(graphics, phase, false);
-        drawConnectorPulse(graphics, (phase + 16.0F) % 32.0F, true);
-        drawConnectorPulse(graphics, (phase + 16.0F) % 32.0F, false);
-    }
+    private void renderProgressArrow(GuiGraphics graphics, int progress, int maximum) {
+        if (progress <= 0 || maximum <= 0) return;
 
-    private void drawConnectorPulse(GuiGraphics graphics, float phase, boolean leftBranch) {
-        int step = (int) phase;
-        int x;
-        int y;
-        if (step < 14) {
-            x = leftBranch ? 47 : 83;
-            y = 45 - step;
-        } else {
-            int horizontalStep = Math.min(17, step - 14);
-            x = leftBranch ? 47 + horizontalStep : 83 - horizontalStep;
-            y = 31;
+        int filled = Math.min(PROGRESS_WIDTH,
+                (int) Math.ceil((double) progress * PROGRESS_WIDTH / maximum));
+        for (int offset = 0; offset < filled; offset++) {
+            int x = PROGRESS_START_X + offset;
+            int top = 53;
+            int bottom = 58;
+            if (x >= PROGRESS_ARROW_HEAD_X) {
+                int inset = Math.max(0, x - PROGRESS_ARROW_HEAD_X - 1);
+                top = 49 + inset;
+                bottom = 62 - inset;
+            }
+            graphics.fill(leftPos + x, topPos + top,
+                    leftPos + x + 1, topPos + bottom, PROGRESS_COLOR);
         }
-        graphics.fill(leftPos + x - 1, topPos + y - 1,
-                leftPos + x + 2, topPos + y + 2, 0xFFB868B2);
     }
 
     @Override
@@ -61,78 +56,75 @@ public class GeneSplicerScreen extends MachineScreen<GeneSplicerMenu> {
         ItemStack output = menu.getSlot(2).getItem();
 
         graphics.drawString(font, title, titleLabelX, titleLabelY, 0x373737, false);
-        graphics.drawString(font, Component.translatable("gui.cybercultivator.splicer.parent_a"),
-                38, 38, 0x4B3D4A, false);
-        graphics.drawString(font, Component.translatable("gui.cybercultivator.splicer.parent_b"),
-                74, 38, 0x4B3D4A, false);
+        Component parentA = Component.translatable("gui.cybercultivator.splicer.parent_a");
+        Component parentB = Component.translatable("gui.cybercultivator.splicer.parent_b");
+        graphics.drawString(font, parentA, 46 - font.width(parentA) / 2, 38, 0x4B3D4A, false);
+        graphics.drawString(font, parentB, 82 - font.width(parentB) / 2, 38, 0x4B3D4A, false);
         graphics.drawString(font, Component.translatable("gui.cybercultivator.splicer.offspring"),
                 144, 38, 0x4B3D4A, false);
 
-        drawFitted(graphics, getStatus(first, second, output), 12, 68, 164,
-                menu.isSplicing() || !output.isEmpty() ? 0x78406F : 0x555555);
         if (output.getItem() instanceof GeneticSeedItem) {
             drawFitted(graphics, Component.translatable("gui.cybercultivator.splicer.offspring_generation",
                     GeneticSeedItem.getGeneration(output)), 12, 81, 164, 0x5C3D58);
         } else if (first.getItem() instanceof GeneticSeedItem && second.getItem() instanceof GeneticSeedItem) {
             drawFitted(graphics, Component.translatable("gui.cybercultivator.splicer.prediction_meta",
-                    menu.getPredictedGeneration(), formatMutationPercent()), 12, 81, 164, 0x5C3D58);
+                    menu.getPredictedGeneration(), formatPermille(menu.getPredictedMutationPermille()),
+                    formatPermille(menu.getPredictedTwinPermille())), 12, 81, 164, 0x5C3D58);
         }
         drawFitted(graphics, getOffspringInfo(first, second, output), 12, 96, 164,
                 output.isEmpty() ? 0x555555 : 0x78406F);
         graphics.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, 0x404040, false);
     }
 
-    private Component getStatus(ItemStack first, ItemStack second, ItemStack output) {
-        if (!output.isEmpty()) {
-            String key = output.hasTag() && output.getTag().getInt("Mutation") > 0
-                    ? "gui.cybercultivator.splicer.status_mutated"
-                    : "gui.cybercultivator.splicer.status_complete";
-            return Component.translatable(key);
-        }
-        if (menu.isSplicing()) {
-            return Component.translatable("gui.cybercultivator.splicer.status_splicing",
-                    menu.getRemainingSeconds());
-        }
-        if (!first.isEmpty() && !second.isEmpty()) {
-            return Component.translatable("gui.cybercultivator.splicer.status_ready");
-        }
-        return Component.translatable(first.isEmpty() && second.isEmpty()
-                ? "gui.cybercultivator.splicer.status_waiting_two"
-                : "gui.cybercultivator.splicer.status_waiting_one");
-    }
-
     private Component getOffspringInfo(ItemStack first, ItemStack second, ItemStack output) {
         if (output.getItem() instanceof GeneticSeedItem) {
+            int mutationType = output.hasTag() ? output.getTag().getInt("Mutation") : 0;
+            if (mutationType > 0) {
+                Component type = Component.translatable(mutationType == 2
+                        ? "gui.cybercultivator.splicer.mutation_type_synergy"
+                        : "gui.cybercultivator.splicer.mutation_type_breakthrough");
+                String detail = output.getTag().getString("MutationDetail");
+                return Component.translatable("gui.cybercultivator.splicer.offspring_result_mutation",
+                        GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_SPEED),
+                        GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_YIELD),
+                        GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_POTENCY),
+                        type, detail, output.getCount());
+            }
             int synergy = GeneticSeedItem.getSynergy(output);
             String key = synergy > 0
-                    ? "gui.cybercultivator.splicer.offspring_summary_synergy"
-                    : "gui.cybercultivator.splicer.offspring_summary";
+                    ? "gui.cybercultivator.splicer.offspring_result_synergy"
+                    : "gui.cybercultivator.splicer.offspring_result";
             if (synergy > 0) {
                 return Component.translatable(key,
                         GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_SPEED),
                         GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_YIELD),
-                        GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_POTENCY), synergy);
+                        GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_POTENCY), synergy,
+                        output.getCount());
             }
             return Component.translatable(key,
                     GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_SPEED),
                     GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_YIELD),
-                    GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_POTENCY));
+                    GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_POTENCY), output.getCount());
         }
         if (first.getItem() instanceof GeneticSeedItem && second.getItem() instanceof GeneticSeedItem) {
-            return Component.translatable("gui.cybercultivator.splicer.preview",
-                    averageGene(first, second, GeneticSeedItem.GENE_SPEED),
-                    averageGene(first, second, GeneticSeedItem.GENE_YIELD),
-                    averageGene(first, second, GeneticSeedItem.GENE_POTENCY));
+            int[] speed = ordinaryRange(first, second, GeneticSeedItem.GENE_SPEED);
+            int[] yield = ordinaryRange(first, second, GeneticSeedItem.GENE_YIELD);
+            int[] potency = ordinaryRange(first, second, GeneticSeedItem.GENE_POTENCY);
+            return Component.translatable("gui.cybercultivator.splicer.preview_range",
+                    speed[0], speed[1], yield[0], yield[1], potency[0], potency[1]);
         }
         return Component.empty();
     }
 
-    private int averageGene(ItemStack first, ItemStack second, String key) {
-        return (GeneticSeedItem.getGene(first, key) + GeneticSeedItem.getGene(second, key)) / 2;
+    private int[] ordinaryRange(ItemStack first, ItemStack second, String key) {
+        int center = (GeneticSeedItem.getGene(first, key) + GeneticSeedItem.getGene(second, key)) / 2;
+        var config = com.TKCCOPL.client.ClientGameplayConfig.getSnapshot();
+        int range = Math.max(0, config.mutationRange());
+        return new int[]{Math.max(config.geneMin(), center - range), Math.min(config.geneMax(), center + range)};
     }
 
-    private String formatMutationPercent() {
-        int tenths = Math.max(0, Math.min(1000, menu.getPredictedMutationPermille()));
+    private String formatPermille(int value) {
+        int tenths = Math.max(0, Math.min(1000, value));
         if (tenths % 10 == 0) {
             return Integer.toString(tenths / 10);
         }

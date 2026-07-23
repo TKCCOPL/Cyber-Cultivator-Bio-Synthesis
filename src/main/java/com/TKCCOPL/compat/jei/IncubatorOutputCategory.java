@@ -16,7 +16,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,10 +60,6 @@ public class IncubatorOutputCategory extends MachineRecipeCategory<IncubatorOutp
                         .withStyle(ChatFormatting.GRAY)));
         builder.addSlot(RecipeIngredientRole.OUTPUT, 146, 31)
                 .addItemStack(recipe.output());
-        builder.addSlot(RecipeIngredientRole.OUTPUT, 86, 55)
-                .addItemStack(new ItemStack(Items.GLASS_BOTTLE))
-                .addTooltipCallback((slot, tooltip) -> tooltip.add(Component.translatable(
-                        "jei.cybercultivator.incubator.bottle_byproduct").withStyle(ChatFormatting.GRAY)));
     }
 
     @Override

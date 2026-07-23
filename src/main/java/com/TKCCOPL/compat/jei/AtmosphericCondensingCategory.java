@@ -24,7 +24,7 @@ public class AtmosphericCondensingCategory extends MachineRecipeCategory<Atmosph
             DisplayRecipe.class);
     public static final DisplayRecipe RECIPE = new DisplayRecipe(
             ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID,
-                    "atmospheric_condensing/purified_water"), 600, 32);
+                    "atmospheric_condensing/purified_water"), 600, 16);
     private static final ResourceLocation TEXTURE =
             ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID,
                     "textures/gui/atmospheric_condenser.png");
@@ -48,9 +48,6 @@ public class AtmosphericCondensingCategory extends MachineRecipeCategory<Atmosph
     @Override
     public void draw(DisplayRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphics graphics,
                      double mouseX, double mouseY) {
-        verticalBar(graphics, 103, 20, 30, 0xFF5DB9C7);
-        renderCondensationScan(graphics);
-
         drawFitted(graphics, Component.translatable("jei.cybercultivator.condenser.cycle",
                 recipe.processingTicks() / 20), 8, 51, 162, 0x2F6F79);
         drawFitted(graphics, Component.translatable("jei.cybercultivator.condenser.stock",
@@ -74,18 +71,5 @@ public class AtmosphericCondensingCategory extends MachineRecipeCategory<Atmosph
     @Override
     public ResourceLocation getRegistryName(DisplayRecipe recipe) {
         return recipe.id();
-    }
-
-    private void renderCondensationScan(GuiGraphics graphics) {
-        float animationTick = animationValue();
-        int activeFin = (int) (animationTick / 4.0F) % 6;
-        graphics.fill(46 + activeFin * 8, 24, 48 + activeFin * 8, 44, 0xFF5DB9C7);
-
-        int pipeOffset = (int) (animationTick % 30.0F);
-        if (pipeOffset < 20) {
-            graphics.fill(104, 21 + pipeOffset, 107, 24 + pipeOffset, 0xFF5DB9C7);
-        } else {
-            graphics.fill(116 + pipeOffset - 20, 34, 119 + pipeOffset - 20, 37, 0xFF5DB9C7);
-        }
     }
 }

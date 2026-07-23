@@ -93,12 +93,10 @@ function incubator(data) {
     slot(data, 94, 50);
     slot(data, 124, 50);
     slot(data, 154, 50);
-    slot(data, 94, 74);
     meter(data, 55, 49, 18);
     meter(data, 85, 49, 18);
     meter(data, 115, 49, 18);
     arrow(data, 142, 55, 10);
-    downArrow(data, 98, 67);
     bevel(data, 21, 101, 157, 7, PALETTE.shadow);
 }
 
