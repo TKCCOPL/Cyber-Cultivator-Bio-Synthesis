@@ -31,7 +31,8 @@ Cyber-Cultivator: Bio-Synthesis is a Forge mod built around a biotechnology prod
 - Optional Curios accessories for seed analysis, automatic injection, and life support
 - Optional KubeJS recipe DSL and reloadable gameplay events
 - Optional bilingual Patchouli Bio-Synthesis Research Guide, granted on first world entry
-- Hopper automation and public query/event APIs
+- IGNORE/HIGH/LOW redstone control and unified comparator state output for all four machines
+- Vanilla hopper and sided Forge `IItemHandler` automation, semantic material tags, and public query/event APIs
 
 Compatible with JEI, with cultivation, splicing, bottling, and condensation shown through the machines' actual GUI layouts; KubeJS, Patchouli, JEI, and Curios are all optional.
 

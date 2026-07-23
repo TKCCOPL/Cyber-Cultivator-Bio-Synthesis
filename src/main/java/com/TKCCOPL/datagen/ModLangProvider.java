@@ -280,5 +280,15 @@ public class ModLangProvider extends LanguageProvider {
         add("gui.cybercultivator.incubator.status_growing", "培养中 · %s%% · 剩余 %s 秒");
         add("gui.cybercultivator.incubator.status_output_blocked", "已成熟 · 输出槽已满");
         add("gui.cybercultivator.incubator.status_complete", "产物就绪 · 可放入下一颗种子");
+        add("gui.cybercultivator.redstone.label.ignore", "RS:忽略");
+        add("gui.cybercultivator.redstone.label.high", "RS:高电平");
+        add("gui.cybercultivator.redstone.label.low", "RS:低电平");
+        add("gui.cybercultivator.redstone.tooltip.ignore", "忽略红石信号 · 当前电平：%s");
+        add("gui.cybercultivator.redstone.tooltip.high", "需高电平激活 · 当前电平：%s");
+        add("gui.cybercultivator.redstone.tooltip.low", "需低电平激活 · 当前电平：%s");
+        add("gui.cybercultivator.redstone.powered.yes", "已供电");
+        add("gui.cybercultivator.redstone.powered.no", "未供电");
+        add("gui.cybercultivator.status.redstone_blocked.high", "红石阻塞：需高电平激活");
+        add("gui.cybercultivator.status.redstone_blocked.low", "红石阻塞：需低电平激活");
     }
 }

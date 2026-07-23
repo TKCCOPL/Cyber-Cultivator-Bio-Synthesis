@@ -86,19 +86,6 @@ public class BioIncubatorBlock extends MachineBlock {
     }
 
     @Override
-    public boolean hasAnalogOutputSignal(BlockState state) {
-        return true;
-    }
-
-    @Override
-    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
-        if (level.getBlockEntity(pos) instanceof BioIncubatorBlockEntity blockEntity) {
-            return Math.min(15, blockEntity.getNutrition() / 7);
-        }
-        return 0;
-    }
-
-    @Override
     public int getLightEmission(BlockState state, BlockGetter level, BlockPos pos) {
         return 2;
     }

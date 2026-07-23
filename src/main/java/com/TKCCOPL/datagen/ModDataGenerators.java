@@ -27,7 +27,10 @@ public final class ModDataGenerators {
         generator.addProvider(event.includeClient(), new ModBlockStateProvider(output, existingFileHelper));
         generator.addProvider(event.includeClient(), new ModItemModelProvider(output, existingFileHelper));
 
-        generator.addProvider(event.includeServer(), new ModBlockTagProvider(output, lookupProvider, existingFileHelper));
+        // v1.1.7 §10.1 物品标签 provider；需在 block tags provider 之后注册以支持 addTag(blockTag)
+        ModBlockTagProvider blockTagProvider = new ModBlockTagProvider(output, lookupProvider, existingFileHelper);
+        generator.addProvider(event.includeServer(), blockTagProvider);
+        generator.addProvider(event.includeServer(), new ModItemTagProvider(output, lookupProvider, blockTagProvider, existingFileHelper));
         generator.addProvider(event.includeServer(), new ModLootTableProvider(output));
         generator.addProvider(event.includeServer(), new ModRecipeProvider(output));
         generator.addProvider(event.includeServer(), new ModAdvancementProvider(output, lookupProvider, existingFileHelper));

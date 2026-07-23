@@ -35,7 +35,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyContainer, MenuProvider {
+public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyContainer, MenuProvider,
+        MachineRedstoneBlockEntity, MachineInventoryPolicy {
     private static final String TAG_PROGRESS = "Progress";
     private static final String TAG_MAX_PROGRESS = "MaxProgress";
     private static final String TAG_INPUT = "Input";
@@ -104,6 +105,8 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     private String pendingRecipeId; // 用于 load() 后延迟恢复 cachedRecipe
     private final SimpleContainer recipeContainer = new SimpleContainer(INPUT_SLOTS);
     private boolean inputsDirty = true;
+    private final MachineRedstoneState redstone = new MachineRedstoneState();
+    private int lastComparatorSignal;
 
     // 可接受原料缓存：避免 canPlaceItem 每次都被漏斗触发而重复查询 RecipeManager
     private List<Ingredient> cachedAcceptableIngredients;
@@ -118,6 +121,9 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
                 case 0 -> progress;
                 case 1 -> maxProgress;
                 case 2 -> calculateActivity(inputs);
+                case 3 -> redstone.getMenuData(MachineRedstoneState.DATA_MODE);
+                case 4 -> redstone.getMenuData(MachineRedstoneState.DATA_POWERED);
+                case 5 -> redstone.getMenuData(MachineRedstoneState.DATA_PROCESSING_ALLOWED);
                 default -> 0;
             };
         }
@@ -128,7 +134,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
 
         @Override
         public int getCount() {
-            return 3;
+            return 3 + MachineRedstoneState.getMenuDataCount();
         }
     };
 
@@ -141,6 +147,10 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
 
     public static void tick(Level level, BlockPos pos, BlockState state, SerumBottlerBlockEntity blockEntity) {
         if (level.isClientSide) return;
+
+        if (blockEntity.redstone.consumePendingResample(level, pos)) {
+            blockEntity.syncToClient();
+        }
 
         boolean changed = false;
         boolean processingCancelled = false;
@@ -187,7 +197,9 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         }
 
         // Try to start a recipe
-        if (!processingCancelled && blockEntity.maxProgress == 0) {
+        boolean redstoneAllows = blockEntity.redstone.isProcessingAllowed();
+
+        if (!processingCancelled && redstoneAllows && blockEntity.maxProgress == 0) {
             SerumRecipe recipe = blockEntity.findRecipe();
             if (recipe != null) {
                 blockEntity.cachedRecipe = recipe;
@@ -198,7 +210,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         }
 
         // Process current recipe
-        if (!processingCancelled && blockEntity.maxProgress > 0) {
+        if (!processingCancelled && redstoneAllows && blockEntity.maxProgress > 0) {
             blockEntity.progress++;
             // 每秒同步一次进度到客户端，驱动 HUD 进度条动画
             if (blockEntity.progress % 20 == 0) {
@@ -228,6 +240,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         if (changed) {
             blockEntity.syncToClient();
         }
+        blockEntity.updateComparatorIfChanged(level, pos);
     }
 
     private boolean recipeTableChanged(List<SerumRecipe> currentRecipes) {
@@ -444,6 +457,36 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         setChanged();
         if (level != null && !level.isClientSide) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
+            updateComparatorIfChanged(level, worldPosition);
+        }
+    }
+
+    private void updateComparatorIfChanged(Level level, BlockPos pos) {
+        int current = getComparatorSignal();
+        if (current != lastComparatorSignal) {
+            lastComparatorSignal = current;
+            level.updateNeighbourForOutputSignal(pos, getBlockState().getBlock());
+        }
+    }
+
+    @Override
+    public MachineRedstoneState getRedstoneState() {
+        return redstone;
+    }
+
+    @Override
+    public int getComparatorSignal() {
+        if (!output.isEmpty()) return 15;
+        if (maxProgress <= 0) return 0;
+        return Math.max(1, Math.min(14,
+                (int) Math.ceil((double) progress * 14 / maxProgress)));
+    }
+
+    @Override
+    public void clearRemoved() {
+        super.clearRemoved();
+        if (level != null && !level.isClientSide) {
+            redstone.markPendingResample();
         }
     }
 
@@ -516,7 +559,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     public void setItem(int slot, ItemStack stack) {
         if (slot < INPUT_SLOTS) {
             boolean changed = !ItemStack.matches(inputs[slot], stack);
-            inputs[slot] = stack.copy();
+            inputs[slot] = stack.isEmpty() ? ItemStack.EMPTY : normalizeInsertedStack(slot, stack);
             markInputsDirty();
             if (changed && maxProgress > 0) {
                 cancelProcessing();
@@ -596,19 +639,46 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
 
     @Override
     public int[] getSlotsForFace(Direction side) {
-        if (side == Direction.DOWN) return new int[]{OUTPUT_SLOT};
-        if (side == Direction.UP) return new int[]{0, 1, 2};
-        return new int[]{0, 1, 2}; // Sides also accept input
+        return visibleSlots(side);
     }
 
     @Override
     public boolean canPlaceItemThroughFace(int slot, ItemStack stack, Direction side) {
-        return side != Direction.DOWN && canPlaceItem(slot, stack);
+        return canInsert(slot, stack, side);
     }
 
     @Override
     public boolean canTakeItemThroughFace(int slot, ItemStack stack, Direction side) {
-        return slot == OUTPUT_SLOT && side == Direction.DOWN;
+        return canExtract(slot, stack, side);
+    }
+
+    @Override
+    public int[] visibleSlots(@org.jetbrains.annotations.Nullable Direction side) {
+        if (side == null) return new int[]{0, 1, 2, OUTPUT_SLOT};
+        if (side == Direction.DOWN) return new int[]{OUTPUT_SLOT};
+        return new int[]{0, 1, 2};
+    }
+
+    @Override
+    public boolean canInsert(int slot, ItemStack stack,
+                             @org.jetbrains.annotations.Nullable Direction side) {
+        return side != Direction.DOWN && canPlaceItem(slot, stack);
+    }
+
+    @Override
+    public boolean canExtract(int slot, ItemStack stack,
+                              @org.jetbrains.annotations.Nullable Direction side) {
+        return slot == OUTPUT_SLOT && (side == null || side == Direction.DOWN);
+    }
+
+    @Override
+    public ItemStack normalizeInsertedStack(int slot, ItemStack stack) {
+        return stack.copy();
+    }
+
+    @Override
+    public int getSlotLimit(int slot) {
+        return 64;
     }
 
     @Override
@@ -630,6 +700,8 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         }
         output = tag.contains(TAG_OUTPUT) ? ItemStack.of(tag.getCompound(TAG_OUTPUT)) : ItemStack.EMPTY;
         markInputsDirty();
+        redstone.load(tag);
+        lastComparatorSignal = -1;
     }
 
     @Override
@@ -655,6 +727,7 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
         } else {
             tag.put(TAG_OUTPUT, new CompoundTag()); // sentinel: ensure tag is non-empty for client sync
         }
+        redstone.save(tag);
     }
 
     @org.jetbrains.annotations.Nullable
@@ -666,5 +739,59 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     @Override
     public CompoundTag getUpdateTag() {
         return saveWithoutMetadata();
+    }
+
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> capUp =
+            net.minecraftforge.common.util.LazyOptional.empty();
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> capHorizontal =
+            net.minecraftforge.common.util.LazyOptional.empty();
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> capDown =
+            net.minecraftforge.common.util.LazyOptional.empty();
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> capNull =
+            net.minecraftforge.common.util.LazyOptional.empty();
+
+    @Override
+    public <T> net.minecraftforge.common.util.LazyOptional<T> getCapability(
+            net.minecraftforge.common.capabilities.Capability<T> cap,
+            @org.jetbrains.annotations.Nullable Direction side) {
+        if (cap == net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER) {
+            net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> handler;
+            if (side == null) {
+                if (!capNull.isPresent()) {
+                    capNull = net.minecraftforge.common.util.LazyOptional.of(
+                            () -> new SidedMachineItemHandler(this, this, null));
+                }
+                handler = capNull;
+            } else if (side == Direction.UP) {
+                if (!capUp.isPresent()) {
+                    capUp = net.minecraftforge.common.util.LazyOptional.of(
+                            () -> new SidedMachineItemHandler(this, this, Direction.UP));
+                }
+                handler = capUp;
+            } else if (side == Direction.DOWN) {
+                if (!capDown.isPresent()) {
+                    capDown = net.minecraftforge.common.util.LazyOptional.of(
+                            () -> new SidedMachineItemHandler(this, this, Direction.DOWN));
+                }
+                handler = capDown;
+            } else {
+                if (!capHorizontal.isPresent()) {
+                    capHorizontal = net.minecraftforge.common.util.LazyOptional.of(
+                            () -> new SidedMachineItemHandler(this, this, side));
+                }
+                handler = capHorizontal;
+            }
+            return handler.cast();
+        }
+        return super.getCapability(cap, side);
+    }
+
+    @Override
+    public void invalidateCaps() {
+        super.invalidateCaps();
+        capUp.invalidate();
+        capHorizontal.invalidate();
+        capDown.invalidate();
+        capNull.invalidate();
     }
 }

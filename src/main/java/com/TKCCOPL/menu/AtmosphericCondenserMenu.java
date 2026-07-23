@@ -13,14 +13,14 @@ import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 
-public class AtmosphericCondenserMenu extends MachineMenu {
+public class AtmosphericCondenserMenu extends MachineMenu implements RedstoneMenuAccess {
+    public static final int BUTTON_CYCLE_REDSTONE = 0;
     private final ContainerData data;
     private final ContainerLevelAccess access;
 
     public AtmosphericCondenserMenu(int containerId, Inventory inventory, FriendlyByteBuf buffer) {
-        this(containerId, inventory, resolve(inventory, buffer), new SimpleContainerData(5), ContainerLevelAccess.NULL);
+        this(containerId, inventory, resolve(inventory, buffer), new SimpleContainerData(8), ContainerLevelAccess.NULL);
     }
 
     public AtmosphericCondenserMenu(int containerId, Inventory inventory, AtmosphericCondenserBlockEntity blockEntity,
@@ -37,7 +37,7 @@ public class AtmosphericCondenserMenu extends MachineMenu {
         addSlot(new Slot(machine, AtmosphericCondenserBlockEntity.BOTTLE_INPUT_SLOT, 18, 50) {
             @Override
             public boolean mayPlace(ItemStack stack) {
-                return stack.is(Items.GLASS_BOTTLE);
+                return machine.canPlaceItem(AtmosphericCondenserBlockEntity.BOTTLE_INPUT_SLOT, stack);
             }
         });
         addSlot(outputSlot(machine, 158, 50));
@@ -71,10 +71,31 @@ public class AtmosphericCondenserMenu extends MachineMenu {
         return stillValid(access, player, ModBlocks.ATMOSPHERIC_CONDENSER.get());
     }
 
+    @Override
+    public boolean clickMenuButton(Player player, int id) {
+        if (id == BUTTON_CYCLE_REDSTONE && machine instanceof AtmosphericCondenserBlockEntity blockEntity) {
+            if (blockEntity.getRedstoneState().cycleMode()) {
+                blockEntity.setChanged();
+                if (blockEntity.getLevel() != null) {
+                    blockEntity.getLevel().sendBlockUpdated(blockEntity.getBlockPos(),
+                            blockEntity.getBlockState(), blockEntity.getBlockState(), 2);
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
     public int getProgress() { return data.get(0); }
     public int getMaxProgress() { return data.get(1); }
     public int getStock() { return data.get(2); }
     public boolean isDownstreamConnected() { return data.get(3) != 0; }
     public int getBottleCount() { return data.get(4); }
     public boolean hasBottle() { return getBottleCount() > 0; }
+    public int getRedstoneModeOrdinal() { return data.get(5); }
+    public boolean isRedstonePowered() { return data.get(6) != 0; }
+    public boolean isRedstoneProcessingAllowed() { return data.get(7) != 0; }
+
+    @Override
+    public int getRedstoneButtonId() { return BUTTON_CYCLE_REDSTONE; }
 }

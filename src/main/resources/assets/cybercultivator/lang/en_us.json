@@ -229,5 +229,15 @@
   "gui.cybercultivator.incubator.status_resources": "Resources low · refill %s",
   "gui.cybercultivator.incubator.status_growing": "Growing · %s%% · %ss remaining",
   "gui.cybercultivator.incubator.status_output_blocked": "Mature · output slot full",
-  "gui.cybercultivator.incubator.status_complete": "Product ready · next seed"
+  "gui.cybercultivator.incubator.status_complete": "Product ready · next seed",
+  "gui.cybercultivator.redstone.label.ignore": "RS:Ignore",
+  "gui.cybercultivator.redstone.label.high": "RS:High",
+  "gui.cybercultivator.redstone.label.low": "RS:Low",
+  "gui.cybercultivator.redstone.tooltip.ignore": "Ignores redstone signal · Power: %s",
+  "gui.cybercultivator.redstone.tooltip.high": "Active on high signal · Power: %s",
+  "gui.cybercultivator.redstone.tooltip.low": "Active on low signal · Power: %s",
+  "gui.cybercultivator.redstone.powered.yes": "Powered",
+  "gui.cybercultivator.redstone.powered.no": "Unpowered",
+  "gui.cybercultivator.status.redstone_blocked.high": "Redstone blocked: high signal required",
+  "gui.cybercultivator.status.redstone_blocked.low": "Redstone blocked: low signal required"
 }

@@ -3,6 +3,8 @@ package com.TKCCOPL.gametest;
 import com.TKCCOPL.Config;
 import com.TKCCOPL.api.BottlerInfo;
 import com.TKCCOPL.api.CyberCultivatorAPI;
+import com.TKCCOPL.api.MachineControlInfo;
+import com.TKCCOPL.api.RedstoneControlMode;
 import com.TKCCOPL.block.entity.BioIncubatorBlockEntity;
 import com.TKCCOPL.block.entity.AtmosphericCondenserBlockEntity;
 import com.TKCCOPL.block.entity.GeneSplicerBlockEntity;
@@ -76,6 +78,8 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 @GameTestHolder(cybercultivator.MODID)
@@ -1711,6 +1715,796 @@ public final class ModGameTests {
         SerumBottlerBlockEntity.tick(helper.getLevel(), pos, bottler.getBlockState(), bottler);
         helper.assertTrue(bottler.getMaxProgress() > 0,
                 "Berry synthesis inputs must start processing despite the previous failed-query cache");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void redstoneLegacyDefaultsToIgnore(GameTestHelper helper) {
+        BlockPos condenserPos = new BlockPos(1, 1, 1);
+        helper.setBlock(condenserPos, ModBlocks.ATMOSPHERIC_CONDENSER.get());
+        AtmosphericCondenserBlockEntity condenser =
+                (AtmosphericCondenserBlockEntity) helper.getBlockEntity(condenserPos);
+        condenser.load(new CompoundTag());
+        helper.assertTrue(condenser.getRedstoneState().getMode() == RedstoneControlMode.IGNORE,
+                "Legacy condenser must default to IGNORE");
+        helper.assertTrue(condenser.getRedstoneState().isProcessingAllowed(),
+                "IGNORE mode must allow processing");
+        AtmosphericCondenserBlockEntity.tick(helper.getLevel(), condenserPos,
+                condenser.getBlockState(), condenser);
+
+        BlockPos incubatorPos = new BlockPos(2, 1, 1);
+        helper.setBlock(incubatorPos, ModBlocks.BIO_INCUBATOR.get());
+        BioIncubatorBlockEntity incubator =
+                (BioIncubatorBlockEntity) helper.getBlockEntity(incubatorPos);
+        incubator.load(new CompoundTag());
+        helper.assertTrue(incubator.getRedstoneState().getMode() == RedstoneControlMode.IGNORE,
+                "Legacy incubator must default to IGNORE");
+        BioIncubatorBlockEntity.tick(helper.getLevel(), incubatorPos,
+                incubator.getBlockState(), incubator);
+
+        BlockPos splicerPos = new BlockPos(3, 1, 1);
+        helper.setBlock(splicerPos, ModBlocks.GENE_SPLICER.get());
+        GeneSplicerBlockEntity splicer =
+                (GeneSplicerBlockEntity) helper.getBlockEntity(splicerPos);
+        splicer.load(new CompoundTag());
+        helper.assertTrue(splicer.getRedstoneState().getMode() == RedstoneControlMode.IGNORE,
+                "Legacy splicer must default to IGNORE");
+        GeneSplicerBlockEntity.tick(helper.getLevel(), splicerPos,
+                splicer.getBlockState(), splicer);
+
+        BlockPos bottlerPos = new BlockPos(4, 1, 1);
+        helper.setBlock(bottlerPos, ModBlocks.SERUM_BOTTLER.get());
+        SerumBottlerBlockEntity bottler =
+                (SerumBottlerBlockEntity) helper.getBlockEntity(bottlerPos);
+        bottler.load(new CompoundTag());
+        helper.assertTrue(bottler.getRedstoneState().getMode() == RedstoneControlMode.IGNORE,
+                "Legacy bottler must default to IGNORE");
+        SerumBottlerBlockEntity.tick(helper.getLevel(), bottlerPos,
+                bottler.getBlockState(), bottler);
+
+        // M5: NBT 未知字符串 → IGNORE
+        CompoundTag unknownModeTag = new CompoundTag();
+        unknownModeTag.putString("RedstoneMode", "bogus");
+        splicer.load(unknownModeTag);
+        helper.assertTrue(splicer.getRedstoneState().getMode() == RedstoneControlMode.IGNORE,
+                "Unknown redstone mode string must fall back to IGNORE");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void redstoneHighLowFreezesAndResumesWithoutConsuming(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.GENE_SPLICER.get());
+        GeneSplicerBlockEntity splicer = (GeneSplicerBlockEntity) helper.getBlockEntity(pos);
+        ItemStack seedA = new ItemStack(ModItems.FIBER_REED_SEEDS.get());
+        ItemStack seedB = new ItemStack(ModItems.PROTEIN_SOY_SEEDS.get());
+        splicer.setItem(GeneSplicerBlockEntity.SEED_A_SLOT, seedA);
+        splicer.setItem(GeneSplicerBlockEntity.SEED_B_SLOT, seedB);
+        helper.assertTrue(splicer.isSplicing() && splicer.getSpliceProgress() == 0,
+                "Two parents must start splicing with progress=0");
+
+        // 推进 1 tick（IGNORE 默认允许加工）
+        GeneSplicerBlockEntity.tick(helper.getLevel(), pos, splicer.getBlockState(), splicer);
+        helper.assertTrue(splicer.getSpliceProgress() == 1,
+                "IGNORE mode must allow progress advancement");
+
+        // HIGH 模式 + 未供电 → 冻结
+        splicer.getRedstoneState().setMode(RedstoneControlMode.HIGH);
+        splicer.getRedstoneState().updatePowered(false);
+        helper.assertFalse(splicer.getRedstoneState().isProcessingAllowed(),
+                "HIGH mode without power must block processing");
+        for (int i = 0; i < 5; i++) {
+            GeneSplicerBlockEntity.tick(helper.getLevel(), pos, splicer.getBlockState(), splicer);
+        }
+        helper.assertTrue(splicer.getSpliceProgress() == 1,
+                "HIGH mode without power must freeze splice progress");
+        helper.assertFalse(splicer.getSeedA().isEmpty() || splicer.getSeedB().isEmpty(),
+                "Frozen splice must not consume parents");
+
+        // HIGH 模式 + 供电 → 恢复
+        splicer.getRedstoneState().updatePowered(true);
+        helper.assertTrue(splicer.getRedstoneState().isProcessingAllowed(),
+                "HIGH mode with power must allow processing");
+        for (int i = 0; i < 5; i++) {
+            GeneSplicerBlockEntity.tick(helper.getLevel(), pos, splicer.getBlockState(), splicer);
+        }
+        helper.assertTrue(splicer.getSpliceProgress() == 6,
+                "HIGH mode with power must resume splice progress");
+
+        // LOW 模式 + 供电 → 冻结
+        splicer.getRedstoneState().setMode(RedstoneControlMode.LOW);
+        helper.assertFalse(splicer.getRedstoneState().isProcessingAllowed(),
+                "LOW mode with power must block processing");
+        for (int i = 0; i < 5; i++) {
+            GeneSplicerBlockEntity.tick(helper.getLevel(), pos, splicer.getBlockState(), splicer);
+        }
+        helper.assertTrue(splicer.getSpliceProgress() == 6,
+                "LOW mode with power must freeze splice progress");
+
+        // LOW 模式 + 未供电 → 恢复
+        splicer.getRedstoneState().updatePowered(false);
+        helper.assertTrue(splicer.getRedstoneState().isProcessingAllowed(),
+                "LOW mode without power must allow processing");
+        for (int i = 0; i < 5; i++) {
+            GeneSplicerBlockEntity.tick(helper.getLevel(), pos, splicer.getBlockState(), splicer);
+        }
+        helper.assertTrue(splicer.getSpliceProgress() == 11,
+                "LOW mode without power must resume splice progress");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void comparatorBoundariesAcrossMachines(GameTestHelper helper) {
+        // === 灌装机 ===
+        BlockPos bottlerPos = new BlockPos(1, 1, 1);
+        helper.setBlock(bottlerPos, ModBlocks.SERUM_BOTTLER.get());
+        SerumBottlerBlockEntity bottler = (SerumBottlerBlockEntity) helper.getBlockEntity(bottlerPos);
+        helper.assertTrue(bottler.getComparatorSignal() == 0,
+                "Empty bottler must emit 0");
+        CompoundTag bottlerProgress = new CompoundTag();
+        bottlerProgress.putInt("Progress", 1);
+        bottlerProgress.putInt("MaxProgress", 300);
+        bottlerProgress.putString("RecipeId", SerumRecipeIds.S01_BOTTLING.toString());
+        bottler.load(bottlerProgress);
+        helper.assertTrue(bottler.getComparatorSignal() == 1,
+                "Bottler at progress=1/300 must emit 1 (lower bound)");
+        bottlerProgress.putInt("Progress", 297);
+        bottler.load(bottlerProgress);
+        helper.assertTrue(bottler.getComparatorSignal() == 14,
+                "Bottler at progress=297/300 must emit 14 (upper bound)");
+        bottlerProgress.put("Output",
+                new ItemStack(ModItems.SYNAPTIC_SERUM_S01.get()).save(new CompoundTag()));
+        bottler.load(bottlerProgress);
+        helper.assertTrue(bottler.getComparatorSignal() == 15,
+                "Bottler with output must emit 15 (priority over progress)");
+
+        // === 拼接机 ===
+        BlockPos splicerPos = new BlockPos(2, 1, 1);
+        helper.setBlock(splicerPos, ModBlocks.GENE_SPLICER.get());
+        GeneSplicerBlockEntity splicer = (GeneSplicerBlockEntity) helper.getBlockEntity(splicerPos);
+        helper.assertTrue(splicer.getComparatorSignal() == 0,
+                "Empty splicer must emit 0");
+        CompoundTag splicerProgress = new CompoundTag();
+        splicerProgress.put("SeedA", new ItemStack(ModItems.FIBER_REED_SEEDS.get()).save(new CompoundTag()));
+        splicerProgress.put("SeedB", new ItemStack(ModItems.PROTEIN_SOY_SEEDS.get()).save(new CompoundTag()));
+        splicerProgress.putInt("SpliceProgress", 0);
+        splicerProgress.putBoolean("Splicing", true);
+        splicerProgress.putBoolean("AutomaticWorkflow", true);
+        splicer.load(splicerProgress);
+        helper.assertTrue(splicer.isSplicing() && splicer.getSpliceProgress() == 0,
+                "Splicer with two parents must be splicing at progress=0");
+        helper.assertTrue(splicer.getComparatorSignal() == 1,
+                "Splicer at splicing=true progress=0 must emit 1 (§3.3 startup boundary)");
+        splicerProgress.putInt("SpliceProgress", 99);
+        splicer.load(splicerProgress);
+        helper.assertTrue(splicer.getComparatorSignal() == 14,
+                "Splicer at progress=99/100 must emit 14");
+        CompoundTag splicerOutput = new CompoundTag();
+        splicerOutput.put("Output", new ItemStack(ModItems.FIBER_REED_SEEDS.get()).save(new CompoundTag()));
+        splicer.load(splicerOutput);
+        helper.assertTrue(splicer.getComparatorSignal() == 15,
+                "Splicer with output must emit 15");
+
+        // === 冷凝器 ===
+        BlockPos condenserPos = new BlockPos(3, 1, 1);
+        helper.setBlock(condenserPos, ModBlocks.ATMOSPHERIC_CONDENSER.get());
+        AtmosphericCondenserBlockEntity condenser =
+                (AtmosphericCondenserBlockEntity) helper.getBlockEntity(condenserPos);
+        helper.assertTrue(condenser.getComparatorSignal() == 0,
+                "Empty condenser must emit 0");
+        CompoundTag condenserProgress = new CompoundTag();
+        condenserProgress.putInt("Progress", 1);
+        condenser.load(condenserProgress);
+        helper.assertTrue(condenser.getComparatorSignal() == 1,
+                "Condenser at progress=1/600 must emit 1");
+        condenserProgress.putInt("Progress", 599);
+        condenser.load(condenserProgress);
+        helper.assertTrue(condenser.getComparatorSignal() == 14,
+                "Condenser at progress=599/600 must emit 14");
+        CompoundTag condenserOutput = new CompoundTag();
+        condenserOutput.put("Output",
+                new ItemStack(ModItems.PURIFIED_WATER_BOTTLE.get()).save(new CompoundTag()));
+        condenser.load(condenserOutput);
+        helper.assertTrue(condenser.getComparatorSignal() == 15,
+                "Condenser with output must emit 15");
+
+        // === 培养槽 ===
+        BlockPos incubatorPos = new BlockPos(4, 1, 1);
+        helper.setBlock(incubatorPos, ModBlocks.BIO_INCUBATOR.get());
+        BioIncubatorBlockEntity incubator =
+                (BioIncubatorBlockEntity) helper.getBlockEntity(incubatorPos);
+        helper.assertTrue(incubator.getComparatorSignal() == 0,
+                "Empty incubator must emit 0");
+        CompoundTag incubatorProgress = new CompoundTag();
+        incubatorProgress.put("Seed", new ItemStack(ModItems.FIBER_REED_SEEDS.get()).save(new CompoundTag()));
+        incubatorProgress.putInt("GrowthProgress", 1);
+        incubator.load(incubatorProgress);
+        int expectedLower = Math.max(1, Math.min(14,
+                (int) Math.ceil((double) 1 * 14 / Config.maturationThreshold)));
+        helper.assertTrue(incubator.getComparatorSignal() == expectedLower,
+                "Incubator at growth=1 must emit " + expectedLower + " (lower bound)");
+        incubatorProgress.putInt("GrowthProgress", Config.maturationThreshold - 1);
+        incubator.load(incubatorProgress);
+        int expectedUpper = Math.max(1, Math.min(14,
+                (int) Math.ceil((double) (Config.maturationThreshold - 1) * 14 / Config.maturationThreshold)));
+        helper.assertTrue(incubator.getComparatorSignal() == expectedUpper,
+                "Incubator near maturity must emit " + expectedUpper + " (upper bound)");
+        CompoundTag incubatorOutput = new CompoundTag();
+        incubatorOutput.put("ResourceOutput",
+                new ItemStack(ModItems.PLANT_FIBER.get()).save(new CompoundTag()));
+        incubator.load(incubatorOutput);
+        helper.assertTrue(incubator.getComparatorSignal() == 15,
+                "Incubator with resource output must emit 15");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void clickMenuButtonCyclesRedstoneMode(GameTestHelper helper) {
+        BlockPos bottlerPos = new BlockPos(1, 1, 1);
+        helper.setBlock(bottlerPos, ModBlocks.SERUM_BOTTLER.get());
+        SerumBottlerBlockEntity bottler = (SerumBottlerBlockEntity) helper.getBlockEntity(bottlerPos);
+        Player player = helper.makeMockSurvivalPlayer();
+        SerumBottlerMenu menu = (SerumBottlerMenu) bottler.createMenu(1, player.getInventory(), player);
+
+        helper.assertTrue(bottler.getRedstoneState().getMode() == RedstoneControlMode.IGNORE,
+                "Bottler must start in IGNORE mode");
+        helper.assertTrue(menu.clickMenuButton(player, SerumBottlerMenu.BUTTON_CYCLE_REDSTONE),
+                "clickMenuButton must handle redstone cycle");
+        helper.assertTrue(bottler.getRedstoneState().getMode() == RedstoneControlMode.HIGH,
+                "First click must cycle IGNORE → HIGH");
+        helper.assertTrue(menu.clickMenuButton(player, SerumBottlerMenu.BUTTON_CYCLE_REDSTONE),
+                "clickMenuButton must handle second cycle");
+        helper.assertTrue(bottler.getRedstoneState().getMode() == RedstoneControlMode.LOW,
+                "Second click must cycle HIGH → LOW");
+        helper.assertTrue(menu.clickMenuButton(player, SerumBottlerMenu.BUTTON_CYCLE_REDSTONE),
+                "clickMenuButton must handle third cycle");
+        helper.assertTrue(bottler.getRedstoneState().getMode() == RedstoneControlMode.IGNORE,
+                "Third click must cycle LOW → IGNORE");
+
+        // 当前冷凝器已移除旧的暂停/自动注入按钮，红石模式使用唯一按钮 ID 0。
+        BlockPos condenserPos = new BlockPos(2, 1, 1);
+        helper.setBlock(condenserPos, ModBlocks.ATMOSPHERIC_CONDENSER.get());
+        AtmosphericCondenserBlockEntity condenser =
+                (AtmosphericCondenserBlockEntity) helper.getBlockEntity(condenserPos);
+        AtmosphericCondenserMenu condenserMenu =
+                (AtmosphericCondenserMenu) condenser.createMenu(2, player.getInventory(), player);
+        helper.assertTrue(condenser.getRedstoneState().getMode() == RedstoneControlMode.IGNORE,
+                "Condenser must start in IGNORE mode");
+        helper.assertTrue(condenserMenu.clickMenuButton(player, AtmosphericCondenserMenu.BUTTON_CYCLE_REDSTONE),
+                "Condenser clickMenuButton must handle redstone cycle");
+        helper.assertTrue(condenser.getRedstoneState().getMode() == RedstoneControlMode.HIGH,
+                "Condenser first click must cycle IGNORE → HIGH");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE, timeoutTicks = 200)
+    public static void apiSetMachineRedstoneModeGuards(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.SERUM_BOTTLER.get());
+        SerumBottlerBlockEntity bottler = (SerumBottlerBlockEntity) helper.getBlockEntity(pos);
+        // 公开 API 使用绝对坐标（helper.setBlock/getBlockEntity 内部转绝对，但 API 直接调用 level）
+        BlockPos absPos = helper.absolutePos(pos);
+
+        // null 参数 → false
+        helper.assertFalse(CyberCultivatorAPI.setMachineRedstoneMode(null, absPos, RedstoneControlMode.HIGH),
+                "Null level must be rejected");
+        helper.assertFalse(CyberCultivatorAPI.setMachineRedstoneMode(helper.getLevel(), null, RedstoneControlMode.HIGH),
+                "Null pos must be rejected");
+        helper.assertFalse(CyberCultivatorAPI.setMachineRedstoneMode(helper.getLevel(), absPos, null),
+                "Null mode must be rejected");
+
+        // 非机器 BE → false
+        BlockPos dirtPos = new BlockPos(2, 1, 1);
+        helper.setBlock(dirtPos, net.minecraft.world.level.block.Blocks.STONE);
+        BlockPos absDirtPos = helper.absolutePos(dirtPos);
+        helper.assertFalse(CyberCultivatorAPI.setMachineRedstoneMode(helper.getLevel(), absDirtPos, RedstoneControlMode.HIGH),
+                "Non-machine block must be rejected");
+
+        // 服务端主线程调用 → true
+        helper.assertTrue(CyberCultivatorAPI.setMachineRedstoneMode(helper.getLevel(), absPos, RedstoneControlMode.HIGH),
+                "Server main-thread call must succeed");
+        helper.assertTrue(bottler.getRedstoneState().getMode() == RedstoneControlMode.HIGH,
+                "API must actually change the redstone mode");
+
+        // 非主线程调用 → false（M7）
+        AtomicBoolean threadResult = new AtomicBoolean(true);
+        CountDownLatch latch = new CountDownLatch(1);
+        Thread other = new Thread(() -> {
+            threadResult.set(CyberCultivatorAPI.setMachineRedstoneMode(
+                    helper.getLevel(), absPos, RedstoneControlMode.LOW));
+            latch.countDown();
+        }, "v1.1.7-redstone-api-test");
+        other.start();
+        try {
+            latch.await();
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+        }
+        helper.assertFalse(threadResult.get(),
+                "Non-main-thread API call must be rejected (M7)");
+        helper.assertTrue(bottler.getRedstoneState().getMode() == RedstoneControlMode.HIGH,
+                "Rejected non-main-thread call must not change the mode");
+
+        // getMachineControlInfo 返回正确快照
+        MachineControlInfo info = CyberCultivatorAPI.getMachineControlInfo(helper.getLevel(), absPos);
+        helper.assertTrue(info != null, "getMachineControlInfo must return a snapshot");
+        helper.assertTrue(info.mode() == RedstoneControlMode.HIGH,
+                "Snapshot must reflect current mode");
+        helper.assertTrue(info.comparatorSignal() == bottler.getComparatorSignal(),
+                "Snapshot must reflect current comparator signal");
+
+        // getMachineControlInfo null/非机器 → null
+        helper.assertTrue(CyberCultivatorAPI.getMachineControlInfo(null, absPos) == null,
+                "Null level must return null snapshot");
+        helper.assertTrue(CyberCultivatorAPI.getMachineControlInfo(helper.getLevel(), absDirtPos) == null,
+                "Non-machine block must return null snapshot");
+
+        // 注：客户端调用（level.isClientSide == true）拒绝逻辑由代码审查覆盖，
+        // GameTest 在服务端运行无法访问 ClientLevel。
+        helper.succeed();
+    }
+
+    // === v1.1.7 §12.1 自动化能力测试（IItemHandler + WorldlyContainer 一致性） ===
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void machineCapabilityMatrix(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.GENE_SPLICER.get());
+        GeneSplicerBlockEntity splicer = (GeneSplicerBlockEntity) helper.getBlockEntity(pos);
+
+        // visibleSlots(UP) 与 visibleSlots(NORTH) 应包含两个亲本槽
+        int[] upSlots = splicer.visibleSlots(Direction.UP);
+        int[] horizontalSlots = splicer.visibleSlots(Direction.NORTH);
+        helper.assertTrue(upSlots.length == 2 && horizontalSlots.length == 2,
+                "Splicer UP/horizontal must expose 2 seed slots");
+        // visibleSlots(DOWN) 仅输出槽
+        int[] downSlots = splicer.visibleSlots(Direction.DOWN);
+        helper.assertTrue(downSlots.length == 1 && downSlots[0] == GeneSplicerBlockEntity.OUTPUT_SLOT,
+                "Splicer DOWN must expose only output slot");
+        // null side 暴露全部 3 槽位
+        int[] nullSlots = splicer.visibleSlots(null);
+        helper.assertTrue(nullSlots.length == 3, "Splicer null side must expose all slots");
+
+        // canInsert：亲本槽接受种子，输出槽拒绝；DOWN 拒绝插入
+        ItemStack seed = ModItems.FIBER_REED_SEEDS.get().getDefaultInstance();
+        helper.assertTrue(splicer.canInsert(GeneSplicerBlockEntity.SEED_A_SLOT, seed, Direction.UP),
+                "Splicer SEED_A must accept seed from UP");
+        helper.assertTrue(!splicer.canInsert(GeneSplicerBlockEntity.OUTPUT_SLOT, seed, Direction.UP),
+                "Splicer OUTPUT must reject insertion");
+        helper.assertTrue(!splicer.canInsert(GeneSplicerBlockEntity.SEED_A_SLOT, seed, Direction.DOWN),
+                "Splicer DOWN must reject seed insertion");
+        // canExtract：仅 DOWN 可抽取输出；亲本槽拒绝
+        helper.assertTrue(splicer.canExtract(GeneSplicerBlockEntity.OUTPUT_SLOT, ItemStack.EMPTY, Direction.DOWN),
+                "Splicer OUTPUT must be extractable from DOWN");
+        helper.assertTrue(!splicer.canExtract(GeneSplicerBlockEntity.SEED_A_SLOT, ItemStack.EMPTY, Direction.DOWN),
+                "Splicer SEED_A must not be extractable");
+        helper.assertTrue(!splicer.canExtract(GeneSplicerBlockEntity.OUTPUT_SLOT, ItemStack.EMPTY, Direction.UP),
+                "Splicer OUTPUT must not be extractable from UP");
+
+        helper.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+
+        // 培养槽：UP=种子只入；水平=N/P/D 只入；DOWN=输出只出
+        helper.setBlock(pos, ModBlocks.BIO_INCUBATOR.get());
+        BioIncubatorBlockEntity incubator = (BioIncubatorBlockEntity) helper.getBlockEntity(pos);
+        int[] incUp = incubator.visibleSlots(Direction.UP);
+        helper.assertTrue(incUp.length == 1 && incUp[0] == BioIncubatorBlockEntity.SEED_SLOT,
+                "Incubator UP must expose only seed slot");
+        int[] incHorizontal = incubator.visibleSlots(Direction.NORTH);
+        helper.assertTrue(incHorizontal.length == 3, "Incubator horizontal must expose 3 input slots");
+        int[] incDown = incubator.visibleSlots(Direction.DOWN);
+        helper.assertTrue(incDown.length == 1
+                        && incDown[0] == BioIncubatorBlockEntity.RESOURCE_OUTPUT_SLOT,
+                "Incubator DOWN must expose only mature resource output");
+        int[] incNull = incubator.visibleSlots(null);
+        helper.assertTrue(incNull.length == 5, "Incubator null side must expose all 5 slots");
+
+        // canInsert：UP 接受种子，UP 拒绝 NUTRITION；horizontal 接受 NUTRITION，horizontal 拒绝种子
+        helper.assertTrue(incubator.canInsert(BioIncubatorBlockEntity.SEED_SLOT, seed, Direction.UP),
+                "Incubator SEED must accept seed from UP");
+        helper.assertTrue(!incubator.canInsert(BioIncubatorBlockEntity.SEED_SLOT, seed, Direction.NORTH),
+                "Incubator SEED must reject seed from horizontal");
+        ItemStack biochem = ModItems.BIOCHEMICAL_SOLUTION.get().getDefaultInstance();
+        helper.assertTrue(incubator.canInsert(BioIncubatorBlockEntity.NUTRITION_SLOT, biochem, Direction.NORTH),
+                "Incubator NUTRITION must accept biochem from horizontal");
+        helper.assertTrue(!incubator.canInsert(BioIncubatorBlockEntity.NUTRITION_SLOT, biochem, Direction.UP),
+                "Incubator NUTRITION must reject biochem from UP");
+
+        helper.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+
+        // 灌装机：UP/horizontal=3 材料槽只入；DOWN=成品只出
+        helper.setBlock(pos, ModBlocks.SERUM_BOTTLER.get());
+        SerumBottlerBlockEntity bottler = (SerumBottlerBlockEntity) helper.getBlockEntity(pos);
+        int[] botUp = bottler.visibleSlots(Direction.UP);
+        helper.assertTrue(botUp.length == 3, "Bottler UP must expose 3 input slots");
+        int[] botDown = bottler.visibleSlots(Direction.DOWN);
+        helper.assertTrue(botDown.length == 1, "Bottler DOWN must expose only output slot");
+        int[] botNull = bottler.visibleSlots(null);
+        helper.assertTrue(botNull.length == 4, "Bottler null side must expose all 4 slots");
+
+        // canInsert：DOWN 拒绝；UP 接受合法材料（莓）
+        ItemStack berry = ModItems.SYNAPTIC_NEURAL_BERRY.get().getDefaultInstance();
+        helper.assertTrue(bottler.canInsert(0, berry, Direction.UP), "Bottler must accept berry from UP");
+        helper.assertTrue(!bottler.canInsert(0, berry, Direction.DOWN), "Bottler DOWN must reject insertion");
+        // canExtract：仅 DOWN 可抽取 OUTPUT
+        helper.assertTrue(bottler.canExtract(3, ItemStack.EMPTY, Direction.DOWN),
+                "Bottler OUTPUT must be extractable from DOWN");
+        helper.assertTrue(!bottler.canExtract(0, ItemStack.EMPTY, Direction.DOWN),
+                "Bottler INPUT must not be extractable");
+
+        helper.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+
+        // 冷凝器：UP=玻璃瓶只入；水平=玻璃瓶输入+纯净水输出；DOWN=纯净水只出
+        helper.setBlock(pos, ModBlocks.ATMOSPHERIC_CONDENSER.get());
+        AtmosphericCondenserBlockEntity condenser = (AtmosphericCondenserBlockEntity) helper.getBlockEntity(pos);
+        int[] condUp = condenser.visibleSlots(Direction.UP);
+        helper.assertTrue(condUp.length == 1
+                        && condUp[0] == AtmosphericCondenserBlockEntity.BOTTLE_INPUT_SLOT,
+                "Condenser UP must expose only bottle input");
+        int[] condHorizontal = condenser.visibleSlots(Direction.NORTH);
+        helper.assertTrue(condHorizontal.length == 2,
+                "Condenser horizontal side must expose bottle input and water output");
+        int[] condDown = condenser.visibleSlots(Direction.DOWN);
+        helper.assertTrue(condDown.length == 1
+                        && condDown[0] == AtmosphericCondenserBlockEntity.OUTPUT_SLOT,
+                "Condenser DOWN must expose only water output");
+        ItemStack glassBottle = Items.GLASS_BOTTLE.getDefaultInstance();
+        helper.assertTrue(condenser.canInsert(AtmosphericCondenserBlockEntity.BOTTLE_INPUT_SLOT,
+                        glassBottle, Direction.UP),
+                "Condenser must accept glass bottles from UP");
+        helper.assertTrue(!condenser.canInsert(AtmosphericCondenserBlockEntity.BOTTLE_INPUT_SLOT,
+                        glassBottle, Direction.DOWN),
+                "Condenser DOWN must reject bottle insertion");
+        helper.assertTrue(!condenser.canExtract(AtmosphericCondenserBlockEntity.OUTPUT_SLOT,
+                        ItemStack.EMPTY, Direction.UP),
+                "Condenser UP must reject extraction");
+
+        helper.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void machineCapabilitySimulateNoSideEffect(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.GENE_SPLICER.get());
+        GeneSplicerBlockEntity splicer = (GeneSplicerBlockEntity) helper.getBlockEntity(pos);
+
+        ItemStack seed = ModItems.FIBER_REED_SEEDS.get().getDefaultInstance();
+        ItemStack seedCopy = seed.copy();
+
+        // 模拟插入：库存不变
+        var capHandler = splicer.getCapability(
+                net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, Direction.UP).orElse(null);
+        helper.assertTrue(capHandler != null, "Splicer UP capability must be present");
+
+        ItemStack remaining = capHandler.insertItem(0, seed, true);
+        helper.assertTrue(remaining.isEmpty(), "Simulated insert of 1 seed into empty slot must succeed fully");
+        // 库存应保持空
+        helper.assertTrue(splicer.getItem(GeneSplicerBlockEntity.SEED_A_SLOT).isEmpty(),
+                "Simulated insert must not modify inventory");
+        // 输入 stack 不应被修改
+        helper.assertTrue(ItemStack.matches(seed, seedCopy), "Simulated insert must not modify input stack");
+
+        // 实际插入：库存变化
+        ItemStack remainingReal = capHandler.insertItem(0, seed, false);
+        helper.assertTrue(remainingReal.isEmpty(), "Real insert must succeed");
+        helper.assertTrue(!splicer.getItem(GeneSplicerBlockEntity.SEED_A_SLOT).isEmpty(),
+                "Real insert must modify inventory");
+        helper.assertTrue(splicer.getItem(GeneSplicerBlockEntity.SEED_A_SLOT).getCount() == 1,
+                "Seed slot must hold exactly 1 item");
+
+        // 模拟抽取：库存不变（output 槽当前为空，模拟抽取返回 EMPTY）
+        ItemStack simulatedExtract = capHandler.extractItem(0, 1, true);
+        // SEED_A 不在 UP 槽位映射中？等等 - UP 映射到 [SEED_A, SEED_B]，所以 slot 0 是 SEED_A
+        // 但 canExtract(SEED_A, ..., UP) 返回 false，所以模拟抽取返回 EMPTY
+        helper.assertTrue(simulatedExtract.isEmpty(),
+                "Simulated extract of SEED_A from UP must be rejected (canExtract=false)");
+
+        // 模拟插入到非空亲本槽（已满，limit=1）：返回原 stack
+        ItemStack extraSeed = ModItems.PROTEIN_SOY_SEEDS.get().getDefaultInstance();
+        ItemStack extraCopy = extraSeed.copy();
+        ItemStack remainingFull = capHandler.insertItem(0, extraSeed, true);
+        helper.assertTrue(remainingFull.getCount() == 1,
+                "Simulated insert into full slot must return full remaining");
+        helper.assertTrue(ItemStack.matches(extraSeed, extraCopy),
+                "Simulated insert into full slot must not modify input stack");
+
+        // 抽取路径：使用 DOWN capability 抽取 OUTPUT（但 output 为空）
+        var downHandler = splicer.getCapability(
+                net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, Direction.DOWN).orElse(null);
+        helper.assertTrue(downHandler != null, "Splicer DOWN capability must be present");
+        ItemStack emptyExtract = downHandler.extractItem(0, 1, true);
+        helper.assertTrue(emptyExtract.isEmpty(), "Simulated extract from empty OUTPUT must return EMPTY");
+
+        helper.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void machineCapabilityLifecycle(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.SERUM_BOTTLER.get());
+        SerumBottlerBlockEntity bottler = (SerumBottlerBlockEntity) helper.getBlockEntity(pos);
+
+        // 第一次查询：创建并缓存
+        var handler1 = bottler.getCapability(
+                net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, Direction.UP);
+        helper.assertTrue(handler1.isPresent(), "First capability query must return handler");
+
+        // 同方向第二次查询：应返回同一缓存实例
+        var handler2 = bottler.getCapability(
+                net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, Direction.UP);
+        helper.assertTrue(handler2.isPresent(), "Second capability query must return handler");
+
+        // invalidateCaps 后旧 LazyOptional 应失效
+        bottler.invalidateCaps();
+        helper.assertTrue(!handler1.isPresent(),
+                "Old LazyOptional must be invalid after invalidateCaps()");
+
+        // reviveCaps 后重新查询应得到新实例
+        bottler.reviveCaps();
+        var handler3 = bottler.getCapability(
+                net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, Direction.UP);
+        helper.assertTrue(handler3.isPresent(), "Capability must be re-queryable after reviveCaps()");
+
+        // 水平方向应共享同一 handler 实例（按角色映射缓存）
+        var northHandler = bottler.getCapability(
+                net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, Direction.NORTH);
+        var southHandler = bottler.getCapability(
+                net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, Direction.SOUTH);
+        // 两个 LazyOptional 应是同一实例（按角色映射共享）
+        helper.assertTrue(northHandler == southHandler,
+                "NORTH and SOUTH must share same LazyOptional (role-based cache)");
+
+        helper.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void incubatorTopSeedAutoInput(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.BIO_INCUBATOR.get());
+        BioIncubatorBlockEntity incubator = (BioIncubatorBlockEntity) helper.getBlockEntity(pos);
+
+        // 初始状态：种子槽为空
+        helper.assertTrue(incubator.getItem(BioIncubatorBlockEntity.SEED_SLOT).isEmpty(),
+                "Seed slot must start empty");
+
+        // 通过 UP capability 插入种子（模拟漏斗从顶部输入）
+        var upHandler = incubator.getCapability(
+                net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, Direction.UP).orElse(null);
+        helper.assertTrue(upHandler != null, "Incubator UP capability must be present");
+
+        ItemStack seed = ModItems.FIBER_REED_SEEDS.get().getDefaultInstance();
+        ItemStack remaining = upHandler.insertItem(0, seed, false);
+        helper.assertTrue(remaining.isEmpty(), "Seed insert must succeed");
+        helper.assertTrue(!incubator.getItem(BioIncubatorBlockEntity.SEED_SLOT).isEmpty(),
+                "Seed slot must be populated after insert");
+        helper.assertTrue(incubator.getItem(BioIncubatorBlockEntity.SEED_SLOT).getCount() == 1,
+                "Seed slot must hold exactly 1 item");
+
+        // 通过 NORTH capability 尝试插入种子到 NUTRITION 槽：应被拒绝（horizontal 不接受种子）
+        var northHandler = incubator.getCapability(
+                net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, Direction.NORTH).orElse(null);
+        ItemStack remaining2 = northHandler.insertItem(0, seed, false);
+        helper.assertTrue(!remaining2.isEmpty(), "Seed insert to NUTRITION slot must be rejected");
+
+        // 通过 UP capability 尝试插入 NUTRITION（biochem）：UP 不接受 NUTRITION
+        ItemStack biochem = ModItems.BIOCHEMICAL_SOLUTION.get().getDefaultInstance();
+        ItemStack remaining3 = upHandler.insertItem(0, biochem, false);
+        helper.assertTrue(!remaining3.isEmpty(), "Biochem insert to UP must be rejected (UP is seed-only)");
+
+        helper.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void geneSplicerWorldlyContainerHopperPath(GameTestHelper helper) {
+        // §9.3 验证 GeneSplicer 改造为 WorldlyContainer 后的漏斗路径
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.GENE_SPLICER.get());
+        GeneSplicerBlockEntity splicer = (GeneSplicerBlockEntity) helper.getBlockEntity(pos);
+
+        // getSlotsForFace 与 visibleSlots 一致
+        int[] upFace = splicer.getSlotsForFace(Direction.UP);
+        int[] upPolicy = splicer.visibleSlots(Direction.UP);
+        helper.assertTrue(upFace.length == upPolicy.length,
+                "getSlotsForFace must match visibleSlots");
+
+        // canPlaceItemThroughFace 委托给 canInsert
+        ItemStack seed = ModItems.FIBER_REED_SEEDS.get().getDefaultInstance();
+        helper.assertTrue(splicer.canPlaceItemThroughFace(GeneSplicerBlockEntity.SEED_A_SLOT, seed, Direction.UP),
+                "canPlaceItemThroughFace must delegate to canInsert");
+
+        // canTakeItemThroughFace 委托给 canExtract
+        helper.assertTrue(splicer.canTakeItemThroughFace(GeneSplicerBlockEntity.OUTPUT_SLOT, ItemStack.EMPTY, Direction.DOWN),
+                "canTakeItemThroughFace must delegate to canExtract");
+        helper.assertTrue(!splicer.canTakeItemThroughFace(GeneSplicerBlockEntity.SEED_A_SLOT, ItemStack.EMPTY, Direction.DOWN),
+                "SEED_A must not be takable through face");
+
+        // 通过 WorldlyContainer.setItem 插入种子（漏斗路径），应触发 normalizeInsertedStack
+        splicer.setItem(GeneSplicerBlockEntity.SEED_A_SLOT, seed);
+        ItemStack inserted = splicer.getItem(GeneSplicerBlockEntity.SEED_A_SLOT);
+        helper.assertTrue(!inserted.isEmpty() && inserted.getCount() == 1,
+                "setItem must normalize seed count to 1");
+        // ensureGeneData 应补齐 GENE 标签
+        helper.assertTrue(inserted.hasTag() && inserted.getTag().contains(GeneticSeedItem.GENE_SPEED),
+                "setItem must ensure gene data via normalizeInsertedStack");
+
+        helper.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        helper.succeed();
+    }
+
+    // === v1.1.7 hotfix 边界回归测试（问题 1/2/3/5/7） ===
+
+    /** 问题 1：IItemHandler 异物插入不得覆盖原物品（防止物品复制/丢失）。 */
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void itemHandlerRejectsMismatchedInsert(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.GENE_SPLICER.get());
+        GeneSplicerBlockEntity splicer = (GeneSplicerBlockEntity) helper.getBlockEntity(pos);
+
+        ItemStack first = new ItemStack(ModItems.FIBER_REED_SEEDS.get());
+        splicer.setItem(GeneSplicerBlockEntity.SEED_A_SLOT, first);
+
+        var upHandler = splicer.getCapability(
+                net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, Direction.UP).orElse(null);
+        helper.assertTrue(upHandler != null, "Splicer UP capability must be present");
+
+        ItemStack mismatched = new ItemStack(ModItems.PROTEIN_SOY_SEEDS.get());
+        ItemStack mismatchedCopy = mismatched.copy();
+        ItemStack remaining = upHandler.insertItem(0, mismatched, false);
+
+        helper.assertTrue(remaining.getCount() == 1,
+                "Mismatched insert must return full remaining (no silent accept)");
+        helper.assertTrue(ItemStack.matches(remaining, mismatchedCopy),
+                "Returned remaining must match input (no item duplication)");
+        ItemStack slotAfter = splicer.getItem(GeneSplicerBlockEntity.SEED_A_SLOT);
+        helper.assertTrue(slotAfter.is(ModItems.FIBER_REED_SEEDS.get()),
+                "Existing item must not be overwritten by mismatched insert");
+        helper.assertTrue(slotAfter.getCount() == 1,
+                "Existing item count must remain 1");
+
+        helper.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        helper.succeed();
+    }
+
+    /** 问题 2：种子/亲本槽严格 1，漏斗连续输入不得堆叠。 */
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void hopperCannotStackOccupiedSeedSlot(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.BIO_INCUBATOR.get());
+        BioIncubatorBlockEntity incubator = (BioIncubatorBlockEntity) helper.getBlockEntity(pos);
+
+        var upHandler = incubator.getCapability(
+                net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, Direction.UP).orElse(null);
+        helper.assertTrue(upHandler != null, "Incubator UP capability must be present");
+
+        ItemStack first = new ItemStack(ModItems.FIBER_REED_SEEDS.get());
+        ItemStack remaining1 = upHandler.insertItem(0, first, false);
+        helper.assertTrue(remaining1.isEmpty(), "First seed insert must succeed");
+        helper.assertTrue(incubator.getItem(BioIncubatorBlockEntity.SEED_SLOT).getCount() == 1,
+                "Seed slot must hold 1 after first insert");
+
+        ItemStack second = new ItemStack(ModItems.FIBER_REED_SEEDS.get());
+        ItemStack remaining2 = upHandler.insertItem(0, second, false);
+        helper.assertTrue(remaining2.getCount() == 1,
+                "Second seed insert must be rejected (slot occupied, no stacking)");
+        helper.assertTrue(incubator.getItem(BioIncubatorBlockEntity.SEED_SLOT).getCount() == 1,
+                "Seed slot must remain at 1 after rejected insert");
+
+        helper.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        helper.succeed();
+    }
+
+    /** 问题 3：产物抽走后比较器信号必须从 15 归 0（提前 return 路径仍调用 updateComparatorIfChanged）。 */
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void comparatorDropsToZeroAfterExtraction(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.GENE_SPLICER.get());
+        GeneSplicerBlockEntity splicer = (GeneSplicerBlockEntity) helper.getBlockEntity(pos);
+
+        // 初始：output 非空 → 比较器 = 15
+        CompoundTag withOutput = new CompoundTag();
+        withOutput.put("Output", new ItemStack(ModItems.FIBER_REED_SEEDS.get()).save(new CompoundTag()));
+        splicer.load(withOutput);
+        helper.assertTrue(splicer.getComparatorSignal() == 15,
+                "Splicer with output must emit 15");
+        // 触发 tick 让 lastComparatorSignal 缓存为 15（走 !splicing 提前 return 路径）
+        GeneSplicerBlockEntity.tick(helper.getLevel(), pos, splicer.getBlockState(), splicer);
+
+        // 抽走产物
+        splicer.setItem(GeneSplicerBlockEntity.OUTPUT_SLOT, ItemStack.EMPTY);
+        helper.assertTrue(splicer.getComparatorSignal() == 0,
+                "getComparatorSignal must return 0 immediately after output cleared");
+
+        // 再次 tick：!splicing 提前 return 路径必须调用 updateComparatorIfChanged
+        GeneSplicerBlockEntity.tick(helper.getLevel(), pos, splicer.getBlockState(), splicer);
+        helper.assertTrue(splicer.getComparatorSignal() == 0,
+                "Comparator must remain 0 after tick (no stale 15 cache)");
+
+        helper.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        helper.succeed();
+    }
+
+    /** 问题 5：HIGH 未供电时灌装机不得选取配方（cachedRecipe/maxProgress 保持 0）。 */
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void bottlerSkipsRecipeSelectionWhenRedstoneBlocked(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.SERUM_BOTTLER.get());
+        SerumBottlerBlockEntity bottler = (SerumBottlerBlockEntity) helper.getBlockEntity(pos);
+
+        // 输入合法配方材料（莓合成配方）
+        bottler.setItem(0, new ItemStack(ModItems.PLANT_FIBER.get()));
+        bottler.setItem(1, new ItemStack(ModItems.INDUSTRIAL_ETHANOL.get()));
+        bottler.setItem(2, new ItemStack(ModItems.BIOCHEMICAL_SOLUTION.get()));
+
+        // HIGH 模式 + 未供电 → 红石阻塞
+        bottler.getRedstoneState().setMode(RedstoneControlMode.HIGH);
+        bottler.getRedstoneState().updatePowered(false);
+        helper.assertFalse(bottler.getRedstoneState().isProcessingAllowed(),
+                "HIGH mode without power must block processing");
+
+        // 触发 tick：应跳过配方选取
+        SerumBottlerBlockEntity.tick(helper.getLevel(), pos, bottler.getBlockState(), bottler);
+        helper.assertTrue(bottler.getMaxProgress() == 0,
+                "Bottler must not select recipe when redstone blocked (maxProgress must stay 0)");
+        helper.assertTrue(bottler.getProgress() == 0,
+                "Bottler must not advance progress when redstone blocked");
+        helper.assertTrue(bottler.getComparatorSignal() == 0,
+                "Blocked bottler must emit comparator 0 (no batch started)");
+
+        // 供电恢复后应立即选取配方
+        bottler.getRedstoneState().updatePowered(true);
+        SerumBottlerBlockEntity.tick(helper.getLevel(), pos, bottler.getBlockState(), bottler);
+        helper.assertTrue(bottler.getMaxProgress() > 0,
+                "Bottler must select recipe after power restored");
+
+        helper.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        helper.succeed();
+    }
+
+    /** 问题 7：拼接机冻结期间状态稳定（不推进、不消耗、不抛异常）。 */
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void splicerFrozenStaysStableAcrossManyTicks(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.GENE_SPLICER.get());
+        GeneSplicerBlockEntity splicer = (GeneSplicerBlockEntity) helper.getBlockEntity(pos);
+
+        ItemStack seedA = new ItemStack(ModItems.FIBER_REED_SEEDS.get());
+        ItemStack seedB = new ItemStack(ModItems.PROTEIN_SOY_SEEDS.get());
+        splicer.setItem(GeneSplicerBlockEntity.SEED_A_SLOT, seedA);
+        splicer.setItem(GeneSplicerBlockEntity.SEED_B_SLOT, seedB);
+        helper.assertTrue(splicer.isSplicing(), "Two parents must start splicing");
+
+        // 推进 1 tick（IGNORE 默认允许加工）
+        GeneSplicerBlockEntity.tick(helper.getLevel(), pos, splicer.getBlockState(), splicer);
+        helper.assertTrue(splicer.getSpliceProgress() == 1,
+                "Initial tick must advance progress to 1");
+
+        // HIGH 模式 + 未供电 → 冻结
+        splicer.getRedstoneState().setMode(RedstoneControlMode.HIGH);
+        splicer.getRedstoneState().updatePowered(false);
+
+        // 100 tick 冻结验证（远超原 syncToClient 间隔 5，验证删除冗余同步后行为仍正确）
+        for (int i = 0; i < 100; i++) {
+            GeneSplicerBlockEntity.tick(helper.getLevel(), pos, splicer.getBlockState(), splicer);
+        }
+        helper.assertTrue(splicer.getSpliceProgress() == 1,
+                "Frozen splice must stay at progress=1 across 100 ticks");
+        helper.assertTrue(splicer.isSplicing(),
+                "Frozen splice must remain in splicing state");
+        helper.assertFalse(splicer.getSeedA().isEmpty() || splicer.getSeedB().isEmpty(),
+                "Frozen splice must not consume parents");
+        helper.assertTrue(splicer.getComparatorSignal() == 1,
+                "Frozen splicer at progress=1 must emit comparator signal 1");
+
+        // 恢复供电：进度立即恢复推进
+        splicer.getRedstoneState().updatePowered(true);
+        GeneSplicerBlockEntity.tick(helper.getLevel(), pos, splicer.getBlockState(), splicer);
+        helper.assertTrue(splicer.getSpliceProgress() == 2,
+                "Resumed splice must advance progress again");
+
+        helper.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
         helper.succeed();
     }
 

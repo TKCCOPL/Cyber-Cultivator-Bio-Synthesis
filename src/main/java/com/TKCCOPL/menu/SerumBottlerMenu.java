@@ -19,13 +19,15 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 
-public class SerumBottlerMenu extends MachineMenu {
+public class SerumBottlerMenu extends MachineMenu implements RedstoneMenuAccess {
+    /** v1.1.7 红石模式循环按钮 ID */
+    public static final int BUTTON_CYCLE_REDSTONE = 0;
     private final ContainerData data;
     private final ContainerLevelAccess access;
     private final Level level;
 
     public SerumBottlerMenu(int containerId, Inventory inventory, FriendlyByteBuf buffer) {
-        this(containerId, inventory, resolve(inventory, buffer), new SimpleContainerData(3), ContainerLevelAccess.NULL);
+        this(containerId, inventory, resolve(inventory, buffer), new SimpleContainerData(6), ContainerLevelAccess.NULL);
     }
 
     public SerumBottlerMenu(int containerId, Inventory inventory, SerumBottlerBlockEntity blockEntity,
@@ -80,11 +82,34 @@ public class SerumBottlerMenu extends MachineMenu {
         return stillValid(access, player, ModBlocks.SERUM_BOTTLER.get());
     }
 
+    @Override
+    public boolean clickMenuButton(Player player, int id) {
+        if (id == BUTTON_CYCLE_REDSTONE && machine instanceof SerumBottlerBlockEntity blockEntity) {
+            if (blockEntity.getRedstoneState().cycleMode()) {
+                blockEntity.setChanged();
+                if (blockEntity.getLevel() != null) {
+                    blockEntity.getLevel().sendBlockUpdated(blockEntity.getBlockPos(),
+                            blockEntity.getBlockState(), blockEntity.getBlockState(), 2);
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
     public int getProgress() { return data.get(0); }
     public int getMaxProgress() { return data.get(1); }
     public int getPredictedActivity() { return data.get(2); }
     public boolean isProcessing() { return getMaxProgress() > 0; }
     public boolean hasOutput() { return !machine.getItem(3).isEmpty(); }
+
+    // v1.1.7 红石字段 getter（ContainerData 索引 3/4/5）
+    public int getRedstoneModeOrdinal() { return data.get(3); }
+    public boolean isRedstonePowered() { return data.get(4) != 0; }
+    public boolean isRedstoneProcessingAllowed() { return data.get(5) != 0; }
+
+    @Override
+    public int getRedstoneButtonId() { return BUTTON_CYCLE_REDSTONE; }
 
     public int getOccupiedInputCount() {
         int occupied = 0;

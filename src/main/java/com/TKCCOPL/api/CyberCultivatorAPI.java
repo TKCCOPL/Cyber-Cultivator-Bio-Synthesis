@@ -9,11 +9,14 @@ import com.TKCCOPL.recipe.ModRecipeTypes;
 import com.TKCCOPL.recipe.RecipeOrdering;
 import com.TKCCOPL.recipe.SerumRecipe;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -22,6 +25,7 @@ import java.util.List;
  * 所有方法 null 安全，供第三方模组调用。
  */
 public final class CyberCultivatorAPI {
+    private static final Logger LOGGER = LoggerFactory.getLogger("CyberCultivator/API");
     private CyberCultivatorAPI() {}
 
     // === 基因数据 API ===
@@ -112,6 +116,67 @@ public final class CyberCultivatorAPI {
                 splicer.hasOutput(),
                 splicer.getInputCount()
         );
+    }
+
+    // === v1.1.7 红石控制 API ===
+
+    /**
+     * 获取机器红石控制状态快照。位置无效或非机器 BE 返回 {@code null}。
+     *
+     * <p>v1.1.7 hotfix：仅服务端可用。{@code powered} 状态不持久化、不在客户端采样，
+     * 客户端调用会返回 {@code null} 避免返回陈旧状态。</p>
+     *
+     * @param level 世界（仅服务端）
+     * @param pos   方块位置
+     * @return 控制信息快照；位置无效或客户端调用返回 {@code null}
+     */
+    public static MachineControlInfo getMachineControlInfo(Level level, BlockPos pos) {
+        if (level == null || pos == null) return null;
+        if (!(level instanceof ServerLevel)) return null;
+        BlockEntity be = level.getBlockEntity(pos);
+        if (!(be instanceof MachineRedstoneBlockEntity machine)) return null;
+        MachineRedstoneState state = machine.getRedstoneState();
+        return new MachineControlInfo(
+                state.getMode(),
+                state.isPowered(),
+                state.isProcessingAllowed(),
+                machine.getComparatorSignal()
+        );
+    }
+
+    /**
+     * 设置机器红石模式。走与 GUI 相同的服务端验证、持久化、同步路径。
+     *
+     * <p>约束（§5.3）：
+     * <ul>
+     *   <li>仅逻辑服务端可执行，客户端调用返回 {@code false}</li>
+     *   <li>非主线程调用返回 {@code false} 并记录 debug 日志（M7）</li>
+     *   <li>参数或目标无效返回 {@code false}</li>
+     * </ul>
+     *
+     * @param level 世界
+     * @param pos   方块位置
+     * @param mode  目标模式；{@code null} 视为无效
+     * @return 操作是否成功
+     */
+    public static boolean setMachineRedstoneMode(Level level, BlockPos pos, RedstoneControlMode mode) {
+        if (level == null || pos == null || mode == null) return false;
+        // v1.2.0 §10 采纳：使用 ServerLevel + isSameThread() 替代 getRunningThread() 比较
+        if (!(level instanceof ServerLevel serverLevel)) return false;
+        if (!serverLevel.getServer().isSameThread()) {
+            LOGGER.debug("setMachineRedstoneMode rejected: non-main-thread call at {}", pos);
+            return false;
+        }
+        BlockEntity be = level.getBlockEntity(pos);
+        if (!(be instanceof MachineRedstoneBlockEntity machine)) return false;
+        if (!machine.getRedstoneState().setMode(mode)) {
+            // 模式未变化，仍视为成功（幂等）
+            return true;
+        }
+        // 持久化 + 同步给客户端（与 GUI clickMenuButton 路径一致）
+        be.setChanged();
+        level.sendBlockUpdated(pos, be.getBlockState(), be.getBlockState(), 2);
+        return true;
     }
 
     // === 血清配方 API ===

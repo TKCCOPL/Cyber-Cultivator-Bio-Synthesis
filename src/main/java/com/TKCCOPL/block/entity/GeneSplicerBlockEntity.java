@@ -2,11 +2,13 @@ package com.TKCCOPL.block.entity;
 
 import com.TKCCOPL.Config;
 import com.TKCCOPL.init.ModBlockEntities;
+import com.TKCCOPL.init.ModTags;
 import com.TKCCOPL.item.GeneticSeedItem;
 import com.TKCCOPL.event.GeneSpliceEvent;
 import com.TKCCOPL.menu.GeneSplicerMenu;
 import com.TKCCOPL.recipe.GeneSpliceRules;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
@@ -15,6 +17,7 @@ import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Container;
 import net.minecraft.world.MenuProvider;
+import net.minecraft.world.WorldlyContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -25,7 +28,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
-public class GeneSplicerBlockEntity extends BlockEntity implements Container, MenuProvider {
+public class GeneSplicerBlockEntity extends BlockEntity implements WorldlyContainer, MenuProvider,
+        MachineRedstoneBlockEntity, MachineInventoryPolicy {
     private static final String TAG_SEED_A = "SeedA";
     private static final String TAG_SEED_B = "SeedB";
     private static final String TAG_OUTPUT = "Output";
@@ -44,6 +48,8 @@ public class GeneSplicerBlockEntity extends BlockEntity implements Container, Me
     private ItemStack output = ItemStack.EMPTY;
     private int spliceProgress;
     private boolean splicing;
+    private final MachineRedstoneState redstone = new MachineRedstoneState();
+    private int lastComparatorSignal;
 
     private final ContainerData menuData = new ContainerData() {
         @Override
@@ -55,6 +61,9 @@ public class GeneSplicerBlockEntity extends BlockEntity implements Container, Me
                 case 3 -> Math.min(Short.MAX_VALUE, getPredictedGeneration());
                 case 4 -> getPredictedMutationPermille();
                 case 5 -> getPredictedTwinPermille();
+                case 6 -> redstone.getMenuData(MachineRedstoneState.DATA_MODE);
+                case 7 -> redstone.getMenuData(MachineRedstoneState.DATA_POWERED);
+                case 8 -> redstone.getMenuData(MachineRedstoneState.DATA_PROCESSING_ALLOWED);
                 default -> 0;
             };
         }
@@ -67,7 +76,7 @@ public class GeneSplicerBlockEntity extends BlockEntity implements Container, Me
 
         @Override
         public int getCount() {
-            return 6;
+            return 6 + MachineRedstoneState.getMenuDataCount();
         }
     };
 
@@ -82,7 +91,7 @@ public class GeneSplicerBlockEntity extends BlockEntity implements Container, Me
         if (splicing || !output.isEmpty()) {
             return false;
         }
-        if (!(stack.getItem() instanceof GeneticSeedItem)) {
+        if (!stack.is(ModTags.SemanticItems.GENETIC_SEEDS)) {
             return false;
         }
 
@@ -227,10 +236,21 @@ public class GeneSplicerBlockEntity extends BlockEntity implements Container, Me
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, GeneSplicerBlockEntity blockEntity) {
-        if (level.isClientSide || !blockEntity.splicing) return;
+        if (level.isClientSide) return;
+        if (blockEntity.redstone.consumePendingResample(level, pos)) {
+            blockEntity.syncToClient();
+        }
+        if (!blockEntity.splicing) {
+            blockEntity.updateComparatorIfChanged(level, pos);
+            return;
+        }
         if (blockEntity.seedA.isEmpty() || blockEntity.seedB.isEmpty() || !blockEntity.output.isEmpty()) {
             blockEntity.resetSplicing();
             blockEntity.syncToClient();
+            return;
+        }
+        if (!blockEntity.redstone.isProcessingAllowed()) {
+            blockEntity.updateComparatorIfChanged(level, pos);
             return;
         }
 
@@ -243,6 +263,7 @@ public class GeneSplicerBlockEntity extends BlockEntity implements Container, Me
         } else if (blockEntity.spliceProgress % 5 == 0) {
             blockEntity.syncToClient();
         }
+        blockEntity.updateComparatorIfChanged(level, pos);
     }
 
     private void resetSplicing() {
@@ -422,6 +443,8 @@ public class GeneSplicerBlockEntity extends BlockEntity implements Container, Me
         boolean ready = !seedA.isEmpty() && !seedB.isEmpty() && output.isEmpty();
         splicing = ready && (tag.getBoolean(TAG_SPLICING) || !tag.contains(TAG_AUTOMATIC_WORKFLOW));
         if (!splicing) spliceProgress = 0;
+        redstone.load(tag);
+        lastComparatorSignal = -1;
     }
 
     @Override
@@ -445,12 +468,43 @@ public class GeneSplicerBlockEntity extends BlockEntity implements Container, Me
         tag.putInt(TAG_SPLICE_PROGRESS, spliceProgress);
         tag.putBoolean(TAG_SPLICING, splicing);
         tag.putBoolean(TAG_AUTOMATIC_WORKFLOW, true);
+        redstone.save(tag);
     }
 
     private void syncToClient() {
         setChanged();
         if (level != null && !level.isClientSide) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
+            updateComparatorIfChanged(level, worldPosition);
+        }
+    }
+
+    private void updateComparatorIfChanged(Level level, BlockPos pos) {
+        int current = getComparatorSignal();
+        if (current != lastComparatorSignal) {
+            lastComparatorSignal = current;
+            level.updateNeighbourForOutputSignal(pos, getBlockState().getBlock());
+        }
+    }
+
+    @Override
+    public MachineRedstoneState getRedstoneState() {
+        return redstone;
+    }
+
+    @Override
+    public int getComparatorSignal() {
+        if (!output.isEmpty()) return 15;
+        if (!splicing) return 0;
+        return Math.max(1, Math.min(14,
+                (int) Math.ceil((double) spliceProgress * 14 / SPLICE_DURATION_TICKS)));
+    }
+
+    @Override
+    public void clearRemoved() {
+        super.clearRemoved();
+        if (level != null && !level.isClientSide) {
+            redstone.markPendingResample();
         }
     }
 
@@ -516,8 +570,9 @@ public class GeneSplicerBlockEntity extends BlockEntity implements Container, Me
     @Override
     public void setItem(int slot, ItemStack stack) {
         if (slot != OUTPUT_SLOT && !output.isEmpty()) return;
-        ItemStack normalized = stack.copy();
-        if (slot != OUTPUT_SLOT && !normalized.isEmpty()) normalized.setCount(1);
+        ItemStack normalized = slot != OUTPUT_SLOT && !stack.isEmpty()
+                ? normalizeInsertedStack(slot, stack)
+                : stack.copy();
         if (slot != OUTPUT_SLOT) resetSplicing();
         setItemInternal(slot, normalized);
         if (slot != OUTPUT_SLOT && startSplicing()) {
@@ -537,8 +592,7 @@ public class GeneSplicerBlockEntity extends BlockEntity implements Container, Me
 
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
-        return !splicing && slot != OUTPUT_SLOT && output.isEmpty()
-                && stack.getItem() instanceof GeneticSeedItem;
+        return canInsert(slot, stack, null);
     }
 
     @Override
@@ -557,6 +611,53 @@ public class GeneSplicerBlockEntity extends BlockEntity implements Container, Me
         syncToClient();
     }
 
+    @Override
+    public int[] getSlotsForFace(Direction side) {
+        return visibleSlots(side);
+    }
+
+    @Override
+    public boolean canPlaceItemThroughFace(int slot, ItemStack stack, @Nullable Direction side) {
+        return canInsert(slot, stack, side);
+    }
+
+    @Override
+    public boolean canTakeItemThroughFace(int slot, ItemStack stack, Direction side) {
+        return canExtract(slot, stack, side);
+    }
+
+    @Override
+    public int[] visibleSlots(@Nullable Direction side) {
+        if (side == null) return new int[]{SEED_A_SLOT, SEED_B_SLOT, OUTPUT_SLOT};
+        if (side == Direction.DOWN) return new int[]{OUTPUT_SLOT};
+        return new int[]{SEED_A_SLOT, SEED_B_SLOT};
+    }
+
+    @Override
+    public boolean canInsert(int slot, ItemStack stack, @Nullable Direction side) {
+        if (stack.isEmpty() || side == Direction.DOWN) return false;
+        if (slot != SEED_A_SLOT && slot != SEED_B_SLOT) return false;
+        return !splicing
+                && output.isEmpty()
+                && getItem(slot).isEmpty()
+                && stack.is(ModTags.SemanticItems.GENETIC_SEEDS);
+    }
+
+    @Override
+    public boolean canExtract(int slot, ItemStack stack, @Nullable Direction side) {
+        return slot == OUTPUT_SLOT && (side == null || side == Direction.DOWN);
+    }
+
+    @Override
+    public ItemStack normalizeInsertedStack(int slot, ItemStack stack) {
+        return slot == OUTPUT_SLOT ? stack.copy() : normalizedSeed(stack);
+    }
+
+    @Override
+    public int getSlotLimit(int slot) {
+        return slot == SEED_A_SLOT || slot == SEED_B_SLOT ? 1 : 64;
+    }
+
     @Nullable
     @Override
     public Packet<ClientGamePacketListener> getUpdatePacket() {
@@ -571,5 +672,58 @@ public class GeneSplicerBlockEntity extends BlockEntity implements Container, Me
     @Override
     public void handleUpdateTag(CompoundTag tag) {
         this.load(tag);
+    }
+
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> capUp =
+            net.minecraftforge.common.util.LazyOptional.empty();
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> capHorizontal =
+            net.minecraftforge.common.util.LazyOptional.empty();
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> capDown =
+            net.minecraftforge.common.util.LazyOptional.empty();
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> capNull =
+            net.minecraftforge.common.util.LazyOptional.empty();
+
+    @Override
+    public <T> net.minecraftforge.common.util.LazyOptional<T> getCapability(
+            net.minecraftforge.common.capabilities.Capability<T> cap, @Nullable Direction side) {
+        if (cap == net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER) {
+            net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> handler;
+            if (side == null) {
+                if (!capNull.isPresent()) {
+                    capNull = net.minecraftforge.common.util.LazyOptional.of(
+                            () -> new SidedMachineItemHandler(this, this, null));
+                }
+                handler = capNull;
+            } else if (side == Direction.UP) {
+                if (!capUp.isPresent()) {
+                    capUp = net.minecraftforge.common.util.LazyOptional.of(
+                            () -> new SidedMachineItemHandler(this, this, Direction.UP));
+                }
+                handler = capUp;
+            } else if (side == Direction.DOWN) {
+                if (!capDown.isPresent()) {
+                    capDown = net.minecraftforge.common.util.LazyOptional.of(
+                            () -> new SidedMachineItemHandler(this, this, Direction.DOWN));
+                }
+                handler = capDown;
+            } else {
+                if (!capHorizontal.isPresent()) {
+                    capHorizontal = net.minecraftforge.common.util.LazyOptional.of(
+                            () -> new SidedMachineItemHandler(this, this, side));
+                }
+                handler = capHorizontal;
+            }
+            return handler.cast();
+        }
+        return super.getCapability(cap, side);
+    }
+
+    @Override
+    public void invalidateCaps() {
+        super.invalidateCaps();
+        capUp.invalidate();
+        capHorizontal.invalidate();
+        capDown.invalidate();
+        capNull.invalidate();
     }
 }

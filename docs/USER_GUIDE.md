@@ -411,6 +411,51 @@ Activity = round(Potency × 0.25 + Purity × 0.375 + Concentration × 0.375)
 
 ---
 
+## 红石链路与比较器
+
+四台机器均支持红石控制与比较器输出，便于接入红石自动化系统。
+
+### 红石控制模式
+
+每台机器 GUI 右上角有 `RS` 按钮，单击循环切换三种模式：
+
+| 模式 | 按钮标签 | 行为 |
+|------|----------|------|
+| IGNORE | `RS:忽略` | 忽略红石信号，始终运行（默认） |
+| HIGH | `RS:高电平` | 有红石信号时运行，无信号时冻结进度 |
+| LOW | `RS:低电平` | 无红石信号时运行，有信号时冻结进度 |
+
+- 加工中失去许可时**冻结进度**，恢复许可后继续，不清零、不消耗输入。
+- 旧存档机器默认 `IGNORE`，不崩溃。
+- 红石作用范围：冷凝器控制产水（已有纯净水仍可向下传输）；培养槽控制生长与成熟（资源注入和自然衰减继续）；拼接机控制拼接进度；灌装机控制配方选取与进度。
+
+### 比较器信号
+
+对四台机器背面放置比较器，输出三段语义信号：
+
+| 信号 | 含义 |
+|------|------|
+| 0 | 待机：无产物且未加工 |
+| 1-14 | 加工中：`ceil(progress × 14 / maxProgress)` |
+| 15 | 产物就绪：主产物槽存在可抽取物品 |
+
+主产物定义：冷凝器=纯净水；培养槽=成熟培养产物；拼接机=子代种子；灌装机=灌装成品。
+
+> **兼容性变更**：当前版本将培养槽比较器语义从“营养度/7”统一为状态信号（0/1-14/15）。
+
+### 公开 API
+
+```java
+// 查询机器红石控制状态
+MachineControlInfo info = CyberCultivatorAPI.getMachineControlInfo(level, pos);
+// info.mode() / info.powered() / info.processingAllowed() / info.comparatorSignal()
+
+// 修改红石模式（仅服务端主线程）
+boolean ok = CyberCultivatorAPI.setMachineRedstoneMode(level, pos, RedstoneControlMode.HIGH);
+```
+
+---
+
 ## 自动化产线布局
 
 ```
@@ -424,6 +469,40 @@ Activity = round(Potency × 0.25 + Purity × 0.375 + Concentration × 0.375)
 ```
 
 冷凝器可从顶部/侧面漏斗输入玻璃瓶，并由底部/侧面漏斗抽取纯净水；灌装机顶部/侧面注入材料、底部抽取输出。
+
+### 分面槽位矩阵
+
+四台机器通过 Forge `IItemHandler` 能力暴露分面槽位，支持原版漏斗、Create、Mekanism、AE2、沉浸工程等遵循 Forge 能力的物流系统：
+
+| 机器 | 顶部 | 水平面（北/南/东/西） | 底部 |
+|------|------|----------------------|------|
+| 大气冷凝器 | 玻璃瓶只入 | 玻璃瓶只入、纯净水只出 | 纯净水只出 |
+| 生物培养槽 | 基因种子只入 | 营养/纯净水/信号只入 | 成熟产物只出 |
+| 基因拼接机 | 两个亲本槽只入 | 两个亲本槽只入 | 子代只出 |
+| 血清灌装机 | 三个材料槽只入 | 三个材料槽只入 | 成品只出 |
+
+- 能力插入会自动规范化种子（数量限制为 1、补齐基因 NBT）。
+- 模拟插入/抽取（`simulate=true`）不修改库存、进度或配方缓存。
+- 输出槽拒绝外部插入，输入槽拒绝外部抽取。
+
+> **兼容性变更**：当前版本开放培养槽顶部基因种子自动输入，并将基因拼接机改造为 `WorldlyContainer`，支持原版漏斗路径。
+
+### 跨模组材料标签
+
+本模组向外发布以下 Forge 约定标签，便于跨模组材料识别：
+
+- `forge:silicon` → `silicon_shard`
+- `forge:ores/silicon`、`forge:ores/rare_earth`
+- `forge:raw_materials/silicon`、`forge:raw_materials/rare_earth`
+- `forge:dusts/rare_earth`
+- `forge:storage_blocks/silicon`、`forge:storage_blocks/raw_silicon`
+- `forge:storage_blocks/rare_earth`、`forge:storage_blocks/raw_rare_earth`
+
+本模组机器输入通过 `cybercultivator:` 语义标签受控扩展，整合包可通过数据包扩展输入物品，但不会自动把所有外部硅或普通种子视为合法机器材料。
+
+### 跨模组兼容
+
+机器遵循 Forge `IItemHandler` 分面能力和 `forge:*` 材料标签。Create、Mekanism、AE2、沉浸工程、Thermal、Pipez 等能够访问标准物品能力的物流系统预计可按上表接入，但尚未逐个进行运行时验证；具体方向识别、过滤器和主动抽取行为仍以对应模组实现为准。
 
 ---
 

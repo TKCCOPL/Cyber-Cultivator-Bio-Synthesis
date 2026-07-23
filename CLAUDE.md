@@ -55,18 +55,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 |---|------|
 | `init/` | 注册表入口：`ModBlocks`, `ModItems`, `ModBlockEntities`, `ModEffects`, `ModCreativeTabs` |
 | `block/` | 方块类：`BioIncubatorBlock` (培养槽), `GeneSplicerBlock` (拼接机), `AtmosphericCondenserBlock` (冷凝器), `SerumBottlerBlock` (灌装机), `BasicCropBlock` (基础作物) |
-| `block/entity/` | TileEntity：`BioIncubatorBlockEntity` (培养槽状态机), `GeneSplicerBlockEntity` (遗传算法), `AtmosphericCondenserBlockEntity` (纯净水生产+相邻传输), `SerumBottlerBlockEntity` (RecipeType 驱动加工+漏斗兼容) |
+| `block/entity/` | TileEntity：`BioIncubatorBlockEntity` (培养槽状态机), `GeneSplicerBlockEntity` (遗传算法), `AtmosphericCondenserBlockEntity` (纯净水生产+相邻传输), `SerumBottlerBlockEntity` (RecipeType 驱动加工+漏斗兼容), `MachineRedstoneBlockEntity`/`MachineRedstoneState` (v1.1.7 红石控制委托), `MachineInventoryPolicy`/`SidedMachineItemHandler` (v1.1.7 Forge `IItemHandler` 分面能力) |
 | `item/` | `GeneticSeedItem` (NBT基因标签), `SynapticSerumItem` (血清效果触发，支持构造函数注入不同效果) |
 | `effect/` | `SynapticOverclockEffect` (突触超频), `NeuralOverloadEffect` (神经过载副作用), `VisualEnhancementEffect` (S-02 视觉强化), `MetabolicBoostEffect` (S-03 代谢加速) |
 | `recipe/` | `ModRecipeTypes` (RecipeType 注册), `SerumRecipe` (JSON 配方), `SerumRecipeSerializer` (序列化器), `ModRecipes` (静态注册表：拼接机/培养槽配方，供第三方 mod 查询) |
-| `api/` | `CyberCultivatorAPI` (门面类), 5 个只读 DTO record：`IncubatorInfo`, `BottlerInfo`, `CondenserInfo`, `SplicerInfo`, `SerumEffectInfo` |
+| `api/` | `CyberCultivatorAPI` (门面类), 5 个只读 DTO record：`IncubatorInfo`, `BottlerInfo`, `CondenserInfo`, `SplicerInfo`, `SerumEffectInfo`；v1.1.7 新增 `RedstoneControlMode` 枚举 + `MachineControlInfo` record + `getMachineControlInfo`/`setMachineRedstoneMode` |
 | `event/` | 自定义 Forge 事件：`GeneSpliceEvent`, `CropMatureEvent`, `SerumCraftEvent`, `SerumConsumeEvent`（均支持取消+字段修改） |
 | `curios/` | `CuriosCompat` — Curios API 饰品集成（compileOnly），`CurioAccessoryItem` 基类，`BioPulseBeltItem`（腰带），`LifeSupportPackItem`（支持箱），`CurioEventHandler`（事件驱动 tick） |
 | `compat/kubejs/` | 可选 KubeJS 插件、两类 Recipe Schema 与四类可热重载事件包装；核心代码不得引用 KubeJS 类型 |
 | `datagen/` | 数据生成器：配方、战利品表、方块状态、物品模型、语言文件、标签、进度引导 |
 | `client/` | `ClientTooltipEvents` — 单片镜种子基因 Tooltip；`client/screen/` — 四台机器的客户端界面与动画 |
-| `menu/` | 四台机器的服务端 Menu、槽位边界、Shift 快速移动与 `ContainerData` 同步 |
+| `menu/` | 四台机器的服务端 Menu、槽位边界、Shift 快速移动与 `ContainerData` 同步；v1.1.7 `RedstoneMenuAccess` + RS 按钮 `clickMenuButton` |
 | `compat/jei/` | 可选 JEI 分类；复用真实机器 GUI 工作区、槽位坐标与加工动画，核心代码不依赖 JEI |
+| `init/ModTags` | v1.1.7 标签集中入口：Forge 材料（silicon/rare_earth 链路）+ 本模组语义（genetic_seeds/machine_inputs） |
 
 ### 关键机制
 
@@ -76,8 +77,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **培养槽 (BioIncubatorBlockEntity):**
 - 三项动态数值：Nutrition / Purity / Data Signal (0-100，随时间衰减)
-- 交互：普通右键打开 6 槽 GUI（种子、营养、纯净水、信号、成熟资源输出、玻璃瓶输出）；三类资源放入后每 20 tick 自动注入一次，每个周期每条 N/P/D 通道最多消耗一份，潜行右键快速取回种子
-- 自动化：侧面仅接受三种资源，底面输出成熟资源和玻璃瓶，种子保持手动管理
+- 交互：普通右键打开 5 槽 GUI（种子、营养、纯净水、信号、成熟资源输出）；三类资源放入后每 20 tick 自动注入一次，每个周期每条 N/P/D 通道最多消耗一份，潜行右键快速取回种子
+- 自动化：顶面接受种子，侧面接受三种资源，底面仅输出成熟资源
 - GUI 在 N/P/D 通道上方显示实时数值，并明确区分等待种子、缺失资源、培养中/ETA、成熟输出阻塞和产物就绪状态；大生长条保持静态进度表达，不增加装饰动画
 - Tick 采用静态方法签名 `tick(Level, BlockPos, BlockState, BioIncubatorBlockEntity)`，通过 `BlockEntityTicker` 注册
 - 客户端同步：所有状态变更通过 `syncToClient()` → `setChanged()` + `level.sendBlockUpdated(pos, state, state, 2)` 推送到客户端（flags=2 是 `Block.UPDATE_CLIENTS`）。注意：`saveAdditional()` 必须写入非空 tag（空字段写入哨兵 `new CompoundTag()`），否则 `ClientboundBlockEntityDataPacket` 会将 tag 设为 null 导致客户端不调用 `load()`
@@ -106,10 +107,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 单片镜：仅在物品提示中解析基因种子的 S/Y/P、代数、协同与突变信息；机器状态统一在机器 GUI 中查看，不再绘制屏幕 HUD
 
 **大气冷凝器 (AtmosphericCondenserBlockEntity):**
-- 每 600 tick 生产 1 纯净水瓶，库存上限 32
-- 相邻传输：下方为培养槽时可自动注入 Purity +20（消耗 1 瓶），GUI 可持久化开关此模式
-- 实现 `WorldlyContainer`，漏斗可从侧面抽取
-- GUI 以散热鳍片、竖向冷凝柱和输出箭头显示生产流程；仅生产时播放冷凝扫描，并显示进度/剩余时间、库存、下游连接或手动模式。主按钮用于暂停/继续生产，下游注入另设开关
+- 每 600 tick 消耗 1 个玻璃瓶并生产 1 瓶纯净水，正常库存上限 16；旧存档中 17-32 的既有库存仍可保留和取出
+- 相邻传输：下方为培养槽时自动注入 Purity +20（消耗 1 瓶），不提供手动开关
+- 自动化：顶面输入玻璃瓶，水平面输入玻璃瓶或输出纯净水，底面仅输出纯净水
+- GUI 仅保留与加工进度有关的动画，不恢复已经移除的右半部分掉落/传输动画和状态文字
 - GUI Shift 快速移动、潜行右键和漏斗抽取库存时都使用相同的进度清零规则
 
 **血清灌装机 (SerumBottlerBlockEntity):**
@@ -129,6 +130,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 效果缩放：`duration = base × (0.5 + Activity × 0.1)`，`baseAmplifier = Activity >= 8 ? 1 : 0`
 - 叠加升级：再次饮用 amplifier +1（上限 7，VIII 级），持续时间累加（上限 5 分钟）
 - 副作用：`removeAttributeModifiers` 中检查 `entity.getEffect(this) == null`，仅自然过期时施加 NeuralOverload；用 TickTask 延迟避免 CME
+
+**红石链路 (v1.1.7):**
+- 3 模式枚举 `RedstoneControlMode { IGNORE, HIGH, LOW }`，字符串持久化 `ignore/high/low`
+- `MachineRedstoneState` 委托类：只持久化 `RedstoneMode`，`RedstonePowered`/`processingAllowed` 从世界重新采样
+- `MachineRedstoneBlockEntity` 标记接口 + `MachineBlock.neighborChanged` 信号采样
+- 比较器三段语义：15（产物就绪）> 1-14（加工进度）> 0（待机）
+- 公开 API `getMachineControlInfo`/`setMachineRedstoneMode`（`isSameThread()` 守卫，非主线程拒绝 + log debug）
+
+**工业自动化 (v1.1.7):**
+- `MachineInventoryPolicy` 接口：统一槽位级 `canInsert`/`canExtract`/`visibleSlots`/`normalizeInsertedStack`/`getSlotLimit` 谓词
+- `SidedMachineItemHandler`：Forge `IItemHandler` 包装器，模拟操作无副作用，`getStackInSlot` 返回 copy（防御性只读）
+- 4 BE 实现 `getCapability` + 按 face→角色映射缓存 LazyOptional（UP/horizontal/DOWN/null 4 实例）
+- GeneSplicer 从 `Container` 改造为 `WorldlyContainer`；BioIncubator 顶部开放种子自动输入
+- 机器输入验证改用 `ModTags.SemanticItems.*` 语义标签，`normalizeInsertedStack` 保留 `instanceof GeneticSeedItem` NBT 品质检查
+- 不在 capability 层静默拒绝非主线程调用（避免自动化模组偶发失败）
 
 **配方系统 (recipe/):**
 - `ModRecipeTypes`：注册 `RecipeType<SerumRecipe>` + `RecipeSerializer`，DeferredRegister 模式

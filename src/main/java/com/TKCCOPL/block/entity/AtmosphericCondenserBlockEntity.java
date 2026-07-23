@@ -23,7 +23,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
-public class AtmosphericCondenserBlockEntity extends BlockEntity implements WorldlyContainer, MenuProvider {
+public class AtmosphericCondenserBlockEntity extends BlockEntity implements WorldlyContainer, MenuProvider,
+        MachineRedstoneBlockEntity, MachineInventoryPolicy {
     private static final String TAG_PROGRESS = "Progress";
     private static final String TAG_BOTTLE_INPUT = "BottleInput";
     private static final String TAG_OUTPUT = "Output";
@@ -39,6 +40,8 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
     private int progress;
     private ItemStack bottleInput = ItemStack.EMPTY;
     private ItemStack output = ItemStack.EMPTY;
+    private final MachineRedstoneState redstone = new MachineRedstoneState();
+    private int lastComparatorSignal;
     private final ContainerData menuData = new ContainerData() {
         @Override
         public int get(int index) {
@@ -49,6 +52,9 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
                 case 3 -> level != null
                         && level.getBlockEntity(worldPosition.below()) instanceof BioIncubatorBlockEntity ? 1 : 0;
                 case 4 -> bottleInput.getCount();
+                case 5 -> redstone.getMenuData(MachineRedstoneState.DATA_MODE);
+                case 6 -> redstone.getMenuData(MachineRedstoneState.DATA_POWERED);
+                case 7 -> redstone.getMenuData(MachineRedstoneState.DATA_PROCESSING_ALLOWED);
                 default -> 0;
             };
         }
@@ -59,7 +65,7 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
 
         @Override
         public int getCount() {
-            return 5;
+            return 5 + MachineRedstoneState.getMenuDataCount();
         }
     };
 
@@ -70,10 +76,16 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
     public static void tick(Level level, BlockPos pos, BlockState state, AtmosphericCondenserBlockEntity blockEntity) {
         if (level.isClientSide) return;
 
+        if (blockEntity.redstone.consumePendingResample(level, pos)) {
+            blockEntity.syncToClient();
+        }
+
         boolean changed = false;
 
         // 只有空玻璃瓶可用且输出库存未满时才推进冷凝周期。
-        if (blockEntity.hasBottleInput() && blockEntity.output.getCount() < MAX_STACK) {
+        if (blockEntity.redstone.isProcessingAllowed()
+                && blockEntity.hasBottleInput()
+                && blockEntity.output.getCount() < MAX_STACK) {
             blockEntity.progress++;
             // 每 20 tick 同步一次进度，用于客户端 HUD 进度条动画
             if (blockEntity.progress % 20 == 0) {
@@ -109,12 +121,43 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
         if (changed) {
             blockEntity.syncToClient();
         }
+        blockEntity.updateComparatorIfChanged(level, pos);
     }
 
     private void syncToClient() {
         setChanged();
         if (level != null && !level.isClientSide) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
+            updateComparatorIfChanged(level, worldPosition);
+        }
+    }
+
+    private void updateComparatorIfChanged(Level level, BlockPos pos) {
+        int current = getComparatorSignal();
+        if (current != lastComparatorSignal) {
+            lastComparatorSignal = current;
+            level.updateNeighbourForOutputSignal(pos, getBlockState().getBlock());
+        }
+    }
+
+    @Override
+    public MachineRedstoneState getRedstoneState() {
+        return redstone;
+    }
+
+    @Override
+    public int getComparatorSignal() {
+        if (!output.isEmpty()) return 15;
+        if (progress <= 0) return 0;
+        return Math.max(1, Math.min(14,
+                (int) Math.ceil((double) progress * 14 / PRODUCTION_TIME)));
+    }
+
+    @Override
+    public void clearRemoved() {
+        super.clearRemoved();
+        if (level != null && !level.isClientSide) {
+            redstone.markPendingResample();
         }
     }
 
@@ -242,7 +285,7 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
 
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
-        return slot == BOTTLE_INPUT_SLOT && stack.is(Items.GLASS_BOTTLE);
+        return canInsert(slot, stack, null);
     }
 
     @Override
@@ -261,20 +304,47 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
 
     @Override
     public int[] getSlotsForFace(Direction side) {
+        return visibleSlots(side);
+    }
+
+    @Override
+    public boolean canPlaceItemThroughFace(int slot, ItemStack stack, Direction side) {
+        return canInsert(slot, stack, side);
+    }
+
+    @Override
+    public boolean canTakeItemThroughFace(int slot, ItemStack stack, Direction side) {
+        return canExtract(slot, stack, side);
+    }
+
+    @Override
+    public int[] visibleSlots(@org.jetbrains.annotations.Nullable Direction side) {
+        if (side == null) return SIDE_SLOTS;
         if (side == Direction.UP) return INPUT_SLOTS;
         if (side == Direction.DOWN) return OUTPUT_SLOTS;
         return SIDE_SLOTS;
     }
 
     @Override
-    public boolean canPlaceItemThroughFace(int slot, ItemStack stack, Direction side) {
-        return slot == BOTTLE_INPUT_SLOT && stack.is(Items.GLASS_BOTTLE)
+    public boolean canInsert(int slot, ItemStack stack, @org.jetbrains.annotations.Nullable Direction side) {
+        return slot == BOTTLE_INPUT_SLOT
+                && stack.is(Items.GLASS_BOTTLE)
                 && side != Direction.DOWN;
     }
 
     @Override
-    public boolean canTakeItemThroughFace(int slot, ItemStack stack, Direction side) {
+    public boolean canExtract(int slot, ItemStack stack, @org.jetbrains.annotations.Nullable Direction side) {
         return slot == OUTPUT_SLOT && !output.isEmpty() && side != Direction.UP;
+    }
+
+    @Override
+    public ItemStack normalizeInsertedStack(int slot, ItemStack stack) {
+        return stack.copy();
+    }
+
+    @Override
+    public int getSlotLimit(int slot) {
+        return slot == OUTPUT_SLOT ? MAX_STACK : 64;
     }
 
     @Override
@@ -284,6 +354,8 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
         bottleInput = tag.contains(TAG_BOTTLE_INPUT)
                 ? ItemStack.of(tag.getCompound(TAG_BOTTLE_INPUT)) : ItemStack.EMPTY;
         output = tag.contains(TAG_OUTPUT) ? ItemStack.of(tag.getCompound(TAG_OUTPUT)) : ItemStack.EMPTY;
+        redstone.load(tag);
+        lastComparatorSignal = -1;
     }
 
     @Override
@@ -296,6 +368,7 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
         if (!output.isEmpty()) {
             tag.put(TAG_OUTPUT, output.save(new CompoundTag()));
         }
+        redstone.save(tag);
     }
 
     @org.jetbrains.annotations.Nullable
@@ -318,5 +391,59 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
     @Override
     public AbstractContainerMenu createMenu(int containerId, Inventory inventory, Player player) {
         return new AtmosphericCondenserMenu(containerId, inventory, this, menuData);
+    }
+
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> capUp =
+            net.minecraftforge.common.util.LazyOptional.empty();
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> capHorizontal =
+            net.minecraftforge.common.util.LazyOptional.empty();
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> capDown =
+            net.minecraftforge.common.util.LazyOptional.empty();
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> capNull =
+            net.minecraftforge.common.util.LazyOptional.empty();
+
+    @Override
+    public <T> net.minecraftforge.common.util.LazyOptional<T> getCapability(
+            net.minecraftforge.common.capabilities.Capability<T> cap,
+            @org.jetbrains.annotations.Nullable Direction side) {
+        if (cap == net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER) {
+            net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> handler;
+            if (side == null) {
+                if (!capNull.isPresent()) {
+                    capNull = net.minecraftforge.common.util.LazyOptional.of(
+                            () -> new SidedMachineItemHandler(this, this, null));
+                }
+                handler = capNull;
+            } else if (side == Direction.UP) {
+                if (!capUp.isPresent()) {
+                    capUp = net.minecraftforge.common.util.LazyOptional.of(
+                            () -> new SidedMachineItemHandler(this, this, Direction.UP));
+                }
+                handler = capUp;
+            } else if (side == Direction.DOWN) {
+                if (!capDown.isPresent()) {
+                    capDown = net.minecraftforge.common.util.LazyOptional.of(
+                            () -> new SidedMachineItemHandler(this, this, Direction.DOWN));
+                }
+                handler = capDown;
+            } else {
+                if (!capHorizontal.isPresent()) {
+                    capHorizontal = net.minecraftforge.common.util.LazyOptional.of(
+                            () -> new SidedMachineItemHandler(this, this, side));
+                }
+                handler = capHorizontal;
+            }
+            return handler.cast();
+        }
+        return super.getCapability(cap, side);
+    }
+
+    @Override
+    public void invalidateCaps() {
+        super.invalidateCaps();
+        capUp.invalidate();
+        capHorizontal.invalidate();
+        capDown.invalidate();
+        capNull.invalidate();
     }
 }

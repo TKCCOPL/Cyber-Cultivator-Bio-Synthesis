@@ -83,21 +83,7 @@ public class SerumBottlerBlock extends MachineBlock {
         return createTickerHelper(blockEntityType, ModBlockEntities.SERUM_BOTTLER.get(), SerumBottlerBlockEntity::tick);
     }
 
-    @Override
-    public boolean hasAnalogOutputSignal(BlockState state) {
-        return true;
-    }
-
-    @Override
-    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
-        if (level.getBlockEntity(pos) instanceof SerumBottlerBlockEntity blockEntity) {
-            if (blockEntity.getMaxProgress() > 0) {
-                return (int) (15.0 * blockEntity.getProgress() / blockEntity.getMaxProgress());
-            }
-            return blockEntity.getOutput().isEmpty() ? 0 : 15;
-        }
-        return 0;
-    }
+    // v1.1.7：比较器与 neighborChanged 由 MachineBlock 基类统一处理
 
     private static void giveToPlayer(Player player, ItemStack stack) {
         if (!player.addItem(stack)) {

@@ -31,7 +31,8 @@ Cyber-Cultivator: Bio-Synthesis 是一个围绕生物科技生产链构建的 Fo
 - 可选 Curios 种子基因解析、自动注入和生命支持能力
 - 可选 KubeJS 配方 DSL 与可热重载玩法事件
 - 可选 Patchouli 中英文《生物合成研究手册》与首次进世界发放
-- 漏斗自动化及公开查询/事件 API
+- 四台机器的 IGNORE/HIGH/LOW 红石控制与统一比较器状态输出
+- 原版漏斗和 Forge `IItemHandler` 分面自动化、材料语义标签及公开查询/事件 API
 
 兼容 JEI，并以机器实际 GUI 展示培养、拼接、灌装与冷凝流程；KubeJS、Patchouli、JEI 与 Curios 均为可选依赖。
 

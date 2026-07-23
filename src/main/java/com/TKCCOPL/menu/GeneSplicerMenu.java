@@ -17,12 +17,13 @@ import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
-public class GeneSplicerMenu extends MachineMenu {
+public class GeneSplicerMenu extends MachineMenu implements RedstoneMenuAccess {
+    public static final int BUTTON_CYCLE_REDSTONE = 0;
     private final ContainerData data;
     private final ContainerLevelAccess access;
 
     public GeneSplicerMenu(int containerId, Inventory inventory, FriendlyByteBuf buffer) {
-        this(containerId, inventory, resolve(inventory, buffer), new SimpleContainerData(6),
+        this(containerId, inventory, resolve(inventory, buffer), new SimpleContainerData(9),
                 ContainerLevelAccess.NULL);
     }
 
@@ -62,7 +63,7 @@ public class GeneSplicerMenu extends MachineMenu {
         return new Slot(container, index, x, y) {
             @Override
             public boolean mayPlace(ItemStack stack) {
-                return stack.getItem() instanceof GeneticSeedItem && container.canPlaceItem(index, stack);
+                return container.canPlaceItem(index, stack);
             }
 
             @Override public int getMaxStackSize() { return 1; }
@@ -81,6 +82,21 @@ public class GeneSplicerMenu extends MachineMenu {
         return stillValid(access, player, ModBlocks.GENE_SPLICER.get());
     }
 
+    @Override
+    public boolean clickMenuButton(Player player, int id) {
+        if (id == BUTTON_CYCLE_REDSTONE && machine instanceof GeneSplicerBlockEntity blockEntity) {
+            if (blockEntity.getRedstoneState().cycleMode()) {
+                blockEntity.setChanged();
+                if (blockEntity.getLevel() != null) {
+                    blockEntity.getLevel().sendBlockUpdated(blockEntity.getBlockPos(),
+                            blockEntity.getBlockState(), blockEntity.getBlockState(), 2);
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
     public int getSpliceProgress() { return data.get(0); }
     public int getSpliceDuration() {
         int duration = data.get(1);
@@ -90,6 +106,12 @@ public class GeneSplicerMenu extends MachineMenu {
     public int getPredictedGeneration() { return data.get(3); }
     public int getPredictedMutationPermille() { return data.get(4); }
     public int getPredictedTwinPermille() { return data.get(5); }
+    public int getRedstoneModeOrdinal() { return data.get(6); }
+    public boolean isRedstonePowered() { return data.get(7) != 0; }
+    public boolean isRedstoneProcessingAllowed() { return data.get(8) != 0; }
+
+    @Override
+    public int getRedstoneButtonId() { return BUTTON_CYCLE_REDSTONE; }
 
     public int getRemainingSeconds() {
         if (!isSplicing()) return 0;
