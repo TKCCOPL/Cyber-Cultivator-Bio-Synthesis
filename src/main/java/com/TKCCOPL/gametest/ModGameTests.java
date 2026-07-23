@@ -8,10 +8,12 @@ import com.TKCCOPL.block.entity.AtmosphericCondenserBlockEntity;
 import com.TKCCOPL.block.entity.GeneSplicerBlockEntity;
 import com.TKCCOPL.block.entity.SerumBottlerBlockEntity;
 import com.TKCCOPL.cybercultivator;
+import com.TKCCOPL.compat.patchouli.PatchouliGuideCompat;
 import com.TKCCOPL.event.CropMatureEvent;
 import com.TKCCOPL.event.GeneSpliceEvent;
 import com.TKCCOPL.event.SerumConsumeEvent;
 import com.TKCCOPL.event.SerumCraftEvent;
+import com.TKCCOPL.event.VillagerTradeEvents;
 import com.TKCCOPL.init.ModBlocks;
 import com.TKCCOPL.init.CreativeTabVariants;
 import com.TKCCOPL.init.ModEffects;
@@ -22,15 +24,18 @@ import com.TKCCOPL.menu.AtmosphericCondenserMenu;
 import com.TKCCOPL.menu.GeneSplicerMenu;
 import com.TKCCOPL.menu.SerumBottlerMenu;
 import com.TKCCOPL.network.GameplayConfigSnapshot;
+import com.TKCCOPL.network.GameplayConfigSyncPacket;
 import com.TKCCOPL.network.S02DetectionSyncPacket;
 import com.TKCCOPL.recipe.IncubatorOutputRecipe;
 import com.TKCCOPL.recipe.IncubatorOutputSerializer;
+import com.TKCCOPL.recipe.GeneSpliceRules;
 import com.TKCCOPL.recipe.RecipeOrdering;
 import com.TKCCOPL.recipe.SerumRecipe;
 import com.TKCCOPL.recipe.SerumRecipeSerializer;
 import com.TKCCOPL.recipe.SerumRecipeIds;
 import com.google.gson.JsonParser;
 import io.netty.buffer.Unpooled;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.FriendlyByteBuf;
@@ -39,8 +44,12 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.npc.VillagerProfession;
+import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -53,13 +62,19 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
 import net.minecraft.world.item.crafting.SmeltingRecipe;
+import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.entity.living.MobEffectEvent;
+import net.minecraftforge.event.village.VillagerTradesEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 import net.minecraftforge.fml.ModList;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -97,6 +112,61 @@ public final class ModGameTests {
                 "cybercultivator:visual_enhancement");
         assertEffectId(helper, ModItems.SYNAPTIC_SERUM_S03.get().getDefaultInstance(),
                 "cybercultivator:metabolic_boost");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void geneSpliceBalanceRulesAndEventCount(GameTestHelper helper) {
+        helper.assertTrue(closeTo(GeneSpliceRules.mutationChance(0, 0,
+                        0.05, 0.005, 20, 0.01, 0.25), 0.05),
+                "Generation zero mutation chance must start at 5%");
+        helper.assertTrue(closeTo(GeneSpliceRules.mutationChance(10, 0,
+                        0.05, 0.005, 20, 0.01, 0.25), 0.10),
+                "Generation ten mutation chance must be 10%");
+        helper.assertTrue(closeTo(GeneSpliceRules.mutationChance(20, 0,
+                        0.05, 0.005, 20, 0.01, 0.25), 0.15)
+                        && closeTo(GeneSpliceRules.mutationChance(999, 0,
+                        0.05, 0.005, 20, 0.01, 0.25), 0.15),
+                "Mutation generation contribution must stop at generation 20");
+        helper.assertTrue(closeTo(GeneSpliceRules.mutationChance(20, 10,
+                        0.05, 0.005, 20, 0.01, 0.25), 0.25),
+                "Maximum gene difference must reach but not exceed the 25% cap");
+
+        helper.assertTrue(closeTo(GeneSpliceRules.normalTwinChance(0, 0.10, 0.02, 0.60), 0.10)
+                        && closeTo(GeneSpliceRules.normalTwinChance(10, 0.10, 0.02, 0.60), 0.30)
+                        && closeTo(GeneSpliceRules.normalTwinChance(20, 0.10, 0.02, 0.60), 0.50)
+                        && closeTo(GeneSpliceRules.normalTwinChance(999, 0.10, 0.02, 0.60), 0.60),
+                "Normal twin chance must scale by generation and stop at 60%");
+        helper.assertTrue(closeTo(GeneSpliceRules.totalTwinChance(0.15, 0.50), 0.575),
+                "Total twin probability must include mutation-guaranteed twins without double counting");
+        helper.assertTrue(GeneSpliceRules.resolveOffspringCount(false, -10) == 1
+                        && GeneSpliceRules.resolveOffspringCount(false, 99) == 2
+                        && GeneSpliceRules.resolveOffspringCount(true, 1) == 2,
+                "Event output counts must clamp to 1-2 and mutations must force two offspring");
+
+        ItemStack parent = new ItemStack(ModItems.FIBER_REED_SEEDS.get(), 2);
+        GeneSpliceEvent event = new GeneSpliceEvent(parent, parent,
+                5, 5, 5, 0, 1, false, 0, "", 2);
+        parent.shrink(1);
+        helper.assertTrue(event.getSeedA().getCount() == 2 && event.getOffspringCount() == 2,
+                "GeneSpliceEvent must copy parents and expose offspringCount");
+        event.setOffspringCount(7);
+        helper.assertTrue(event.getOffspringCount() == 7
+                        && GeneSpliceRules.resolveOffspringCount(event.isMutation(), event.getOffspringCount()) == 2,
+                "Machine-side resolution must clamp an event-modified offspring count after listeners finish");
+
+        helper.assertTrue(closeTo(Config.migrateMutationChancePerGeneration(1, 0.02), 0.005),
+                "Historical default mutation increment must migrate once");
+        helper.assertTrue(closeTo(Config.migrateMutationChancePerGeneration(1, 0.013), 0.013)
+                        && closeTo(Config.migrateMutationChancePerGeneration(2, 0.02), 0.02),
+                "Custom values and already-migrated schemas must remain unchanged");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void apprenticeSeedTradesMatchBalance(GameTestHelper helper) {
+        assertSeedTrade(helper, VillagerProfession.FARMER, ModItems.PROTEIN_SOY_SEEDS.get());
+        assertSeedTrade(helper, VillagerProfession.CLERIC, ModItems.ALCOHOL_BLOOM_SEEDS.get());
         helper.succeed();
     }
 
@@ -331,7 +401,8 @@ public final class ModGameTests {
         GeneSpliceEvent splice = new GeneSpliceEvent(ItemStack.EMPTY, ItemStack.EMPTY,
                 1, 1, 1, 0, 777, false, 0, "");
         MinecraftForge.EVENT_BUS.post(splice);
-        helper.assertTrue(splice.getSpeed() == 9, "KubeJS geneSplice listener must modify the Forge event");
+        helper.assertTrue(splice.getSpeed() == 9 && splice.getOffspringCount() == 2,
+                "KubeJS geneSplice listener must modify genes and offspring count");
 
         CropMatureEvent crop = new CropMatureEvent(helper.getLevel(), new BlockPos(0, 77, 0),
                 ItemStack.EMPTY, new ItemStack(Items.WHEAT));
@@ -382,6 +453,8 @@ public final class ModGameTests {
         helper.assertTrue(activityEffect.getAmplifier() == expectedAmplifier,
                 "Activity-only override must recompute the first amplifier");
         helper.assertTrue(activityStack.getCount() == 1, "Mutating the event serum snapshot must not mutate the consumed stack");
+        helper.assertTrue(countInventoryItem(activityPlayer, Items.GLASS_BOTTLE) == 1,
+                "Drinking from a serum stack must place one empty bottle in the inventory");
 
         Player explicitPlayer = helper.makeMockSurvivalPlayer();
         ItemStack explicitStack = new ItemStack(item, 2);
@@ -404,6 +477,48 @@ public final class ModGameTests {
         helper.assertTrue(explicitEffect.getAmplifier() == 6,
                 "Explicit amplifier must override Activity recomputation");
 
+        Player lastDosePlayer = helper.makeMockSurvivalPlayer();
+        ItemStack lastDose = new ItemStack(item);
+        ItemStack returned = item.finishUsingItem(lastDose, helper.getLevel(), lastDosePlayer);
+        helper.assertTrue(returned.is(Items.GLASS_BOTTLE) && lastDose.isEmpty(),
+                "The final serum dose must replace the held stack with a glass bottle");
+
+        Player fullInventoryPlayer = helper.makeMockSurvivalPlayer();
+        for (int slot = 0; slot < fullInventoryPlayer.getInventory().items.size(); slot++) {
+            fullInventoryPlayer.getInventory().setItem(slot, new ItemStack(Items.COBBLESTONE, 64));
+        }
+        ItemStack fullInventoryDose = new ItemStack(item, 2);
+        item.finishUsingItem(fullInventoryDose, helper.getLevel(), fullInventoryPlayer);
+        boolean droppedBottle = !helper.getLevel().getEntitiesOfClass(ItemEntity.class,
+                fullInventoryPlayer.getBoundingBox().inflate(2.0),
+                entity -> entity.getItem().is(Items.GLASS_BOTTLE)).isEmpty();
+        helper.assertTrue(fullInventoryDose.getCount() == 1 && droppedBottle,
+                "A stacked serum must drop its empty bottle when the inventory is full");
+
+        Player creativePlayer = helper.makeMockPlayer();
+        creativePlayer.getAbilities().instabuild = true;
+        ItemStack creativeDose = new ItemStack(item);
+        ItemStack creativeReturned = item.finishUsingItem(creativeDose, helper.getLevel(), creativePlayer);
+        helper.assertTrue(creativeReturned.is(item) && creativeReturned.getCount() == 1
+                        && countInventoryItem(creativePlayer, Items.GLASS_BOTTLE) == 0,
+                "Creative-mode serum use must neither consume serum nor return a bottle");
+
+        Player cancelledPlayer = helper.makeMockSurvivalPlayer();
+        ItemStack cancelledDose = new ItemStack(item);
+        ConsumeListener cancelListener = new ConsumeListener(event -> {
+            if (event.getEntity() == cancelledPlayer) event.setCanceled(true);
+        });
+        MinecraftForge.EVENT_BUS.register(cancelListener);
+        ItemStack cancelledReturned;
+        try {
+            cancelledReturned = item.finishUsingItem(cancelledDose, helper.getLevel(), cancelledPlayer);
+        } finally {
+            MinecraftForge.EVENT_BUS.unregister(cancelListener);
+        }
+        helper.assertTrue(cancelledReturned.is(item) && cancelledReturned.getCount() == 1
+                        && countInventoryItem(cancelledPlayer, Items.GLASS_BOTTLE) == 0,
+                "Cancelled serum use must neither consume serum nor return a bottle");
+
         SerumConsumeEvent bounds = new SerumConsumeEvent(explicitPlayer, explicitStack, item.getSerumEffect(), 5, 20, 1);
         bounds.setActivity(100);
         bounds.setDuration(0);
@@ -411,6 +526,62 @@ public final class ModGameTests {
         helper.assertTrue(bounds.getActivity() == 15 && bounds.getDuration() == 1 && bounds.getAmplifier() == 0,
                 "Event setters must enforce their public bounds");
         helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void serumStackingPreservesLevelAndDurationIdentity(GameTestHelper helper) {
+        SynapticSerumItem item = (SynapticSerumItem) ModItems.SYNAPTIC_SERUM_S01.get();
+        Player player = helper.makeMockSurvivalPlayer();
+        ItemStack doses = new ItemStack(item, 3);
+        int doseDuration = SynapticSerumItem.getScaledDuration(Config.s01BaseDuration,
+                SynapticSerumItem.DEFAULT_ACTIVITY);
+        int durationCap = SynapticSerumItem.getStackDurationCap(doses);
+
+        item.finishUsingItem(doses, helper.getLevel(), player);
+        MobEffectInstance first = player.getEffect(item.getSerumEffect());
+        helper.assertTrue(first != null && first.getAmplifier() == 0 && first.getDuration() == doseDuration,
+                "First default-Activity S-01 dose must start at level I with one full dose duration");
+
+        item.finishUsingItem(doses, helper.getLevel(), player);
+        MobEffectInstance second = player.getEffect(item.getSerumEffect());
+        helper.assertTrue(second != null && second.getAmplifier() == 1,
+                "Second same-serum dose must raise amplifier by one");
+        helper.assertTrue(second.getDuration() == Math.min(doseDuration * 2, durationCap),
+                "Second same-serum dose must add its complete duration");
+
+        player.forceAddEffect(new MobEffectInstance(item.getSerumEffect(), durationCap,
+                Config.stackAmplifierCap), null);
+        int countBeforeBlockedDose = doses.getCount();
+        item.finishUsingItem(doses, helper.getLevel(), player);
+        helper.assertTrue(doses.getCount() == countBeforeBlockedDose,
+                "A serum already at both level and duration caps must not consume another dose");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void removedAndExpiredSerumsStillApplyOverload(GameTestHelper helper) {
+        Player milkPlayer = helper.makeMockSurvivalPlayer();
+        milkPlayer.addEffect(new MobEffectInstance(ModEffects.SYNAPTIC_OVERCLOCK.get(), 200, 2));
+        helper.assertTrue(milkPlayer.curePotionEffects(new ItemStack(Items.MILK_BUCKET)),
+                "Milk must be able to end the beneficial serum effect");
+
+        Player expiryPlayer = helper.makeMockSurvivalPlayer();
+        MobEffectInstance expiring = new MobEffectInstance(ModEffects.METABOLIC_BOOST.get(), 1, 1);
+        expiryPlayer.addEffect(expiring);
+        MinecraftForge.EVENT_BUS.post(new MobEffectEvent.Expired(expiryPlayer, expiring));
+        expiryPlayer.removeEffectNoUpdate(ModEffects.METABOLIC_BOOST.get());
+
+        helper.runAfterDelay(4, () -> {
+            MobEffectInstance milkOverload = milkPlayer.getEffect(ModEffects.NEURAL_OVERLOAD_S01.get());
+            helper.assertTrue(milkOverload != null && milkOverload.getAmplifier() == 2,
+                    "Removing S-01 with milk must still schedule source-specific overload");
+            helper.assertTrue(milkOverload.getCurativeItems().isEmpty(),
+                    "Ordinary curative items must not remove neural overload");
+            MobEffectInstance expiryOverload = expiryPlayer.getEffect(ModEffects.NEURAL_OVERLOAD_S03.get());
+            helper.assertTrue(expiryOverload != null && expiryOverload.getAmplifier() == 1,
+                    "Natural S-03 expiration must schedule source-specific overload");
+            helper.succeed();
+        });
     }
 
     @GameTest(template = EMPTY_TEMPLATE)
@@ -608,7 +779,59 @@ public final class ModGameTests {
     }
 
     @GameTest(template = EMPTY_TEMPLATE)
-    public static void incubatorAutoInjectionAndDualOutputs(GameTestHelper helper) {
+    public static void incubatorSpeedRemainderAndLegacyBottleMigration(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.BIO_INCUBATOR.get());
+        BioIncubatorBlockEntity incubator = (BioIncubatorBlockEntity) helper.getBlockEntity(pos);
+        incubator.addNutrition(100);
+        incubator.addPurity(100);
+        incubator.addDataSignal(100);
+
+        int previousRate = 0;
+        for (int speed = 1; speed <= 10; speed++) {
+            ItemStack seed = new ItemStack(ModItems.FIBER_REED_SEEDS.get());
+            GeneticSeedItem.setGene(seed, GeneticSeedItem.GENE_SPEED, speed);
+            incubator.setItem(BioIncubatorBlockEntity.SEED_SLOT, seed);
+            int rate = incubator.getCurrentGrowthRateMilli();
+            helper.assertTrue(rate == 500 + speed * 150,
+                    "Full-resource milli growth rate must follow the continuous Speed formula at " + speed);
+            helper.assertTrue(CyberCultivatorAPI.getIncubatorGrowthRateMilli(helper.getLevel(),
+                            helper.absolutePos(pos)) == rate,
+                    "Public API exact growth query must match the machine at Speed " + speed);
+            helper.assertTrue(rate > previousRate,
+                    "Speed 1-10 must accelerate growth monotonically at " + speed);
+            int expectedEta = (int) Math.ceil(Config.maturationThreshold * 1000.0D / rate / 20.0D);
+            helper.assertTrue(incubator.getEstimatedSecondsRemaining() == expectedEta,
+                    "ETA must use the same exact milli rate as actual growth at Speed " + speed);
+            previousRate = rate;
+        }
+
+        CompoundTag state = incubator.saveWithoutMetadata();
+        state.putInt("GrowthRemainderMilli", 875);
+        BioIncubatorBlockEntity restored = new BioIncubatorBlockEntity(pos, incubator.getBlockState());
+        restored.load(state);
+        helper.assertTrue(restored.saveWithoutMetadata().getInt("GrowthRemainderMilli") == 875,
+                "Fractional growth remainder must survive an NBT round-trip");
+        restored.setItem(BioIncubatorBlockEntity.SEED_SLOT, ItemStack.EMPTY);
+        helper.assertTrue(restored.saveWithoutMetadata().getInt("GrowthRemainderMilli") == 0,
+                "Removing or replacing a seed must clear fractional growth remainder");
+
+        Player player = helper.makeMockSurvivalPlayer();
+        CompoundTag legacyState = new CompoundTag();
+        legacyState.put("BottleOutput", new ItemStack(Items.GLASS_BOTTLE, 5).save(new CompoundTag()));
+        incubator.load(legacyState);
+        helper.assertTrue(incubator.getContainerSize() == 5
+                        && incubator.getItem(BioIncubatorBlockEntity.BOTTLE_OUTPUT_SLOT).isEmpty(),
+                "Legacy bottles must not be exposed as a sixth container slot");
+        incubator.createMenu(17, player.getInventory(), player);
+        helper.assertTrue(countInventoryItem(player, Items.GLASS_BOTTLE) == 5
+                        && !incubator.saveWithoutMetadata().contains("BottleOutput"),
+                "Opening an old incubator must migrate its hidden bottles into the player inventory exactly once");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void incubatorAutoInjectionAndSingleOutput(GameTestHelper helper) {
         BlockPos pos = new BlockPos(1, 1, 1);
         helper.setBlock(pos, ModBlocks.BIO_INCUBATOR.get());
         BioIncubatorBlockEntity incubator = (BioIncubatorBlockEntity) helper.getBlockEntity(pos);
@@ -632,9 +855,10 @@ public final class ModGameTests {
         helper.assertTrue(incubator.canTakeItemThroughFace(BioIncubatorBlockEntity.RESOURCE_OUTPUT_SLOT,
                         new ItemStack(ModItems.PLANT_FIBER.get()), Direction.DOWN),
                 "The bottom face must expose the resource output");
-        helper.assertTrue(incubator.canTakeItemThroughFace(BioIncubatorBlockEntity.BOTTLE_OUTPUT_SLOT,
-                incubator.getItem(BioIncubatorBlockEntity.BOTTLE_OUTPUT_SLOT), Direction.DOWN),
-                "The bottom face must expose the bottle output");
+        helper.assertTrue(incubator.getContainerSize() == 5
+                        && !incubator.canTakeItemThroughFace(BioIncubatorBlockEntity.BOTTLE_OUTPUT_SLOT,
+                        ItemStack.EMPTY, Direction.DOWN),
+                "The incubator must expose only five slots and no legacy bottle output");
 
         helper.runAfterDelay(BioIncubatorBlockEntity.INPUT_INJECTION_INTERVAL_TICKS / 2, () -> {
             helper.assertTrue(incubator.getNutrition() == 0 && incubator.getPurity() == 0
@@ -650,9 +874,8 @@ public final class ModGameTests {
                             && incubator.getItem(BioIncubatorBlockEntity.PURITY_SLOT).getCount() == 1
                             && incubator.getItem(BioIncubatorBlockEntity.SIGNAL_SLOT).getCount() == 1,
                     "The first cycle must leave the second resource in every input slot");
-            helper.assertTrue(incubator.getItem(BioIncubatorBlockEntity.BOTTLE_OUTPUT_SLOT).is(Items.GLASS_BOTTLE)
-                            && incubator.getItem(BioIncubatorBlockEntity.BOTTLE_OUTPUT_SLOT).getCount() == 1,
-                    "Each timed water injection must return exactly one empty bottle");
+            helper.assertTrue(incubator.getItem(BioIncubatorBlockEntity.BOTTLE_OUTPUT_SLOT).isEmpty(),
+                    "Timed water injection must consume the bottle without a byproduct");
         });
         helper.runAfterDelay(BioIncubatorBlockEntity.INPUT_INJECTION_INTERVAL_TICKS * 2 + 2, () -> {
             helper.assertTrue(incubator.getNutrition() == Config.nutritionInjectAmount * 2
@@ -664,19 +887,16 @@ public final class ModGameTests {
                             && incubator.getItem(BioIncubatorBlockEntity.SIGNAL_SLOT).isEmpty(),
                     "Both timed cycles must consume exactly two resources per channel");
 
-            incubator.setItem(BioIncubatorBlockEntity.BOTTLE_OUTPUT_SLOT,
-                    new ItemStack(Items.GLASS_BOTTLE, Items.GLASS_BOTTLE.getDefaultInstance().getMaxStackSize()));
             incubator.setItem(BioIncubatorBlockEntity.PURITY_SLOT,
                     new ItemStack(ModItems.PURIFIED_WATER_BOTTLE.get()));
             helper.assertTrue(incubator.getItem(BioIncubatorBlockEntity.PURITY_SLOT)
                             .is(ModItems.PURIFIED_WATER_BOTTLE.get()),
-                    "Water input must wait while the bottle output is full");
-            incubator.setItem(BioIncubatorBlockEntity.BOTTLE_OUTPUT_SLOT, ItemStack.EMPTY);
+                    "New water must wait for the next timed injection cycle");
         });
         helper.runAfterDelay(BioIncubatorBlockEntity.INPUT_INJECTION_INTERVAL_TICKS * 3 + 3, () -> {
             helper.assertTrue(incubator.getItem(BioIncubatorBlockEntity.PURITY_SLOT).isEmpty()
-                            && incubator.getItem(BioIncubatorBlockEntity.BOTTLE_OUTPUT_SLOT).is(Items.GLASS_BOTTLE),
-                    "Waiting water input must resume on a later interval after output space becomes available");
+                            && incubator.getItem(BioIncubatorBlockEntity.BOTTLE_OUTPUT_SLOT).isEmpty(),
+                    "Waiting water must inject without producing a bottle output");
 
             ItemStack seed = new ItemStack(ModItems.FIBER_REED_SEEDS.get());
             GeneticSeedItem.setGene(seed, GeneticSeedItem.GENE_SPEED, 10);
@@ -706,14 +926,15 @@ public final class ModGameTests {
         second.getOrCreateTag().putInt(GeneticSeedItem.GENE_GENERATION, 4);
         splicer.setItem(GeneSplicerBlockEntity.SEED_A_SLOT, first);
         splicer.setItem(GeneSplicerBlockEntity.SEED_B_SLOT, second);
-        int expectedMutationPermille = (int) Math.round(Math.max(0.0D, Math.min(1.0D,
-                Config.mutationChanceBase
-                        + 4 * Config.mutationChancePerGen
-                        + 5 * Config.mutationChancePerGeneDiff)) * 1000.0D);
+        int expectedMutationPermille = (int) Math.round(GeneSpliceRules.mutationChance(4, 5) * 1000.0D);
+        int expectedTwinPermille = (int) Math.round(GeneSpliceRules.totalTwinChance(
+                GeneSpliceRules.mutationChance(4, 5), GeneSpliceRules.normalTwinChance(4)) * 1000.0D);
         helper.assertTrue(splicer.getPredictedGeneration() == 5,
                 "GUI generation preview must use the higher parent generation plus one");
         helper.assertTrue(splicer.getPredictedMutationPermille() == expectedMutationPermille,
                 "GUI mutation preview must match the server-side splice formula");
+        helper.assertTrue(splicer.getPredictedTwinPermille() == expectedTwinPermille,
+                "GUI twin preview must include mutation-guaranteed twins");
         helper.assertTrue(splicer.isSplicing() && splicer.getOutput().isEmpty(),
                 "Adding the second parent must automatically start timed splicing");
         GeneSplicerBlockEntity.tick(helper.getLevel(), pos, splicer.getBlockState(), splicer);
@@ -822,8 +1043,8 @@ public final class ModGameTests {
         ItemStack water = condenserMenu.quickMoveStack(player, AtmosphericCondenserBlockEntity.OUTPUT_SLOT);
         helper.assertTrue(water.getCount() == 4 && condenser.getOutput().isEmpty(),
                 "Shift-moving condenser stock must transfer the complete output");
-        helper.assertTrue(condenser.getProgress() == 0,
-                "Shift-moving condenser stock must reset progress like every other extraction path");
+        helper.assertTrue(condenser.getProgress() == 599,
+                "Shift-moving condenser stock must preserve the active production progress");
         helper.succeed();
     }
 
@@ -874,6 +1095,30 @@ public final class ModGameTests {
         restored.load(saved);
         helper.assertTrue(restored.getProgress() == 11 && restored.getBottleCount() == 2,
                 "Glass bottle input must survive an NBT round-trip");
+
+        CompoundTag legacyOverstock = new CompoundTag();
+        legacyOverstock.putInt("Progress", 100);
+        legacyOverstock.put("BottleInput", new ItemStack(Items.GLASS_BOTTLE, 2).save(new CompoundTag()));
+        legacyOverstock.put("Output", new ItemStack(ModItems.PURIFIED_WATER_BOTTLE.get(), 32)
+                .save(new CompoundTag()));
+        restored.load(legacyOverstock);
+        helper.assertTrue(restored.getMaxStock() == 16 && restored.getStock() == 32,
+                "Old 17-32 bottle condenser stacks must survive load without truncation");
+        AtmosphericCondenserBlockEntity.tick(helper.getLevel(), condenserPos,
+                restored.getBlockState(), restored);
+        helper.assertTrue(restored.getProgress() == 100 && restored.getStock() == 32,
+                "An overstocked condenser must pause rather than discard stock or cycle progress");
+        ItemStack hopperExtracted = restored.removeItem(AtmosphericCondenserBlockEntity.OUTPUT_SLOT, 20);
+        helper.assertTrue(hopperExtracted.getCount() == 20 && restored.getStock() == 12
+                        && restored.getProgress() == 100,
+                "Hopper extraction must preserve the next-cycle progress while reducing legacy overstock");
+        AtmosphericCondenserBlockEntity.tick(helper.getLevel(), condenserPos,
+                restored.getBlockState(), restored);
+        helper.assertTrue(restored.getProgress() == 101,
+                "Production must resume naturally once legacy stock falls below the new 16-bottle cap");
+        restored.extractOutput();
+        helper.assertTrue(restored.getProgress() == 101,
+                "Manual extraction must not reset the next condensation cycle");
         AtmosphericCondenserBlockEntity legacy =
                 new AtmosphericCondenserBlockEntity(condenser.getBlockPos(), condenser.getBlockState());
         legacy.load(new CompoundTag());
@@ -964,10 +1209,23 @@ public final class ModGameTests {
     public static void neuralOverloadVariantsAreRegistered(GameTestHelper helper) {
         // 修复 4：神经过载来源丢失和串线 —— 三个独立效果必须全部注册
         String[] ids = {"neural_overload", "neural_overload_s01", "neural_overload_s02", "neural_overload_s03"};
+        byte[][] textures = new byte[ids.length][];
+        int textureIndex = 0;
         for (String id : ids) {
             ResourceLocation key = ResourceLocation.fromNamespaceAndPath(cybercultivator.MODID, id);
             var effect = net.minecraftforge.registries.ForgeRegistries.MOB_EFFECTS.getValue(key);
             helper.assertTrue(effect != null, "NeuralOverload variant must be registered: " + id);
+            String texturePath = "assets/cybercultivator/textures/mob_effect/" + id + ".png";
+            textures[textureIndex++] = readResourceBytes(texturePath);
+            helper.assertTrue(textures[textureIndex - 1].length > 0,
+                    "NeuralOverload variant must have its own effect-bar texture: " + id);
+        }
+        for (int first = 0; first < textures.length; first++) {
+            for (int second = first + 1; second < textures.length; second++) {
+                helper.assertTrue(!Arrays.equals(textures[first], textures[second]),
+                        "NeuralOverload variants must use visually distinct texture files: "
+                                + ids[first] + " / " + ids[second]);
+            }
         }
         // 三个子类必须各自是独立类型，而非共享旧 SOURCE_MAP 的旧 NeuralOverloadEffect
         helper.assertTrue(ModEffects.NEURAL_OVERLOAD_S01.get() != ModEffects.NEURAL_OVERLOAD.get(),
@@ -976,17 +1234,61 @@ public final class ModGameTests {
                 "S-02 overload must be a distinct effect instance");
         helper.assertTrue(ModEffects.NEURAL_OVERLOAD_S03.get() != ModEffects.NEURAL_OVERLOAD.get(),
                 "S-03 overload must be a distinct effect instance");
+
+        String[] beneficialIds = {"synaptic_overclock", "visual_enhancement", "metabolic_boost"};
+        byte[][] beneficialTextures = new byte[beneficialIds.length][];
+        for (int i = 0; i < beneficialIds.length; i++) {
+            beneficialTextures[i] = readResourceBytes(
+                    "assets/cybercultivator/textures/mob_effect/" + beneficialIds[i] + ".png");
+            byte[] png = beneficialTextures[i];
+            helper.assertTrue(png.length > 24
+                            && png[16] == 0 && png[17] == 0 && png[18] == 0 && png[19] == 18
+                            && png[20] == 0 && png[21] == 0 && png[22] == 0 && png[23] == 18,
+                    "Beneficial effect icon must be an 18x18 PNG: " + beneficialIds[i]);
+        }
+        for (int first = 0; first < beneficialTextures.length; first++) {
+            for (int second = first + 1; second < beneficialTextures.length; second++) {
+                helper.assertTrue(!Arrays.equals(beneficialTextures[first], beneficialTextures[second]),
+                        "Beneficial effects must use distinct icon files: "
+                                + beneficialIds[first] + " / " + beneficialIds[second]);
+            }
+        }
         helper.succeed();
     }
 
     @GameTest(template = EMPTY_TEMPLATE)
-    public static void neuralOverloadS01AppliesWitherAndHunger(GameTestHelper helper) {
-        // 修复 4：S-01 过载必须是凋零 + 饥饿，且不得串线到 S-02/S-03 的副作用
+    public static void optionalPatchouliGuideLifecycle(GameTestHelper helper) {
+        ResourceLocation recipeId = ResourceLocation.fromNamespaceAndPath(
+                cybercultivator.MODID, "bio_synthesis_guide");
+        Recipe<?> recipe = helper.getLevel().getRecipeManager().byKey(recipeId).orElse(null);
+        if (!ModList.get().isLoaded("patchouli")) {
+            helper.assertTrue(recipe == null,
+                    "Guide recovery recipe must be skipped cleanly when Patchouli is absent");
+            helper.succeed();
+            return;
+        }
+
+        helper.assertTrue(recipe != null,
+                "Guide recovery recipe must load when Patchouli is present");
+        Player player = helper.makeMockSurvivalPlayer();
+        helper.assertTrue(PatchouliGuideCompat.tryGrantGuide(player)
+                        && countPatchouliGuides(player) == 1,
+                "First login with Patchouli must grant the Bio-Synthesis guide directly to the inventory");
+        helper.assertTrue(!PatchouliGuideCompat.tryGrantGuide(player)
+                        && countPatchouliGuides(player) == 1,
+                "Repeated login must not grant a duplicate guide");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void neuralOverloadS01AppliesFatigueAndHighLevelWither(GameTestHelper helper) {
         Player player = helper.makeMockSurvivalPlayer();
         player.getInventory().clearContent();
-        ModEffects.NEURAL_OVERLOAD_S01.get().applyEffectTick(player, 0);
-        helper.assertTrue(player.getEffect(MobEffects.WITHER) != null, "S-01 overload must apply Wither");
-        helper.assertTrue(player.getEffect(MobEffects.HUNGER) != null, "S-01 overload must apply Hunger");
+        ModEffects.NEURAL_OVERLOAD_S01.get().applyEffectTick(player, 7);
+        helper.assertTrue(player.getEffect(MobEffects.WEAKNESS) != null, "S-01 overload must apply Weakness");
+        helper.assertTrue(player.getEffect(MobEffects.DIG_SLOWDOWN) != null, "S-01 overload must apply Mining Fatigue");
+        helper.assertTrue(player.getEffect(MobEffects.WITHER) != null, "High-level S-01 overload must apply Wither I");
+        helper.assertTrue(player.getEffect(MobEffects.HUNGER) == null, "S-01 overload must no longer apply Hunger");
         helper.assertTrue(player.getEffect(MobEffects.BLINDNESS) == null, "S-01 overload must not apply Blindness (S-02 crosstalk)");
         helper.assertTrue(player.getEffect(MobEffects.POISON) == null, "S-01 overload must not apply Poison (S-03 crosstalk)");
         helper.assertTrue(player.getEffect(MobEffects.MOVEMENT_SLOWDOWN) == null,
@@ -995,30 +1297,35 @@ public final class ModGameTests {
     }
 
     @GameTest(template = EMPTY_TEMPLATE)
-    public static void neuralOverloadS02AppliesBlindnessAndHunger(GameTestHelper helper) {
-        // 修复 4：S-02 过载必须是失明 + 饥饿
+    public static void neuralOverloadS02AppliesSensoryCrash(GameTestHelper helper) {
         Player player = helper.makeMockSurvivalPlayer();
         player.getInventory().clearContent();
-        ModEffects.NEURAL_OVERLOAD_S02.get().applyEffectTick(player, 0);
-        helper.assertTrue(player.getEffect(MobEffects.BLINDNESS) != null, "S-02 overload must apply Blindness");
-        helper.assertTrue(player.getEffect(MobEffects.HUNGER) != null, "S-02 overload must apply Hunger");
+        player.addEffect(new MobEffectInstance(ModEffects.NEURAL_OVERLOAD_S02.get(), 440, 7));
+        ModEffects.NEURAL_OVERLOAD_S02.get().applyEffectTick(player, 7);
+        helper.assertTrue(player.getEffect(MobEffects.BLINDNESS) != null
+                        && player.getEffect(MobEffects.BLINDNESS).getDuration() > 400,
+                "S-02 overload Blindness must follow the parent duration instead of restarting at 21 ticks");
+        helper.assertTrue(player.getEffect(MobEffects.CONFUSION) != null, "High-level S-02 overload must apply Nausea");
+        helper.assertTrue(player.getEffect(MobEffects.MOVEMENT_SLOWDOWN) != null,
+                "Level VII-VIII S-02 overload must apply Slowness I");
+        helper.assertTrue(player.getEffect(MobEffects.HUNGER) == null, "S-02 overload must no longer apply Hunger");
         helper.assertTrue(player.getEffect(MobEffects.WITHER) == null, "S-02 overload must not apply Wither (S-01 crosstalk)");
         helper.assertTrue(player.getEffect(MobEffects.POISON) == null, "S-02 overload must not apply Poison (S-03 crosstalk)");
         helper.succeed();
     }
 
     @GameTest(template = EMPTY_TEMPLATE)
-    public static void neuralOverloadS03AppliesSlownessAndPoison(GameTestHelper helper) {
-        // 修复 4：S-03 过载必须是缓慢 + 中毒
+    public static void neuralOverloadS03AppliesMetabolicCrash(GameTestHelper helper) {
         Player player = helper.makeMockSurvivalPlayer();
         player.getInventory().clearContent();
-        ModEffects.NEURAL_OVERLOAD_S03.get().applyEffectTick(player, 0);
+        ModEffects.NEURAL_OVERLOAD_S03.get().applyEffectTick(player, 7);
         helper.assertTrue(player.getEffect(MobEffects.MOVEMENT_SLOWDOWN) != null, "S-03 overload must apply Slowness");
-        helper.assertTrue(player.getEffect(MobEffects.POISON) != null, "S-03 overload must apply Poison");
+        helper.assertTrue(player.getEffect(MobEffects.HUNGER) != null, "S-03 overload must apply Hunger");
+        helper.assertTrue(player.getEffect(MobEffects.POISON) != null
+                        && player.getEffect(MobEffects.POISON).getAmplifier() == 1,
+                "Level VIII S-03 overload must apply Poison II");
         helper.assertTrue(player.getEffect(MobEffects.WITHER) == null, "S-03 overload must not apply Wither (S-01 crosstalk)");
         helper.assertTrue(player.getEffect(MobEffects.BLINDNESS) == null, "S-03 overload must not apply Blindness (S-02 crosstalk)");
-        helper.assertTrue(player.getEffect(MobEffects.HUNGER) == null,
-                "S-03 overload must not apply Hunger (legacy/S-01/S-02 crosstalk)");
         helper.succeed();
     }
 
@@ -1028,7 +1335,7 @@ public final class ModGameTests {
         Player drinker = helper.makeMockSurvivalPlayer();
         net.minecraft.world.entity.animal.Cow nearby = helper.spawn(net.minecraft.world.entity.EntityType.COW,
                 new BlockPos(2, 1, 2));
-        // 直接调用 applyEffectTick 绕过 60-tick 节流，验证 S-02 内部逻辑
+        // 直接调用 applyEffectTick 绕过按等级调节的扫描节流，验证 S-02 内部逻辑
         try {
             ModEffects.VISUAL_ENHANCEMENT.get().applyEffectTick(drinker, 0);
         } catch (Exception ignored) {
@@ -1036,12 +1343,59 @@ public final class ModGameTests {
         }
         helper.assertTrue(drinker.getEffect(MobEffects.NIGHT_VISION) != null,
                 "S-02 must still grant Night Vision to the drinker");
-        helper.assertTrue(drinker.getEffect(MobEffects.FIRE_RESISTANCE) != null,
-                "S-02 must still grant Fire Resistance to the drinker");
+        helper.assertTrue(drinker.getEffect(MobEffects.NIGHT_VISION).getDuration() > 200,
+                "S-02 Night Vision refresh must remain above the vanilla flicker threshold");
+        helper.assertTrue(drinker.getEffect(MobEffects.FIRE_RESISTANCE) == null,
+                "S-02 must no longer grant unrelated Fire Resistance");
+        helper.assertTrue(com.TKCCOPL.effect.VisualEnhancementEffect.getScanRange(7, 64) == 64.0D
+                        && com.TKCCOPL.effect.VisualEnhancementEffect.getScanInterval(7) == 32,
+                "S-02 level VIII must reach 64 blocks and refresh every 32 ticks");
         helper.assertTrue(nearby.getEffect(MobEffects.GLOWING) == null,
                 "S-02 must not apply GLOWING to nearby entities (v1.1.7 regression)");
         helper.assertTrue(drinker.getEffect(MobEffects.GLOWING) == null,
                 "S-02 must not apply GLOWING to the drinker either");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void s02NightVisionDoesNotFlickerOrOutliveItsParent(GameTestHelper helper) {
+        Player player = helper.makeMockSurvivalPlayer();
+        player.addEffect(new MobEffectInstance(ModEffects.VISUAL_ENHANCEMENT.get(), 200, 0));
+        MobEffectInstance nightVision = player.getEffect(MobEffects.NIGHT_VISION);
+        helper.assertTrue(nightVision != null && nightVision.getDuration() > 200,
+                "S-02 must apply Night Vision immediately above the vanilla flicker threshold");
+
+        player.removeEffect(ModEffects.VISUAL_ENHANCEMENT.get());
+        helper.runAfterDelay(3, () -> {
+            helper.assertTrue(player.getEffect(MobEffects.NIGHT_VISION) == null,
+                    "S-02-owned Night Vision must be removed after the parent effect ends");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void serumPrimaryEffectsScaleThroughLevelEight(GameTestHelper helper) {
+        Player s01Player = helper.makeMockSurvivalPlayer();
+        double baseAttackSpeed = s01Player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_SPEED);
+        s01Player.addEffect(new MobEffectInstance(ModEffects.SYNAPTIC_OVERCLOCK.get(), 200, 7));
+        helper.assertTrue(s01Player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_SPEED)
+                        > baseAttackSpeed * 1.44D,
+                "S-01 level VIII must immediately grant 45% attack speed");
+        helper.assertTrue(s01Player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE)
+                        >= 0.45D,
+                "S-01 level VIII must grant 45% knockback resistance");
+
+        Player s03Player = helper.makeMockSurvivalPlayer();
+        s03Player.setHealth(10.0F);
+        s03Player.getFoodData().setFoodLevel(20);
+        ModEffects.METABOLIC_BOOST.get().applyEffectTick(s03Player, 7);
+        helper.assertTrue(Math.abs(s03Player.getHealth() - 14.5F) < 0.001F,
+                "S-03 level VIII must heal 4.5 HP per second while food is available");
+        s03Player.setHealth(10.0F);
+        s03Player.getFoodData().setFoodLevel(6);
+        ModEffects.METABOLIC_BOOST.get().applyEffectTick(s03Player, 7);
+        helper.assertTrue(Math.abs(s03Player.getHealth() - 10.0F) < 0.001F,
+                "S-03 healing must pause at food level 6 or below");
         helper.succeed();
     }
 
@@ -1075,10 +1429,24 @@ public final class ModGameTests {
         // 且 fromServerConfig 必须镜像运行时 Config（GameTest 世界已加载 SERVER 类型 Config）
         GameplayConfigSnapshot defaults = GameplayConfigSnapshot.empty();
         helper.assertTrue(defaults.mutationRange() == 2, "Default mutationRange must be 2");
-        helper.assertTrue(defaults.s01BaseDuration() == 500, "Default s01BaseDuration must be 500");
-        helper.assertTrue(defaults.s02BaseDuration() == 600, "Default s02BaseDuration must be 600");
-        helper.assertTrue(defaults.s03BaseDuration() == 300, "Default s03BaseDuration must be 300");
-        helper.assertTrue(defaults.glowScanRangeCap() == 48, "Default glowScanRangeCap must be 48");
+        helper.assertTrue(closeTo(defaults.mutationChancePerGen(), 0.005)
+                        && defaults.mutationGenerationCap() == 20
+                        && closeTo(defaults.mutationChanceCap(), 0.25),
+                "Default mutation generation increment and caps must match v1.2.0 balance");
+        helper.assertTrue(closeTo(defaults.twinChanceBase(), 0.10)
+                        && closeTo(defaults.twinChancePerGen(), 0.02)
+                        && closeTo(defaults.twinChanceCap(), 0.60),
+                "Default twin probability fields must match v1.2.0 balance");
+        helper.assertTrue(defaults.s01BaseDuration() == 300, "Default s01BaseDuration must be 300");
+        helper.assertTrue(defaults.s02BaseDuration() == 400, "Default s02BaseDuration must be 400");
+        helper.assertTrue(defaults.s03BaseDuration() == 200, "Default s03BaseDuration must be 200");
+        helper.assertTrue(defaults.stackAmplifierCap() == 7, "Serum stacking must retain the level VIII cap");
+        helper.assertTrue(defaults.stackDurationCap() == 2400
+                        && defaults.s01StackDurationCap() == 1800
+                        && defaults.s02StackDurationCap() == 2400
+                        && defaults.s03StackDurationCap() == 1200,
+                "Default serum duration caps must be 90/120/60 seconds under the global 120-second cap");
+        helper.assertTrue(defaults.glowScanRangeCap() == 64, "Default glowScanRangeCap must be 64");
         helper.assertTrue(defaults.beltScanRange() == 3, "Default beltScanRange must be 3");
         helper.assertTrue(Math.abs(defaults.packHealThreshold() - 6.0F) < 0.001F,
                 "Default packHealThreshold must be 6.0");
@@ -1087,6 +1455,10 @@ public final class ModGameTests {
         GameplayConfigSnapshot fromServer = GameplayConfigSnapshot.fromServerConfig();
         helper.assertTrue(fromServer.s01BaseDuration() == Config.s01BaseDuration,
                 "Snapshot.fromServerConfig must mirror Config.s01BaseDuration");
+        helper.assertTrue(fromServer.s01StackDurationCap() == Config.s01StackDurationCap
+                        && fromServer.s02StackDurationCap() == Config.s02StackDurationCap
+                        && fromServer.s03StackDurationCap() == Config.s03StackDurationCap,
+                "Snapshot.fromServerConfig must mirror all type-specific serum duration caps");
         helper.assertTrue(fromServer.glowScanRangeCap() == Config.glowScanRangeCap,
                 "Snapshot.fromServerConfig must mirror Config.glowScanRangeCap");
         helper.assertTrue(fromServer.beltScanRange() == Config.beltScanRange,
@@ -1095,6 +1467,20 @@ public final class ModGameTests {
                 "Snapshot.fromServerConfig must mirror Config.maturationThreshold");
         helper.assertTrue(fromServer.packHealThreshold() == Config.packHealThreshold,
                 "Snapshot.fromServerConfig must mirror Config.packHealThreshold");
+
+        FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
+        GameplayConfigSyncPacket.encode(new GameplayConfigSyncPacket(fromServer), buffer);
+        buffer.readerIndex(0);
+        GameplayConfigSnapshot decoded = GameplayConfigSyncPacket.decode(buffer).getSnapshot();
+        helper.assertTrue(decoded.mutationGenerationCap() == Config.mutationGenerationCap
+                        && decoded.mutationChanceCap() == Config.mutationChanceCap
+                        && decoded.twinChanceBase() == Config.twinChanceBase
+                        && decoded.twinChancePerGen() == Config.twinChancePerGen
+                        && decoded.twinChanceCap() == Config.twinChanceCap
+                        && decoded.s01StackDurationCap() == Config.s01StackDurationCap
+                        && decoded.s02StackDurationCap() == Config.s02StackDurationCap
+                        && decoded.s03StackDurationCap() == Config.s03StackDurationCap,
+                "Protocol v3 must round-trip mutation, twin and serum duration-cap fields");
         helper.succeed();
     }
 
@@ -1347,6 +1733,58 @@ public final class ModGameTests {
                         && GeneticSeedItem.getGene(stack, GeneticSeedItem.GENE_YIELD) == expectedValue
                         && GeneticSeedItem.getGene(stack, GeneticSeedItem.GENE_POTENCY) == expectedValue,
                 "Creative tab seed genes must be balanced at " + expectedValue);
+    }
+
+    private static void assertSeedTrade(GameTestHelper helper, VillagerProfession profession, Item expectedSeed) {
+        Int2ObjectOpenHashMap<List<VillagerTrades.ItemListing>> trades = new Int2ObjectOpenHashMap<>();
+        for (int level = 1; level <= 5; level++) trades.put(level, new ArrayList<>());
+        VillagerTradeEvents.addSeedTrades(new VillagerTradesEvent(trades, profession));
+        helper.assertTrue(trades.get(2).size() == 1,
+                "Each configured profession must receive exactly one apprentice seed trade");
+        MerchantOffer offer = trades.get(2).get(0).getOffer(
+                helper.makeMockSurvivalPlayer(), RandomSource.create(1234L));
+        helper.assertTrue(offer != null
+                        && offer.getBaseCostA().is(Items.EMERALD) && offer.getBaseCostA().getCount() == 3
+                        && offer.getResult().is(expectedSeed) && offer.getResult().getCount() == 2
+                        && offer.getMaxUses() == 8 && offer.getXp() == 10
+                        && Math.abs(offer.getPriceMultiplier() - 0.05F) < 0.0001F,
+                "Apprentice seed trade must cost 3 emeralds for 2 seeds with 8 uses, 10 XP and 0.05 pricing");
+        helper.assertTrue(trades.get(1).isEmpty() && trades.get(3).isEmpty(),
+                "Seed trade must be registered only at apprentice level");
+    }
+
+    private static int countInventoryItem(Player player, Item item) {
+        int count = 0;
+        for (ItemStack stack : player.getInventory().items) {
+            if (stack.is(item)) count += stack.getCount();
+        }
+        return count;
+    }
+
+    private static int countPatchouliGuides(Player player) {
+        int count = 0;
+        for (ItemStack stack : player.getInventory().items) {
+            ResourceLocation key = net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(stack.getItem());
+            if (ResourceLocation.fromNamespaceAndPath("patchouli", "guide_book").equals(key)
+                    && stack.hasTag()
+                    && "cybercultivator:bio_synthesis_guide".equals(
+                    stack.getTag().getString("patchouli:book"))) {
+                count += stack.getCount();
+            }
+        }
+        return count;
+    }
+
+    private static byte[] readResourceBytes(String path) {
+        try (InputStream stream = ModGameTests.class.getClassLoader().getResourceAsStream(path)) {
+            return stream == null ? new byte[0] : stream.readAllBytes();
+        } catch (IOException exception) {
+            throw new IllegalStateException("Unable to read test resource: " + path, exception);
+        }
+    }
+
+    private static boolean closeTo(double actual, double expected) {
+        return Math.abs(actual - expected) < 0.0000001D;
     }
 
     private static final class ConsumeListener {
