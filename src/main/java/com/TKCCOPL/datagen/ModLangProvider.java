@@ -57,6 +57,9 @@ public class ModLangProvider extends LanguageProvider {
         addItem(ModItems.SPECTRUM_MONOCLE, "光谱单片镜");
         addItem(ModItems.BIO_PULSE_BELT, "生化脉冲腰带");
         addItem(ModItems.LIFE_SUPPORT_PACK, "生命支持箱");
+        add("item.cybercultivator.bio_synthesis_guide", "生物合成研究手册");
+        add("book.cybercultivator.landing", "记录从种子、机器、育种到血清与恢复的完整生物合成链路。");
+        add("book.cybercultivator.subtitle", "赛博农业 · 生存版");
         add("tooltip.cybercultivator.spectrum_monocle", "佩戴后可解析种子基因、代数、协同与突变信息");
         add("tooltip.cybercultivator.curios_loaded", "Curios: 已连接");
         add("tooltip.cybercultivator.curios_missing", "Curios: 未加载");
@@ -138,6 +141,8 @@ public class ModLangProvider extends LanguageProvider {
         add("tooltip.cybercultivator.serum_activity", "突触活性: %s");
         add("tooltip.cybercultivator.serum_base_level", "基础等级: %s");
         add("tooltip.cybercultivator.serum_duration_mult", "时长倍率: ×%s");
+        add("tooltip.cybercultivator.serum_duration", "单瓶时长: %s 秒 · 累加上限: %s 秒");
+        add("message.cybercultivator.serum.at_cap", "血清效果已达到等级与时长上限");
         add("tooltip.cybercultivator.quality_potency", "品质: %s/10");
         add("tooltip.cybercultivator.quality_purity", "纯度: %s/10");
         add("tooltip.cybercultivator.quality_concentration", "浓度: %s/10");
@@ -166,23 +171,19 @@ public class ModLangProvider extends LanguageProvider {
         add("jei.cybercultivator.incubator.resource_nutrition", "资源注入：营养 +%s");
         add("jei.cybercultivator.incubator.resource_purity", "资源注入：纯度 +%s");
         add("jei.cybercultivator.incubator.resource_signal", "资源注入：信号 +%s");
-        add("jei.cybercultivator.incubator.bottle_byproduct", "纯净水瓶注入后返还玻璃瓶");
-        add("jei.cybercultivator.splicer.automatic", "自动拼接 · %s 秒");
-        add("jei.cybercultivator.splicer.meta", "预计 G%s · 特殊突变 %s%%");
-        add("jei.cybercultivator.splicer.average", "子代均值 S%s Y%s P%s · 常规波动 ±%s");
-        add("jei.cybercultivator.bottler.automatic", "自动灌装 · %s 秒");
+        add("jei.cybercultivator.splicer.meta", "子代 G%s · 特殊突变 %s%% · 双生 %s%%");
+        add("jei.cybercultivator.splicer.range", "普通范围 S %s～%s · Y %s～%s · P %s～%s");
         add("jei.cybercultivator.bottler.output", "产出：%s");
-        add("jei.cybercultivator.bottler.activity_calculated", "活性由三项原料品质计算");
-        add("jei.cybercultivator.bottler.activity_inherited", "继承神经莓活性");
+        add("gui.cybercultivator.bottler.output_recipe", "产出配方：%s");
         add("jei.cybercultivator.condenser.cycle", "消耗 1 个玻璃瓶 · 每 %s 秒产出 1 瓶");
         add("jei.cybercultivator.condenser.stock", "内部库存上限：%s");
         add("jei.cybercultivator.condenser.downstream", "下游培养槽自动注入纯度 +%s");
         add("jei.cybercultivator.condenser.tooltip", "顶部/侧面输入玻璃瓶，底部/侧面抽取产物；下方培养槽会自动接收纯净度");
 
         // JEI 物品信息页面
-        add("jei.cybercultivator.info.s01", "S-01 突触超频血清：配方 = 神经莓 + 生化原液 + 玻璃瓶。效果：攻速+力量（随活性缩放），持续 25 秒。副作用：凋零+饥饿。可叠加饮用提升等级（上限 VIII），活性 ≥8 起步 II 级。");
-        add("jei.cybercultivator.info.s02", "S-02 视觉强化血清：配方 = 神经莓 + 稀土粉末 + 玻璃瓶。效果：夜视+侦测附近玩家与生物（范围 16-48 格）+抗火，持续 30 秒。副作用：失明+饥饿。可叠加饮用提升等级（上限 VIII），活性 ≥8 起步 II 级。");
-        add("jei.cybercultivator.info.s03", "S-03 代谢加速血清：配方 = 神经莓 + 工业乙醇 + 玻璃瓶。效果：回血+移速+跳跃提升，持续 15 秒。副作用：缓慢+中毒。可叠加饮用提升等级（上限 VIII），活性 ≥8 起步 II 级。");
+        add("jei.cybercultivator.info.s01", "S-01 突触超频血清：配方 = 神经莓 + 生化原液 + 玻璃瓶。效果：攻速+力量+击退抗性，基础 15 秒、累加上限 90 秒。过载：弱化+挖掘疲劳，高等级追加凋零 I。可完整叠加等级与时长（上限 VIII），活性 ≥8 起步 II 级。");
+        add("jei.cybercultivator.info.s02", "S-02 视觉强化血清：配方 = 神经莓 + 稀土粉末 + 玻璃瓶。效果：夜视+私有轮廓侦测；I~VIII 对应 16~64 格且逐级加快刷新，基础 20 秒、累加上限 120 秒。过载：失明，高等级追加恶心与缓慢。可完整叠加等级与时长。");
+        add("jei.cybercultivator.info.s03", "S-03 代谢加速血清：配方 = 神经莓 + 工业乙醇 + 玻璃瓶。效果：食物驱动回血+移速+跳跃，基础 10 秒、累加上限 60 秒。过载：缓慢+饥饿，高等级追加中毒。可完整叠加等级与时长（上限 VIII）。");
         add("jei.cybercultivator.info.monocle", "光谱单片镜：佩戴后可在种子提示中解析基因值、代数、协同与突变信息。使用铁粒、玻璃板、硅碎片和稀土粉末合成。");
         add("jei.cybercultivator.info.belt", "生化脉冲腰带：自动扫描附近的培养槽，消耗背包中的材料自动注入营养液、纯净水和数据信号。获取：废弃矿井、要塞、大型海底废墟（20% 掉率）。");
         add("jei.cybercultivator.info.pack", "生命支持箱：加速血清副作用（神经过载）的消退。当生命值过低时自动注射治疗（冷却 60 秒）。获取：废弃矿井、地牢、掠夺者前哨站（20% 掉率）。");
@@ -203,8 +204,8 @@ public class ModLangProvider extends LanguageProvider {
 
         // JEI 机器信息
         add("jei.cybercultivator.info.bio_incubator", "生物培养槽：放入基因种子后，可注入纯净水（提升纯度）、生化原液（提升营养）、硅碎片（提升数据信号）进行培养。三项数值影响作物产出品质。");
-        add("jei.cybercultivator.info.gene_splicer", "基因拼接机：放入两颗基因种子后自动开始，等待 5 秒完成拼接。子代基因 = (父本+母本)/2 ± 随机变异。同类拼接突变率 5%，跨类型拼接突变率 9%。");
-        add("jei.cybercultivator.info.atmospheric_condenser", "大气冷凝器：消耗 1 个玻璃瓶，等待 30 秒生产 1 瓶纯净水，库存上限 32。下方放置培养槽时自动注入纯净度 +20。支持漏斗自动化。");
+        add("jei.cybercultivator.info.gene_splicer", "基因拼接机：放入两颗基因种子后自动开始，等待 5 秒完成。界面显示普通范围、特殊突变率和双生率；特殊突变必定产出两颗子代。");
+        add("jei.cybercultivator.info.atmospheric_condenser", "大气冷凝器：消耗 1 个玻璃瓶，等待 30 秒生产 1 瓶纯净水，库存上限 16。下方放置培养槽时自动注入纯净度 +20。支持漏斗自动化。");
         add("jei.cybercultivator.info.serum_bottler", "血清灌装机：将突触神经莓加工为高级血清（S-01/S-02/S-03）。支持漏斗自动化（顶部/侧面注入，底部抽取）。");
 
         // JEI 矿石信息
@@ -212,9 +213,9 @@ public class ModLangProvider extends LanguageProvider {
         add("jei.cybercultivator.info.rare_earth_ore", "稀土矿石：在地下生成，挖掘后掉落粗稀土矿；精准采集可保留矿石方块。");
 
         // JEI 血清效果简介
-        add("jei.cybercultivator.serum_effect.s01", "攻速+力量 | 副作用: 凋零+饥饿");
-        add("jei.cybercultivator.serum_effect.s02", "夜视+侦测附近玩家与生物 | 副作用: 失明+饥饿");
-        add("jei.cybercultivator.serum_effect.s03", "回血+移速 | 副作用: 缓慢+中毒");
+        add("jei.cybercultivator.serum_effect.s01", "攻速+力量+击退抗性 | 过载: 弱化+疲劳");
+        add("jei.cybercultivator.serum_effect.s02", "夜视+16~64格私有侦测 | 过载: 失明+恶心");
+        add("jei.cybercultivator.serum_effect.s03", "食物驱动回血+移速 | 过载: 缓慢+饥饿");
 
         // JEI 原料品质标签
         add("jei.cybercultivator.tag_potency", "效价");
@@ -234,10 +235,11 @@ public class ModLangProvider extends LanguageProvider {
         add("jei.cybercultivator.tooltip.serum_chain", "链路：神经莓 + 辅料 + 玻璃瓶 → 血清");
 
         // JEI Tooltip 公式说明
-        add("jei.cybercultivator.tooltip.mutation_formula", "突变概率：基础 5% + 每点基因差异 +1%");
+        add("jei.cybercultivator.tooltip.mutation_formula", "特殊突变：基础 5% + 前 20 代每代 0.5% + 每点基因差异 1%，上限 25%");
         add("jei.cybercultivator.tooltip.mutation_formula_config",
-                "特殊突变：基础 %s%% + 每代 %s%% + 每点最大基因差异 %s%%");
-        add("jei.cybercultivator.tooltip.gene_formula", "子代基因 = (A+B)/2 ± 随机(-2,+2)，限制 1-10");
+                "特殊突变：基础 %s%% + 每代 %s%% + 每点差异 %s%%（计入前%s代，上限%s%%）");
+        add("jei.cybercultivator.tooltip.twin_formula", "普通双生：基础 %s%% + 每代 %s%%，上限 %s%%；特殊突变必定双生");
+        add("jei.cybercultivator.tooltip.gene_formula", "普通范围 = (A+B)/2 ± 配置浮动，特殊突变可能超出范围");
         add("jei.cybercultivator.tooltip.output_formula", "产出数量 = 2 + Yield/3");
         add("jei.cybercultivator.tooltip.rate_formula", "生长速率 = 0.5 + Speed/10 × 1.5");
         add("jei.cybercultivator.tooltip.rate_value", "默认速度基因倍率：%sx（环境倍率另计）");
@@ -265,30 +267,18 @@ public class ModLangProvider extends LanguageProvider {
         add("gui.cybercultivator.splicer.status_splicing", "拼接中 · %s 秒");
         add("gui.cybercultivator.splicer.status_complete", "完成 · 收取子代");
         add("gui.cybercultivator.splicer.status_mutated", "突变完成 · 收取子代");
-        add("gui.cybercultivator.splicer.preview", "均值 S/Y/P %s/%s/%s");
         add("gui.cybercultivator.splicer.offspring_generation", "子代 G%s");
-        add("gui.cybercultivator.splicer.offspring_summary", "S/Y/P %s/%s/%s");
-        add("gui.cybercultivator.splicer.offspring_summary_synergy", "S/Y/P %s/%s/%s · 协同%s");
-        add("gui.cybercultivator.splicer.prediction_meta", "G%s · 突变 %s%%");
-        add("gui.cybercultivator.bottler.status_waiting", "放入材料后自动灌装");
-        add("gui.cybercultivator.bottler.status_incomplete", "材料不足或配方不匹配");
-        add("gui.cybercultivator.bottler.status_ready", "配方就绪 · 自动启动");
-        add("gui.cybercultivator.bottler.status_processing", "灌装中 · %s%% · 剩余 %s 秒");
-        add("gui.cybercultivator.bottler.status_output_blocked", "输出槽已占用 · 等待收取");
-        add("gui.cybercultivator.bottler.status_complete", "产物就绪 · 可收取");
-        add("gui.cybercultivator.bottler.input_count", "输入 %s/3 · 自动流程");
-        add("gui.cybercultivator.bottler.flow_hint", "混合 · 灌装 · 输出");
-        add("gui.cybercultivator.bottler.recipe", "产出 %s · %s 秒");
-        add("gui.cybercultivator.bottler.activity", "预计活性 %s");
+        add("gui.cybercultivator.splicer.preview_range", "普通范围 S %s～%s · Y %s～%s · P %s～%s");
+        add("gui.cybercultivator.splicer.offspring_result", "实际 S/Y/P %s/%s/%s · 数量×%s");
+        add("gui.cybercultivator.splicer.offspring_result_synergy", "实际 S/Y/P %s/%s/%s · 协同%s · 数量×%s");
+        add("gui.cybercultivator.splicer.offspring_result_mutation", "实际 S/Y/P %s/%s/%s · %s（%s） · 数量×%s");
+        add("gui.cybercultivator.splicer.mutation_type_breakthrough", "数值突破");
+        add("gui.cybercultivator.splicer.mutation_type_synergy", "协同突变");
+        add("gui.cybercultivator.splicer.prediction_meta", "子代 G%s · 特殊突变 %s%% · 双生 %s%%");
         add("gui.cybercultivator.incubator.status_waiting_seed", "等待种子 · 放入后自动培养");
         add("gui.cybercultivator.incubator.status_resources", "资源不足 · 补充 %s");
         add("gui.cybercultivator.incubator.status_growing", "培养中 · %s%% · 剩余 %s 秒");
         add("gui.cybercultivator.incubator.status_output_blocked", "已成熟 · 输出槽已满");
         add("gui.cybercultivator.incubator.status_complete", "产物就绪 · 可放入下一颗种子");
-        add("gui.cybercultivator.condenser.status_condensing", "冷凝中 · %s%% · 剩余 %s 秒");
-        add("gui.cybercultivator.condenser.status_waiting_bottle", "等待玻璃瓶 · 放入后继续冷凝");
-        add("gui.cybercultivator.condenser.status_full", "库存已满 · 收取后继续");
-        add("gui.cybercultivator.condenser.stock_connected", "库存 %s/%s · 下游已连接");
-        add("gui.cybercultivator.condenser.stock_waiting_downstream", "库存 %s/%s · 等待下游");
     }
 }
