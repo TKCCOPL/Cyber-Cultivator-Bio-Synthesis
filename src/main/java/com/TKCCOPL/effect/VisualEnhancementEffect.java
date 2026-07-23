@@ -1,9 +1,9 @@
 package com.TKCCOPL.effect;
 
 import com.TKCCOPL.Config;
-import com.TKCCOPL.init.ModEffects;
 import com.TKCCOPL.network.ModNetwork;
 import com.TKCCOPL.network.S02DetectionSyncPacket;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.TickTask;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffect;
@@ -22,6 +22,9 @@ public class VisualEnhancementEffect extends MobEffect {
 
     /** 单次同步最多携带的目标实体数。客户端每帧渲染 256 个轮廓已足够明显。 */
     private static final int MAX_TARGETS_PER_SYNC = 256;
+    /** 原版夜视在剩余 200 tick 内开始闪烁；刷新值必须始终高于这个区间。 */
+    private static final int NIGHT_VISION_FLICKER_THRESHOLD = 200;
+    private static final int NIGHT_VISION_REFRESH_MARGIN = 5;
 
     public VisualEnhancementEffect() {
         super(MobEffectCategory.BENEFICIAL, 0x88FFAA);
@@ -29,21 +32,31 @@ public class VisualEnhancementEffect extends MobEffect {
 
     @Override
     public boolean isDurationEffectTick(int duration, int amplifier) {
-        return duration % 60 == 0;
+        return duration % getScanInterval(amplifier) == 0;
+    }
+
+    /** I~VIII: 60, 56, 52, 48, 44, 40, 36, 32 tick. */
+    public static int getScanInterval(int amplifier) {
+        return Math.max(30, 60 - Math.max(0, amplifier) * 4);
+    }
+
+    /** I~VIII: 16, 23, 30, 37, 44, 51, 58, 64 blocks before the configured cap. */
+    public static double getScanRange(int amplifier, int configuredCap) {
+        return Math.min(16.0 + Math.max(0, amplifier) * 7.0, (double) configuredCap);
+    }
+
+    /** 刚好覆盖一次扫描间隔，并始终保留超过原版闪烁阈值的安全余量。 */
+    public static int getNightVisionRefreshDuration(int amplifier) {
+        return getScanInterval(amplifier) + NIGHT_VISION_FLICKER_THRESHOLD + NIGHT_VISION_REFRESH_MARGIN;
     }
 
     @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
-        // 夜视
-        entity.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 100, 0, true, false, true));
+        refreshNightVision(entity, amplifier);
 
-        // 抗火（上限 IV = amplifier 3）
-        int fireResAmp = Math.min(amplifier, 3);
-        entity.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 100, fireResAmp, true, false, true));
-
-        // 私有轮廓：服务端每 60 tick 扫描附近 LivingEntity，只向饮用者发送目标列表
+        // 私有轮廓：随 amplifier 提升刷新速度，只向饮用者发送目标列表。
         if (!entity.level().isClientSide && entity instanceof ServerPlayer serverPlayer) {
-            double scanRange = Math.min(16.0 + amplifier * 8.0, (double) Config.glowScanRangeCap);
+            double scanRange = getScanRange(amplifier, Config.glowScanRangeCap);
             AABB area = entity.getBoundingBox().inflate(scanRange);
             List<LivingEntity> nearby = entity.level().getEntitiesOfClass(LivingEntity.class, area,
                     e -> e != entity && e.isAlive() && !e.isRemoved());
@@ -62,25 +75,41 @@ public class VisualEnhancementEffect extends MobEffect {
     }
 
     @Override
+    public void addAttributeModifiers(LivingEntity entity, AttributeMap attributeMap, int amplifier) {
+        super.addAttributeModifiers(entity, attributeMap, amplifier);
+        // 效果刚加入时立即获得夜视，不必等待第一次扫描取模命中。
+        refreshNightVision(entity, amplifier);
+    }
+
+    private static void refreshNightVision(LivingEntity entity, int amplifier) {
+        if (entity.level().isClientSide) return;
+        entity.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION,
+                getNightVisionRefreshDuration(amplifier), 0, true, false, true));
+    }
+
+    @Override
     public void removeAttributeModifiers(LivingEntity entity, AttributeMap attributeMap, int amplifier) {
         super.removeAttributeModifiers(entity, attributeMap, amplifier);
         if (!entity.level().isClientSide) {
-            // 效果结束时清除客户端残留的轮廓目标，避免饮用者退出 S-02 后仍看到旧目标
-            if (entity instanceof ServerPlayer serverPlayer) {
-                S02DetectionSyncPacket packet = new S02DetectionSyncPacket(new int[0]);
-                ModNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> serverPlayer), packet);
-            }
-            // 只在效果自然过期时施加副作用，叠加替换时跳过
-            if (entity.getEffect(this) == null) {
-                entity.level().getServer().tell(new TickTask(
-                    entity.level().getServer().getTickCount() + 1,
-                    () -> {
-                        if (entity.isRemoved() || !entity.isAlive()) return;
-                        // 直接使用 S-02 独立效果，避免旧 SOURCE_MAP 串线
-                        entity.addEffect(new MobEffectInstance(ModEffects.NEURAL_OVERLOAD_S02.get(),
-                                20 * (12 + amplifier * 4), amplifier));
+            // amplifier/时长更新也会调用本方法；延迟确认主效果确实已经离开效果表。
+            MinecraftServer server = entity.level().getServer();
+            if (server != null) {
+                server.tell(new TickTask(server.getTickCount() + 1, () -> {
+                    if (entity.getEffect(this) != null) return;
+                    MobEffectInstance nightVision = entity.getEffect(MobEffects.NIGHT_VISION);
+                    int ownedDurationCap = getNightVisionRefreshDuration(amplifier);
+                    if (nightVision != null
+                            && nightVision.getAmplifier() == 0
+                            && nightVision.isAmbient()
+                            && !nightVision.isVisible()
+                            && nightVision.showIcon()
+                            && nightVision.getDuration() <= ownedDurationCap) {
+                        entity.removeEffect(MobEffects.NIGHT_VISION);
                     }
-                ));
+                    if (!(entity instanceof ServerPlayer serverPlayer)) return;
+                    ModNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> serverPlayer),
+                            new S02DetectionSyncPacket(new int[0]));
+                }));
             }
         }
     }

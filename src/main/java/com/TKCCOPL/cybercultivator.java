@@ -121,7 +121,7 @@ public class cybercultivator {
      * 玩家换维度时：
      * 1. 清除 S-02 私有轮廓残留目标（新维度中旧实体 ID 全部失效）；
      * 2. 重新推送配置快照（防御性同步）。
-     * 若饮用者在新世界仍有 S-02，下一次 60-tick 扫描会重新填充。
+     * 若饮用者在新世界仍有 S-02，下一轮按等级调节的扫描会重新填充。
      */
     @SubscribeEvent
     public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {

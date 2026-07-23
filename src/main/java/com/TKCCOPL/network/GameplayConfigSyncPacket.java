@@ -31,6 +31,11 @@ public class GameplayConfigSyncPacket {
         buf.writeDouble(s.mutationChanceBase());
         buf.writeDouble(s.mutationChancePerGen());
         buf.writeDouble(s.mutationChancePerGeneDiff());
+        buf.writeVarInt(s.mutationGenerationCap());
+        buf.writeDouble(s.mutationChanceCap());
+        buf.writeDouble(s.twinChanceBase());
+        buf.writeDouble(s.twinChancePerGen());
+        buf.writeDouble(s.twinChanceCap());
         buf.writeVarInt(s.geneMin());
         buf.writeVarInt(s.geneMax());
         // serum
@@ -39,6 +44,9 @@ public class GameplayConfigSyncPacket {
         buf.writeVarInt(s.s03BaseDuration());
         buf.writeVarInt(s.stackAmplifierCap());
         buf.writeVarInt(s.stackDurationCap());
+        buf.writeVarInt(s.s01StackDurationCap());
+        buf.writeVarInt(s.s02StackDurationCap());
+        buf.writeVarInt(s.s03StackDurationCap());
         buf.writeVarInt(s.activityThresholdForBonus());
         buf.writeDouble(s.durationMultiplierBase());
         buf.writeDouble(s.durationMultiplierPerActivity());
@@ -72,8 +80,16 @@ public class GameplayConfigSyncPacket {
                 buf.readDouble(),
                 buf.readDouble(),
                 buf.readVarInt(),
+                buf.readDouble(),
+                buf.readDouble(),
+                buf.readDouble(),
+                buf.readDouble(),
+                buf.readVarInt(),
                 buf.readVarInt(),
                 // serum
+                buf.readVarInt(),
+                buf.readVarInt(),
+                buf.readVarInt(),
                 buf.readVarInt(),
                 buf.readVarInt(),
                 buf.readVarInt(),

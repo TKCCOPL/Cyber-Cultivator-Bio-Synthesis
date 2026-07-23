@@ -1,12 +1,11 @@
 package com.TKCCOPL.effect;
 
-import com.TKCCOPL.init.ModEffects;
-import net.minecraft.server.TickTask;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeMap;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -15,23 +14,31 @@ import java.util.UUID;
 
 public class SynapticOverclockEffect extends MobEffect {
     private static final UUID ATTACK_SPEED_UUID = UUID.fromString("5b7d8f1d-24fc-4f4e-8f7a-14a1ec752c9e");
+    private static final UUID KNOCKBACK_RESISTANCE_UUID = UUID.fromString("c2c72513-c92c-49d9-b981-651a05737a2e");
 
     public SynapticOverclockEffect() {
         super(MobEffectCategory.BENEFICIAL, 0x44F7FF);
-        // 不在构造函数中注册固定属性修饰符，改为在 applyEffectTick 中动态计算
     }
 
     @Override
     public boolean isDurationEffectTick(int duration, int amplifier) {
-        // 每秒刷新一次属性和抗性效果
+        // 每秒刷新一次力量效果；动态属性由 addAttributeModifiers 立即应用。
         return duration % 20 == 0;
     }
 
     @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
-        // 动态攻速：0.10 + amp * 0.05 (MULTIPLY_TOTAL)
+        entity.addEffect(new MobEffectInstance(
+                MobEffects.DAMAGE_BOOST, 21, amplifier, true, false, true));
+    }
+
+    @Override
+    public void addAttributeModifiers(LivingEntity entity, AttributeMap attributeMap, int amplifier) {
+        super.addAttributeModifiers(entity, attributeMap, amplifier);
+
+        // 动态攻速：10%~45%，完整保留 I~VIII 的等级收益。
         double attackSpeed = 0.10 + amplifier * 0.05;
-        var attackAttr = entity.getAttribute(Attributes.ATTACK_SPEED);
+        AttributeInstance attackAttr = attributeMap.getInstance(Attributes.ATTACK_SPEED);
         if (attackAttr != null) {
             attackAttr.removeModifier(ATTACK_SPEED_UUID);
             attackAttr.addTransientModifier(new AttributeModifier(
@@ -39,41 +46,28 @@ public class SynapticOverclockEffect extends MobEffect {
                     AttributeModifier.Operation.MULTIPLY_TOTAL));
         }
 
-        // 力量效果（上限由 amplifier 决定，0=力量I, 1=力量II, ...）
-        entity.addEffect(new MobEffectInstance(
-                MobEffects.DAMAGE_BOOST, 30, amplifier, true, false, true));
-
-        // 抗性效果（上限 IV = amplifier 3）
-        int resistanceAmp = Math.min(amplifier, 3);
-        entity.addEffect(new MobEffectInstance(
-                MobEffects.DAMAGE_RESISTANCE, 30, resistanceAmp, true, false, true));
+        // 击退抗性：10%~45%，使用 ADDITION 避免基础值为 0 时乘法无效。
+        double knockbackResistance = 0.10 + amplifier * 0.05;
+        AttributeInstance knockbackAttr = attributeMap.getInstance(Attributes.KNOCKBACK_RESISTANCE);
+        if (knockbackAttr != null) {
+            knockbackAttr.removeModifier(KNOCKBACK_RESISTANCE_UUID);
+            knockbackAttr.addTransientModifier(new AttributeModifier(
+                    KNOCKBACK_RESISTANCE_UUID, "synaptic_knockback_resistance", knockbackResistance,
+                    AttributeModifier.Operation.ADDITION));
+        }
     }
 
     @Override
     public void removeAttributeModifiers(LivingEntity entity, AttributeMap attributeMap, int amplifier) {
         super.removeAttributeModifiers(entity, attributeMap, amplifier);
 
-        // 清理攻速 transient modifier
-        var attackAttr = attributeMap.getInstance(Attributes.ATTACK_SPEED);
+        AttributeInstance attackAttr = attributeMap.getInstance(Attributes.ATTACK_SPEED);
         if (attackAttr != null) {
             attackAttr.removeModifier(ATTACK_SPEED_UUID);
         }
-
-        // 神经过载延迟施加（直接使用 S-01 独立效果，避免旧 SOURCE_MAP 串线）
-        if (!entity.level().isClientSide) {
-            // 只在效果自然过期时施加副作用，叠加替换时跳过
-            if (entity.getEffect(this) == null) {
-                entity.level().getServer().tell(new TickTask(
-                        entity.level().getServer().getTickCount() + 1,
-                        () -> {
-                            if (entity.isRemoved() || !entity.isAlive()) return;
-                            entity.addEffect(new MobEffectInstance(
-                                    ModEffects.NEURAL_OVERLOAD_S01.get(),
-                                    20 * (12 + amplifier * 4),
-                                    amplifier));
-                        }
-                ));
-            }
+        AttributeInstance knockbackAttr = attributeMap.getInstance(Attributes.KNOCKBACK_RESISTANCE);
+        if (knockbackAttr != null) {
+            knockbackAttr.removeModifier(KNOCKBACK_RESISTANCE_UUID);
         }
     }
 }

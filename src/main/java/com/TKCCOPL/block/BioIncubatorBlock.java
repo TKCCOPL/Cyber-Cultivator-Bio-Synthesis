@@ -64,6 +64,10 @@ public class BioIncubatorBlock extends MachineBlock {
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof BioIncubatorBlockEntity blockEntity) {
+            ItemStack legacyBottles = blockEntity.drainLegacyBottleOutput();
+            if (!legacyBottles.isEmpty()) {
+                Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), legacyBottles);
+            }
             Containers.dropContents(level, pos, blockEntity);
         }
         super.onRemove(state, level, pos, newState, isMoving);

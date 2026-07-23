@@ -22,7 +22,7 @@ public class GeneSplicerMenu extends MachineMenu {
     private final ContainerLevelAccess access;
 
     public GeneSplicerMenu(int containerId, Inventory inventory, FriendlyByteBuf buffer) {
-        this(containerId, inventory, resolve(inventory, buffer), new SimpleContainerData(5),
+        this(containerId, inventory, resolve(inventory, buffer), new SimpleContainerData(6),
                 ContainerLevelAccess.NULL);
     }
 
@@ -89,6 +89,7 @@ public class GeneSplicerMenu extends MachineMenu {
     public boolean isSplicing() { return data.get(2) != 0; }
     public int getPredictedGeneration() { return data.get(3); }
     public int getPredictedMutationPermille() { return data.get(4); }
+    public int getPredictedTwinPermille() { return data.get(5); }
 
     public int getRemainingSeconds() {
         if (!isSplicing()) return 0;

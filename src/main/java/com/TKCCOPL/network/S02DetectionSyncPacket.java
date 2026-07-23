@@ -10,7 +10,7 @@ import java.util.function.Supplier;
 /**
  * 服务端 → 客户端同步 S-02 侦测目标的实体 ID 列表。
  * <p>
- * 服务端在饮用者身上每 60 tick 扫描附近 LivingEntity，
+ * 服务端按效果等级每 60～32 tick 扫描附近 LivingEntity，
  * 排除饮用者本人、死亡/已移除实体，按距离排序最多 256 个，
  * 通过此包只发给饮用者。饮用者客户端据此扩展原版的 glowing 渲染判断，
  * 不修改实体状态；服务端不使用 {@code MobEffects.GLOWING}，其他玩家因此

@@ -18,6 +18,11 @@ public record GameplayConfigSnapshot(
         double mutationChanceBase,
         double mutationChancePerGen,
         double mutationChancePerGeneDiff,
+        int mutationGenerationCap,
+        double mutationChanceCap,
+        double twinChanceBase,
+        double twinChancePerGen,
+        double twinChanceCap,
         int geneMin,
         int geneMax,
         // serum
@@ -26,6 +31,9 @@ public record GameplayConfigSnapshot(
         int s03BaseDuration,
         int stackAmplifierCap,
         int stackDurationCap,
+        int s01StackDurationCap,
+        int s02StackDurationCap,
+        int s03StackDurationCap,
         int activityThresholdForBonus,
         double durationMultiplierBase,
         double durationMultiplierPerActivity,
@@ -61,6 +69,11 @@ public record GameplayConfigSnapshot(
                 Config.mutationChanceBase,
                 Config.mutationChancePerGen,
                 Config.mutationChancePerGeneDiff,
+                Config.mutationGenerationCap,
+                Config.mutationChanceCap,
+                Config.twinChanceBase,
+                Config.twinChancePerGen,
+                Config.twinChanceCap,
                 Config.geneMin,
                 Config.geneMax,
                 Config.s01BaseDuration,
@@ -68,6 +81,9 @@ public record GameplayConfigSnapshot(
                 Config.s03BaseDuration,
                 Config.stackAmplifierCap,
                 Config.stackDurationCap,
+                Config.s01StackDurationCap,
+                Config.s02StackDurationCap,
+                Config.s03StackDurationCap,
                 Config.activityThresholdForBonus,
                 Config.durationMultiplierBase,
                 Config.durationMultiplierPerActivity,
@@ -98,8 +114,8 @@ public record GameplayConfigSnapshot(
      */
     public static GameplayConfigSnapshot empty() {
         return new GameplayConfigSnapshot(
-                2, 0.05, 0.02, 0.01, 1, 10,
-                500, 600, 300, 7, 6000, 8, 0.5, 0.1, 48,
+                2, 0.05, 0.005, 0.01, 20, 0.25, 0.10, 0.02, 0.60, 1, 10,
+                300, 400, 200, 7, 2400, 1800, 2400, 1200, 8, 0.5, 0.1, 64,
                 200, 10, 20, 40, 60, 25, 20, 15, 5, 5,
                 3, 50, 50, 25, 2, 6.0F, 1200
         );

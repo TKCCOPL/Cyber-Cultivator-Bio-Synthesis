@@ -29,7 +29,7 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
     private static final String TAG_OUTPUT = "Output";
 
     private static final int PRODUCTION_TIME = 600; // 30 seconds
-    private static final int MAX_STACK = 32; // was 16
+    private static final int MAX_STACK = 16;
     public static final int BOTTLE_INPUT_SLOT = 0;
     public static final int OUTPUT_SLOT = 1;
     private static final int[] INPUT_SLOTS = {BOTTLE_INPUT_SLOT};
@@ -158,7 +158,6 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
         if (output.isEmpty()) return ItemStack.EMPTY;
         ItemStack out = output.split(output.getCount());
         if (output.isEmpty()) output = ItemStack.EMPTY;
-        progress = 0;
         syncToClient();
         return out;
     }
@@ -173,9 +172,7 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
 
     /** Keep menu quick-move extraction consistent with buttons, sneak-use, and hopper extraction. */
     public void completeMenuOutputExtraction() {
-        if (progress == 0) return;
-        progress = 0;
-        syncToClient();
+        // Output extraction no longer interrupts the next condensation cycle.
     }
 
     // WorldlyContainer implementation for hopper compatibility
@@ -207,7 +204,6 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
             bottleInput = ItemStack.EMPTY;
         } else if (slot == OUTPUT_SLOT) {
             if (output.isEmpty()) output = ItemStack.EMPTY;
-            progress = 0; // 与 extractOutput 行为一致
         }
         syncToClient();
         return result;
@@ -222,7 +218,6 @@ public class AtmosphericCondenserBlockEntity extends BlockEntity implements Worl
         } else if (slot == OUTPUT_SLOT) {
             out = output;
             output = ItemStack.EMPTY;
-            progress = 0;
         } else {
             return ItemStack.EMPTY;
         }

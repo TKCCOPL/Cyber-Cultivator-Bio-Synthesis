@@ -64,6 +64,14 @@ public final class CyberCultivatorAPI {
         );
     }
 
+    /** 查询培养槽精确生长速率，1000 表示每 tick 推进 1 点；位置无效或无法生长返回 0。 */
+    public static int getIncubatorGrowthRateMilli(Level level, BlockPos pos) {
+        if (level == null || pos == null) return 0;
+        BlockEntity be = level.getBlockEntity(pos);
+        return be instanceof BioIncubatorBlockEntity incubator
+                ? incubator.getCurrentGrowthRateMilli() : 0;
+    }
+
     /** 获取灌装机状态快照 */
     public static BottlerInfo getBottlerInfo(Level level, BlockPos pos) {
         if (level == null || pos == null) return null;

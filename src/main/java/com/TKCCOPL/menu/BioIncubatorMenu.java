@@ -36,7 +36,7 @@ public class BioIncubatorMenu extends MachineMenu {
 
     private BioIncubatorMenu(int containerId, Inventory inventory, Container machine, ContainerData data,
                              ContainerLevelAccess access) {
-        super(ModMenuTypes.BIO_INCUBATOR.get(), containerId, machine, 6);
+        super(ModMenuTypes.BIO_INCUBATOR.get(), containerId, machine, 5);
         this.data = data;
         this.access = access;
         addSlot(new Slot(machine, BioIncubatorBlockEntity.SEED_SLOT, 30, 50) {
@@ -55,9 +55,6 @@ public class BioIncubatorMenu extends MachineMenu {
         addSlot(new Slot(machine, BioIncubatorBlockEntity.RESOURCE_OUTPUT_SLOT, 154, 50) {
             @Override public boolean mayPlace(ItemStack stack) { return false; }
         });
-        addSlot(new Slot(machine, BioIncubatorBlockEntity.BOTTLE_OUTPUT_SLOT, 94, 74) {
-            @Override public boolean mayPlace(ItemStack stack) { return false; }
-        });
         addPlayerInventory(inventory);
         addDataSlots(data);
     }
@@ -66,7 +63,7 @@ public class BioIncubatorMenu extends MachineMenu {
         if (inventory.player.level().getBlockEntity(buffer.readBlockPos()) instanceof BioIncubatorBlockEntity blockEntity) {
             return blockEntity;
         }
-        return new SimpleContainer(6);
+        return new SimpleContainer(5);
     }
 
     @Override

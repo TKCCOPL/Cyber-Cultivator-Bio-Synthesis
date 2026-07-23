@@ -75,6 +75,8 @@ public final class CyberCultivatorKubeJSEvents {
         public void setMutationType(int value) { event.setMutationType(value); }
         public String getMutationDetail() { return event.getMutationDetail(); }
         public void setMutationDetail(String value) { event.setMutationDetail(value); }
+        public int getOffspringCount() { return event.getOffspringCount(); }
+        public void setOffspringCount(int value) { event.setOffspringCount(value); }
     }
 
     public static final class CropMatureEventJS extends EventJS {

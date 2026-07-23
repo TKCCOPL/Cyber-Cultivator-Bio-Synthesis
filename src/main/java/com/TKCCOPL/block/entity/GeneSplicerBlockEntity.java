@@ -5,6 +5,7 @@ import com.TKCCOPL.init.ModBlockEntities;
 import com.TKCCOPL.item.GeneticSeedItem;
 import com.TKCCOPL.event.GeneSpliceEvent;
 import com.TKCCOPL.menu.GeneSplicerMenu;
+import com.TKCCOPL.recipe.GeneSpliceRules;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -53,6 +54,7 @@ public class GeneSplicerBlockEntity extends BlockEntity implements Container, Me
                 case 2 -> splicing ? 1 : 0;
                 case 3 -> Math.min(Short.MAX_VALUE, getPredictedGeneration());
                 case 4 -> getPredictedMutationPermille();
+                case 5 -> getPredictedTwinPermille();
                 default -> 0;
             };
         }
@@ -65,7 +67,7 @@ public class GeneSplicerBlockEntity extends BlockEntity implements Container, Me
 
         @Override
         public int getCount() {
-            return 5;
+            return 6;
         }
     };
 
@@ -189,6 +191,18 @@ public class GeneSplicerBlockEntity extends BlockEntity implements Container, Me
         return (int) Math.round(chance * 1000.0D);
     }
 
+    public int getPredictedTwinPermille() {
+        if (seedA.isEmpty() || seedB.isEmpty()) {
+            return 0;
+        }
+        int generation = Math.max(
+                GeneticSeedItem.getGeneration(seedA),
+                GeneticSeedItem.getGeneration(seedB));
+        double chance = GeneSpliceRules.totalTwinChance(
+                calculateMutationChance(), GeneSpliceRules.normalTwinChance(generation));
+        return (int) Math.round(chance * 1000.0D);
+    }
+
     public int getInputCount() {
         int count = 0;
         if (!seedA.isEmpty()) {
@@ -264,6 +278,8 @@ public class GeneSplicerBlockEntity extends BlockEntity implements Container, Me
         int maxGen = Math.max(genA, genB);
         double mutationChance = calculateMutationChance();
         boolean isMutation = random.nextDouble() < mutationChance;
+        boolean isNormalTwin = random.nextDouble() < GeneSpliceRules.normalTwinChance(maxGen);
+        int proposedOffspringCount = isMutation || isNormalTwin ? 2 : 1;
 
         // 3. 计算子代基因（标准公式 ±mutationRange）
         int mutationRange = Config.mutationRange;
@@ -337,7 +353,8 @@ public class GeneSplicerBlockEntity extends BlockEntity implements Container, Me
         int currentSynergy = result.getOrCreateTag().getInt(GeneticSeedItem.GENE_SYNERGY);
         GeneSpliceEvent event = new GeneSpliceEvent(
                 seedA, seedB, newSpeed, newYield, newPotency,
-                currentSynergy, childGen, isMutation, mutationType, mutationDetail
+                currentSynergy, childGen, isMutation, mutationType, mutationDetail,
+                proposedOffspringCount
         );
         if (net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(event)) {
             return; // 事件被取消
@@ -366,6 +383,10 @@ public class GeneSplicerBlockEntity extends BlockEntity implements Container, Me
         // 回读 generation
         result.getOrCreateTag().putInt(GeneticSeedItem.GENE_GENERATION, Math.max(0, event.getGeneration()));
 
+        int offspringCount = GeneSpliceRules.resolveOffspringCount(
+                event.isMutation(), event.getOffspringCount());
+        result.setCount(offspringCount);
+
         output = result;
         seedA = ItemStack.EMPTY;
         seedB = ItemStack.EMPTY;
@@ -384,9 +405,7 @@ public class GeneSplicerBlockEntity extends BlockEntity implements Container, Me
                         Math.abs(GeneticSeedItem.getGene(seedA, GeneticSeedItem.GENE_POTENCY)
                                 - GeneticSeedItem.getGene(seedB, GeneticSeedItem.GENE_POTENCY)))
         );
-        return Config.mutationChanceBase
-                + maxGeneration * Config.mutationChancePerGen
-                + maxGeneDifference * Config.mutationChancePerGeneDiff;
+        return GeneSpliceRules.mutationChance(maxGeneration, maxGeneDifference);
     }
 
     @Override

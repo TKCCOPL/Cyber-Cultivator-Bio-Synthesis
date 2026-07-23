@@ -1,7 +1,5 @@
 package com.TKCCOPL.effect;
 
-import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
@@ -15,9 +13,9 @@ import net.minecraft.world.entity.LivingEntity;
  *
  * <p>此旧效果保留默认行为：缓慢 + 饥饿，仅用于已经持有该效果的旧存档玩家。
  */
-public class NeuralOverloadEffect extends MobEffect {
+public class NeuralOverloadEffect extends NonCurableNeuralOverloadEffect {
     public NeuralOverloadEffect() {
-        super(MobEffectCategory.HARMFUL, 0xD94848);
+        super(0xD94848);
     }
 
     @Override
