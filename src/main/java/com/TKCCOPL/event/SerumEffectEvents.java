@@ -25,6 +25,9 @@ public final class SerumEffectEvents {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onRemoved(MobEffectEvent.Remove event) {
+        // MobEffectEvent.Remove 是 @Cancelable 事件：其他模组取消移除时不应触发神经过载。
+        // LOWEST 优先级仍会被已取消事件触发，因此必须显式检查。
+        if (event.isCanceled()) return;
         scheduleOverload(event.getEntity(), event.getEffectInstance());
     }
 
@@ -37,8 +40,13 @@ public final class SerumEffectEvents {
         if (server == null) return;
         int amplifier = serumEffect.getAmplifier();
         int duration = 20 * (8 + amplifier * 2);
+        MobEffect serumEffectType = serumEffect.getEffect();
         server.tell(new TickTask(server.getTickCount() + 1, () -> {
             if (entity.isRemoved() || !entity.isAlive()) return;
+            // 延迟 1 tick 后再次确认原血清效果确实已消失：
+            // 血清升级/重新施加/被其他模组恢复时效果仍在，则跳过神经过载，
+            // 与 VisualEnhancementEffect 等效果自身的 removeAttributeModifiers 守卫一致。
+            if (entity.getEffect(serumEffectType) != null) return;
             entity.addEffect(new MobEffectInstance(overload, duration, amplifier));
         }));
     }
