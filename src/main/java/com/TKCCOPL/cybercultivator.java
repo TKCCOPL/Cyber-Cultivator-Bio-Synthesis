@@ -126,10 +126,33 @@ public class cybercultivator {
     @SubscribeEvent
     public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
-            S02DetectionSyncPacket packet = new S02DetectionSyncPacket(new int[0]);
-            ModNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> serverPlayer), packet);
+            clearS02Targets(serverPlayer);
             GameplayConfigSync.sendTo(serverPlayer);
         }
+    }
+
+    /**
+     * 玩家死亡重生时清除 S-02 私有轮廓残留目标。
+     * <p>重生不触发 PlayerLoggedOutEvent（连接保持），客户端状态集合不会被自动清空，
+     * 旧实体 ID 可能被新生物重新利用导致饮用者看到错误的高亮目标。
+     * 若重生后仍持有 S-02 效果，下一轮扫描会重新填充合法目标。
+     */
+    @SubscribeEvent
+    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer serverPlayer) {
+            clearS02Targets(serverPlayer);
+            GameplayConfigSync.sendTo(serverPlayer);
+        }
+    }
+
+    /**
+     * 统一入口：向指定玩家发送空 S-02 侦测列表，清空其客户端的目标集合。
+     * 登录、换维度、重生共用此逻辑，避免重复构造空数据包。
+     */
+    private static void clearS02Targets(ServerPlayer player) {
+        ModNetwork.CHANNEL.send(
+                PacketDistributor.PLAYER.with(() -> player),
+                new S02DetectionSyncPacket(new int[0]));
     }
 
     // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent
