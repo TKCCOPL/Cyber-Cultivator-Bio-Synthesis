@@ -576,6 +576,16 @@ public class SerumBottlerBlockEntity extends BlockEntity implements WorldlyConta
     public boolean canPlaceItem(int slot, ItemStack stack) {
         if (slot < 0 || slot >= INPUT_SLOTS || stack.isEmpty()) return false;
         if (level == null) return true;
+        // 拒绝同种物品跨槽位重复：4 种血清配方均需 3 种不同原料，
+        // 漏斗或玩家把同种物品放入多个槽位会导致机器死锁且无 GUI 反馈。
+        // 用 isSameItem（不比 NBT）：即使两个莓 Activity 不同，配方也只消耗一个，
+        // 另一个纯属浪费槽位。同槽位堆叠不受此检查影响（跳过 i == slot）。
+        for (int i = 0; i < INPUT_SLOTS; i++) {
+            if (i == slot) continue;
+            if (!inputs[i].isEmpty() && ItemStack.isSameItem(inputs[i], stack)) {
+                return false;
+            }
+        }
         // 使用缓存的 Ingredient 列表，避免每次漏斗探测都查询 RecipeManager
         List<Ingredient> ingredients = getAcceptableIngredients();
         for (Ingredient ingredient : ingredients) {
