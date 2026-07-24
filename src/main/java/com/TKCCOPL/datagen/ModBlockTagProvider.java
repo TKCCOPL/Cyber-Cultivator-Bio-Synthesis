@@ -63,8 +63,12 @@ public class ModBlockTagProvider extends BlockTagsProvider {
         );
 
         // === v1.1.7 §10.2 跨模组材料标签（方块） ===
-        tag(ModTags.ForgeBlocks.ORES_SILICON).add(ModBlocks.SILICON_ORE.get());
-        tag(ModTags.ForgeBlocks.ORES_RARE_EARTH).add(ModBlocks.RARE_EARTH_ORE.get());
+        tag(ModTags.ForgeBlocks.ORES_SILICON).add(
+                ModBlocks.SILICON_ORE.get(),
+                ModBlocks.DEEPSLATE_SILICON_ORE.get());
+        tag(ModTags.ForgeBlocks.ORES_RARE_EARTH).add(
+                ModBlocks.RARE_EARTH_ORE.get(),
+                ModBlocks.DEEPSLATE_RARE_EARTH_ORE.get());
         tag(ModTags.ForgeBlocks.STORAGE_BLOCKS_RAW_SILICON).add(ModBlocks.RAW_SILICON_BLOCK.get());
         tag(ModTags.ForgeBlocks.STORAGE_BLOCKS_SILICON).add(ModBlocks.SILICON_BLOCK.get());
         tag(ModTags.ForgeBlocks.STORAGE_BLOCKS_RAW_RARE_EARTH).add(ModBlocks.RAW_RARE_EARTH_BLOCK.get());

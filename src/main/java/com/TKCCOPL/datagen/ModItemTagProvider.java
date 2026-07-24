@@ -36,13 +36,17 @@ public class ModItemTagProvider extends ItemTagsProvider {
 
         // 硅链路
         tag(ModTags.ForgeItems.SILICON).add(ModItems.SILICON_SHARD.get());
-        tag(ModTags.ForgeItems.ORES_SILICON).add(ModItems.SILICON_ORE_ITEM.get());
+        tag(ModTags.ForgeItems.ORES_SILICON).add(
+                ModItems.SILICON_ORE_ITEM.get(),
+                ModItems.DEEPSLATE_SILICON_ORE_ITEM.get());
         tag(ModTags.ForgeItems.RAW_MATERIALS_SILICON).add(ModItems.RAW_SILICON_CRYSTAL.get());
         tag(ModTags.ForgeItems.STORAGE_BLOCKS_RAW_SILICON).add(ModItems.RAW_SILICON_BLOCK_ITEM.get());
         tag(ModTags.ForgeItems.STORAGE_BLOCKS_SILICON).add(ModItems.SILICON_BLOCK_ITEM.get());
 
         // 稀土链路
-        tag(ModTags.ForgeItems.ORES_RARE_EARTH).add(ModItems.RARE_EARTH_ORE_ITEM.get());
+        tag(ModTags.ForgeItems.ORES_RARE_EARTH).add(
+                ModItems.RARE_EARTH_ORE_ITEM.get(),
+                ModItems.DEEPSLATE_RARE_EARTH_ORE_ITEM.get());
         tag(ModTags.ForgeItems.RAW_MATERIALS_RARE_EARTH).add(ModItems.RAW_RARE_EARTH.get());
         tag(ModTags.ForgeItems.DUSTS_RARE_EARTH).add(ModItems.RARE_EARTH_DUST.get());
         tag(ModTags.ForgeItems.STORAGE_BLOCKS_RAW_RARE_EARTH).add(ModItems.RAW_RARE_EARTH_BLOCK_ITEM.get());
