@@ -1,0 +1,23 @@
+{
+  "name": "Quality & Activity",
+  "icon": "cybercultivator:synaptic_serum_s01",
+  "category": "cybercultivator:serums",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "Ingredient Quality",
+      "text": "An incubator's mature output takes quality from seed $(bold)Potency$():$(br2)$(li)Plant Fiber → Potency$(br)$(li)Industrial Ethanol → Purity$(br)$(li)Biochemical Solution → Concentration$(br2)Missing quality data defaults to 5. Ethanol Purity is a material quality and is not the seed's Synergy gene."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Activity Formula",
+      "text": "$(bold)Base Activity$()$(br)round(Potency×0.25 + Purity×0.375 + Concentration×0.375)$(br2)Take the highest Synergy among all three ingredients and add floor(Synergy÷2), then clamp the result to 1–15. Serum made from a berry directly inherits the berry's Activity."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Effect Scaling",
+      "text": "$(li)Duration multiplier = 0.5 + Activity×0.1.$(br)$(li)Activity 1–15 gives 0.6–2.0x duration.$(br)$(li)Activity 8+ starts the first dose at level II.$(br)$(li)Above Activity 10, every 2 extra points add another starting level.$(br)$(li)All levels remain capped at VIII."
+    }
+  ]
+}

@@ -3,6 +3,7 @@ plugins {
     id 'idea'
     id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
     id 'org.parchmentmc.librarian.forgegradle' version '1.+'
+    id 'org.spongepowered.mixin' version '0.7.38'
 }
 
 
@@ -12,6 +13,9 @@ version = mod_version
 def enableKubeJSRuntime = providers.gradleProperty('enableKubeJSRuntime')
         .map(String::toBoolean)
         .getOrElse(false)
+def enablePatchouliRuntime = providers.gradleProperty('enablePatchouliRuntime')
+        .map(String::toBoolean)
+        .getOrElse(true)
 
 base {
     archivesName = mod_id
@@ -55,6 +59,8 @@ minecraft {
             property 'forge.enabledGameTestNamespaces', mod_id
             if (enableKubeJSRuntime) {
                 workingDirectory layout.buildDirectory.dir('kubejs-smoke').get().asFile
+            } else if (enablePatchouliRuntime) {
+                workingDirectory layout.buildDirectory.dir('patchouli-smoke').get().asFile
             }
         }
 
@@ -82,12 +88,19 @@ repositories {
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+
     compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}:api")
     runtimeOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}")
 
     compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}")
     compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}")
     runtimeOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge:${jei_version}")
+
+    compileOnly fg.deobf("vazkii.patchouli:Patchouli:${patchouli_version}")
+    if (enablePatchouliRuntime) {
+        runtimeOnly fg.deobf("vazkii.patchouli:Patchouli:${patchouli_version}")
+    }
 
     // KubeJS integration is compile-only and isolated under compat/kubejs.
     // Enable the full development runtime explicitly with -PenableKubeJSRuntime=true.
@@ -100,6 +113,11 @@ dependencies {
         runtimeOnly fg.deobf("dev.latvian.mods:rhino-forge:${rhino_version}") { transitive = false }
         runtimeOnly fg.deobf("dev.architectury:architectury-forge:${architectury_version}") { transitive = false }
     }
+}
+
+mixin {
+    add sourceSets.main, 'cybercultivator.refmap.json'
+    config 'cybercultivator.mixins.json'
 }
 
 tasks.register('prepareKubeJSSmoke', Sync) {

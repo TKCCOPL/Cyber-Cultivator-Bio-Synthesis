@@ -56,6 +56,10 @@ public class AtmosphericCondenserBlock extends MachineBlock {
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof AtmosphericCondenserBlockEntity blockEntity) {
+            ItemStack bottles = blockEntity.extractBottleInput();
+            if (!bottles.isEmpty()) {
+                popResource(level, pos, bottles);
+            }
             ItemStack out = blockEntity.extractOutput();
             if (!out.isEmpty()) {
                 popResource(level, pos, out);
@@ -76,18 +80,7 @@ public class AtmosphericCondenserBlock extends MachineBlock {
         return createTickerHelper(blockEntityType, ModBlockEntities.ATMOSPHERIC_CONDENSER.get(), AtmosphericCondenserBlockEntity::tick);
     }
 
-    @Override
-    public boolean hasAnalogOutputSignal(BlockState state) {
-        return true;
-    }
-
-    @Override
-    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
-        if (level.getBlockEntity(pos) instanceof AtmosphericCondenserBlockEntity blockEntity) {
-            return blockEntity.hasOutput() ? 15 : 0;
-        }
-        return 0;
-    }
+    // v1.1.7：比较器与 neighborChanged 由 MachineBlock 基类统一处理
 
     @Override
     public int getLightEmission(BlockState state, BlockGetter level, BlockPos pos) {

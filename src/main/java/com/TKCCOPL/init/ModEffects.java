@@ -3,6 +3,9 @@ package com.TKCCOPL.init;
 import com.TKCCOPL.cybercultivator;
 import com.TKCCOPL.effect.MetabolicBoostEffect;
 import com.TKCCOPL.effect.NeuralOverloadEffect;
+import com.TKCCOPL.effect.NeuralOverloadEffectS01;
+import com.TKCCOPL.effect.NeuralOverloadEffectS02;
+import com.TKCCOPL.effect.NeuralOverloadEffectS03;
 import com.TKCCOPL.effect.SynapticOverclockEffect;
 import com.TKCCOPL.effect.VisualEnhancementEffect;
 import net.minecraft.world.effect.MobEffect;
@@ -16,6 +19,9 @@ public final class ModEffects {
 
     public static final RegistryObject<MobEffect> SYNAPTIC_OVERCLOCK = MOB_EFFECTS.register("synaptic_overclock", SynapticOverclockEffect::new);
     public static final RegistryObject<MobEffect> NEURAL_OVERLOAD = MOB_EFFECTS.register("neural_overload", NeuralOverloadEffect::new);
+    public static final RegistryObject<MobEffect> NEURAL_OVERLOAD_S01 = MOB_EFFECTS.register("neural_overload_s01", NeuralOverloadEffectS01::new);
+    public static final RegistryObject<MobEffect> NEURAL_OVERLOAD_S02 = MOB_EFFECTS.register("neural_overload_s02", NeuralOverloadEffectS02::new);
+    public static final RegistryObject<MobEffect> NEURAL_OVERLOAD_S03 = MOB_EFFECTS.register("neural_overload_s03", NeuralOverloadEffectS03::new);
     public static final RegistryObject<MobEffect> VISUAL_ENHANCEMENT = MOB_EFFECTS.register("visual_enhancement", VisualEnhancementEffect::new);
     public static final RegistryObject<MobEffect> METABOLIC_BOOST = MOB_EFFECTS.register("metabolic_boost", MetabolicBoostEffect::new);
 

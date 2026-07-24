@@ -1,0 +1,6 @@
+{
+  "name": "Automation & Help",
+  "description": "Hoppers, optional integrations, recovery, and fault checks.",
+  "icon": "minecraft:hopper",
+  "sortnum": 5
+}

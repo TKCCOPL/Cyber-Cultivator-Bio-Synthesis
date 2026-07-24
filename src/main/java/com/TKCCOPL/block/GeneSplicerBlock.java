@@ -1,5 +1,6 @@
 package com.TKCCOPL.block;
 
+import com.TKCCOPL.advancement.ModTriggers;
 import com.TKCCOPL.block.entity.GeneSplicerBlockEntity;
 import com.TKCCOPL.init.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -42,6 +43,9 @@ public class GeneSplicerBlock extends MachineBlock {
         if (player.isShiftKeyDown()) {
             ItemStack out = blockEntity.extractOutput();
             if (!out.isEmpty()) {
+                // 潜行右键领取子代也必须触发进度，与 GUI onTake 路径行为一致；
+                // 漏斗自动抽取不走此路径，不会错误获得玩家进度。
+                ModTriggers.triggerForOutput(player, out);
                 giveToPlayer(player, out);
                 player.displayClientMessage(Component.translatable(
                         "message.cybercultivator.splicer.output_extracted"), true);

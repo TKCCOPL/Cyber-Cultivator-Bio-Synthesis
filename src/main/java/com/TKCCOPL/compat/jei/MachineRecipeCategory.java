@@ -71,6 +71,11 @@ abstract class MachineRecipeCategory<T> implements IRecipeCategory<T> {
         graphics.drawString(font, value, x, y, color, false);
     }
 
+    protected final void drawCentered(GuiGraphics graphics, Component text, int centerX, int y, int color) {
+        var font = Minecraft.getInstance().font;
+        graphics.drawString(font, text, centerX - font.width(text) / 2, y, color, false);
+    }
+
     protected final void horizontalBar(GuiGraphics graphics, int x, int y, int width, int color) {
         int filled = scaledFill(Math.max(0, width - 2));
         graphics.fill(x, y, x + width, y + 5, 0xFF373737);

@@ -30,6 +30,7 @@ ServerEvents.recipes(event => {
 CyberCultivatorEvents.geneSplice(event => {
     if (event.getGeneration() === 777) {
         event.setSpeed(9)
+        event.setOffspringCount(2)
     }
 })
 

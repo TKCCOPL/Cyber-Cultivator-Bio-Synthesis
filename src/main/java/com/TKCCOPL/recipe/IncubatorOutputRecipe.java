@@ -66,7 +66,10 @@ public class IncubatorOutputRecipe implements net.minecraft.world.item.crafting.
         int synergy = GeneticSeedItem.getSynergy(seedStack);
         int count = Math.max(1, Math.min(outputItem.getMaxStackSize(), evaluateCountFormula(yield)));
 
-        ItemStack result = new ItemStack(outputItem.getItem(), count);
+        // 使用 outputItem.copy() 保留模板 NBT（如自定义显示名、CustomModelData 等），
+        // new ItemStack(outputItem.getItem(), count) 会丢失这些标签
+        ItemStack result = outputItem.copy();
+        result.setCount(count);
         if (!qualityTag.isEmpty()) {
             result.getOrCreateTag().putInt(qualityTag, potency);
         }

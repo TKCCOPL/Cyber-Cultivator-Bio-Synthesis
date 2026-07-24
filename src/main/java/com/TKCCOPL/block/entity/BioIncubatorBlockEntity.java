@@ -2,7 +2,7 @@ package com.TKCCOPL.block.entity;
 
 import com.TKCCOPL.Config;
 import com.TKCCOPL.init.ModBlockEntities;
-import com.TKCCOPL.init.ModItems;
+import com.TKCCOPL.init.ModTags;
 import com.TKCCOPL.item.GeneticSeedItem;
 import com.TKCCOPL.event.CropMatureEvent;
 import com.TKCCOPL.menu.BioIncubatorMenu;
@@ -22,17 +22,18 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
-public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyContainer, MenuProvider {
+public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyContainer, MenuProvider,
+        MachineRedstoneBlockEntity, MachineInventoryPolicy {
     private static final String TAG_NUTRITION = "Nutrition";
     private static final String TAG_PURITY = "Purity";
     private static final String TAG_DATA_SIGNAL = "DataSignal";
     private static final String TAG_GROWTH_PROGRESS = "GrowthProgress";
+    private static final String TAG_GROWTH_REMAINDER_MILLI = "GrowthRemainderMilli";
     private static final String TAG_SEED = "Seed";
     private static final String TAG_NUTRITION_INPUT = "NutritionInput";
     private static final String TAG_PURITY_INPUT = "PurityInput";
@@ -46,6 +47,8 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
     public static final int PURITY_SLOT = 2;
     public static final int SIGNAL_SLOT = 3;
     public static final int RESOURCE_OUTPUT_SLOT = 4;
+    /** @deprecated Legacy save compatibility only; no longer exposed by the five-slot container. */
+    @Deprecated
     public static final int BOTTLE_OUTPUT_SLOT = 5;
 
     private static final int SYNC_INTERVAL = 10;
@@ -55,13 +58,16 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
     private int purity;
     private int dataSignal;
     private int growthProgress;
+    private int growthRemainderMilli;
     private ItemStack seed = ItemStack.EMPTY;
     private ItemStack nutritionInput = ItemStack.EMPTY;
     private ItemStack purityInput = ItemStack.EMPTY;
     private ItemStack signalInput = ItemStack.EMPTY;
     private ItemStack resourceOutput = ItemStack.EMPTY;
-    private ItemStack bottleOutput = ItemStack.EMPTY;
+    private ItemStack legacyBottleOutput = ItemStack.EMPTY;
     private long nextInputInjectionTick;
+    private final MachineRedstoneState redstone = new MachineRedstoneState();
+    private int lastComparatorSignal;
 
     private final ContainerData menuData = new ContainerData() {
         @Override
@@ -72,6 +78,9 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
                 case 2 -> dataSignal;
                 case 3 -> getGrowthPercent();
                 case 4 -> getEstimatedSecondsRemaining() + 1;
+                case 5 -> redstone.getMenuData(MachineRedstoneState.DATA_MODE);
+                case 6 -> redstone.getMenuData(MachineRedstoneState.DATA_POWERED);
+                case 7 -> redstone.getMenuData(MachineRedstoneState.DATA_PROCESSING_ALLOWED);
                 default -> 0;
             };
         }
@@ -82,7 +91,7 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
 
         @Override
         public int getCount() {
-            return 5;
+            return 5 + MachineRedstoneState.getMenuDataCount();
         }
     };
 
@@ -99,6 +108,10 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
             return;
         }
 
+        if (blockEntity.redstone.consumePendingResample(level, pos)) {
+            blockEntity.syncToClient();
+        }
+
         boolean autoInjected = false;
         if (level.getGameTime() >= blockEntity.nextInputInjectionTick) {
             autoInjected = blockEntity.consumeAvailableInputs();
@@ -108,6 +121,7 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
         }
         if (blockEntity.seed.isEmpty()) {
             if (autoInjected) blockEntity.syncToClient();
+            blockEntity.updateComparatorIfChanged(level, pos);
             return;
         }
 
@@ -129,20 +143,19 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
         }
 
         // 生长推进：需要三项资源均高于阈值
-        if (blockEntity.nutrition > Config.resourceThreshold
+        if (blockEntity.redstone.isProcessingAllowed()
+                && blockEntity.nutrition > Config.resourceThreshold
                 && blockEntity.purity > Config.resourceThreshold
                 && blockEntity.dataSignal > 0) {
 
-            // 计算生长速率：基础速率 * 基因倍率 * 环境倍率
-            int geneSpeed = blockEntity.cachedSpeed;
-            double geneMultiplier = 0.5 + (geneSpeed / 10.0) * 1.5; // 范围 0.5 - 2.0
-            double envMultiplier = (blockEntity.nutrition + blockEntity.purity + blockEntity.dataSignal) / 300.0;
-            int growthRate = Math.max(1, (int) Math.round(geneMultiplier * envMultiplier));
-
+            int growthRateMilli = blockEntity.getCurrentGrowthRateMilli();
+            int accumulatedGrowth = blockEntity.growthRemainderMilli + growthRateMilli;
+            int growthDelta = accumulatedGrowth / 1000;
+            blockEntity.growthRemainderMilli = accumulatedGrowth % 1000;
             int previousProgress = blockEntity.growthProgress;
             blockEntity.growthProgress = Math.min(Config.maturationThreshold,
-                    blockEntity.growthProgress + growthRate);
-            if (blockEntity.growthProgress != previousProgress) changed = true;
+                    blockEntity.growthProgress + growthDelta);
+            if (blockEntity.growthProgress != previousProgress || growthRateMilli > 0) changed = true;
 
             // 成熟判定
             if (blockEntity.growthProgress >= Config.maturationThreshold) {
@@ -161,15 +174,24 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
                     // the event from firing again every tick.
                     if (cancelled) {
                         blockEntity.growthProgress = 0;
+                        blockEntity.growthRemainderMilli = 0;
                         changed = true;
                         forceSync = true;
                     } else {
                         cropOutput = cropEvent.getOutput();
-                        if (!blockEntity.canAcceptResourceOutput(cropOutput)) {
+                        // 监听器通过 setOutput(EMPTY) 实现"软取消"：保留种子和资源，
+                        // 仅重置进度避免每 tick 重复触发事件
+                        if (cropOutput.isEmpty()) {
+                            blockEntity.growthProgress = 0;
+                            blockEntity.growthRemainderMilli = 0;
+                            changed = true;
+                            forceSync = true;
+                        } else if (!blockEntity.canAcceptResourceOutput(cropOutput)) {
                             blockEntity.growthProgress = Config.maturationThreshold;
                         } else {
                             blockEntity.seed = ItemStack.EMPTY;
                             blockEntity.growthProgress = 0;
+                            blockEntity.growthRemainderMilli = 0;
                             blockEntity.addResourceOutput(cropOutput);
                             blockEntity.nutrition = Math.max(0,
                                     blockEntity.nutrition - Config.matureNutritionCost);
@@ -190,6 +212,7 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
                 blockEntity.syncCounter = 0;
             }
         }
+        blockEntity.updateComparatorIfChanged(level, pos);
     }
 
     /**
@@ -230,6 +253,7 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
         seed = inserted;
         cachedSpeed = GeneticSeedItem.getGene(inserted, GeneticSeedItem.GENE_SPEED);
         growthProgress = 0;
+        growthRemainderMilli = 0;
         syncCounter = 0;
         syncToClient();
         return true;
@@ -243,6 +267,7 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
         seed = ItemStack.EMPTY;
         cachedSpeed = 1;
         growthProgress = 0;
+        growthRemainderMilli = 0;
         syncCounter = 0;
         syncToClient();
         return out;
@@ -270,10 +295,9 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
             nutrition = clampStat(nutrition + Config.nutritionInjectAmount);
             return true;
         }
-        if (slot == PURITY_SLOT && !purityInput.isEmpty() && purity < 100 && canAcceptBottle()) {
+        if (slot == PURITY_SLOT && !purityInput.isEmpty() && purity < 100) {
             purityInput.shrink(1);
             if (purityInput.isEmpty()) purityInput = ItemStack.EMPTY;
-            addBottleOutput();
             purity = clampStat(purity + Config.purityInjectAmount);
             return true;
         }
@@ -294,16 +318,6 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
         return changed;
     }
 
-    private boolean canAcceptBottle() {
-        return bottleOutput.isEmpty()
-                || bottleOutput.is(Items.GLASS_BOTTLE) && bottleOutput.getCount() < bottleOutput.getMaxStackSize();
-    }
-
-    private void addBottleOutput() {
-        if (bottleOutput.isEmpty()) bottleOutput = new ItemStack(Items.GLASS_BOTTLE);
-        else bottleOutput.grow(1);
-    }
-
     private boolean canAcceptResourceOutput(ItemStack stack) {
         if (stack.isEmpty()) return true;
         if (resourceOutput.isEmpty()) return stack.getCount() <= stack.getMaxStackSize();
@@ -321,6 +335,36 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
         setChanged();
         if (level != null && !level.isClientSide) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 2);
+            updateComparatorIfChanged(level, worldPosition);
+        }
+    }
+
+    private void updateComparatorIfChanged(Level level, BlockPos pos) {
+        int current = getComparatorSignal();
+        if (current != lastComparatorSignal) {
+            lastComparatorSignal = current;
+            level.updateNeighbourForOutputSignal(pos, getBlockState().getBlock());
+        }
+    }
+
+    @Override
+    public MachineRedstoneState getRedstoneState() {
+        return redstone;
+    }
+
+    @Override
+    public int getComparatorSignal() {
+        if (!resourceOutput.isEmpty()) return 15;
+        if (growthProgress <= 0 || Config.maturationThreshold <= 0) return 0;
+        return Math.max(1, Math.min(14,
+                (int) Math.ceil((double) growthProgress * 14 / Config.maturationThreshold)));
+    }
+
+    @Override
+    public void clearRemoved() {
+        super.clearRemoved();
+        if (level != null && !level.isClientSide) {
+            redstone.markPendingResample();
         }
     }
 
@@ -344,22 +388,29 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
 
     /** 获取当前生长速率（每 tick 推进量），用于外部估算 */
     public int getCurrentGrowthRate() {
+        int milli = getCurrentGrowthRateMilli();
+        return milli <= 0 ? 0 : Math.max(1, (int) Math.round(milli / 1000.0D));
+    }
+
+    /** 精确生长速率，1000 表示每 tick 推进 1 点。 */
+    public int getCurrentGrowthRateMilli() {
         if (seed.isEmpty()) return 0;
+        if (!redstone.isProcessingAllowed()) return 0;
         if (nutrition <= Config.resourceThreshold || purity <= Config.resourceThreshold || dataSignal <= 0) return 0;
-        int geneSpeed = cachedSpeed;
-        double geneMultiplier = 0.5 + (geneSpeed / 10.0) * 1.5;
-        double envMultiplier = (nutrition + purity + dataSignal) / 300.0;
-        return Math.max(1, (int) Math.round(geneMultiplier * envMultiplier));
+        double geneMultiplier = 0.5D + cachedSpeed / 10.0D * 1.5D;
+        double resourceRatio = (nutrition + purity + dataSignal) / 300.0D;
+        double environmentMultiplier = 0.65D + 0.35D * resourceRatio;
+        return Math.max(1, (int) Math.round(geneMultiplier * environmentMultiplier * 1000.0D));
     }
 
     /** 估算剩余成熟时间（秒），-1 表示无法生长 */
     public int getEstimatedSecondsRemaining() {
-        int rate = getCurrentGrowthRate();
-        if (rate <= 0) return -1;
-        int remaining = Config.maturationThreshold - growthProgress;
-        if (remaining <= 0) return 0;
-        // 每秒 20 tick
-        return (int) Math.ceil(remaining / (double) rate / 20.0);
+        int rateMilli = getCurrentGrowthRateMilli();
+        if (rateMilli <= 0) return -1;
+        long remainingMilli = (long) (Config.maturationThreshold - growthProgress) * 1000L
+                - growthRemainderMilli;
+        if (remainingMilli <= 0L) return 0;
+        return (int) Math.ceil(remainingMilli / (double) rateMilli / 20.0D);
     }
 
     @Override
@@ -369,13 +420,16 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
         purity = clampStat(tag.getInt(TAG_PURITY));
         dataSignal = clampStat(tag.getInt(TAG_DATA_SIGNAL));
         growthProgress = Math.max(0, tag.getInt(TAG_GROWTH_PROGRESS));
+        growthRemainderMilli = Math.max(0, Math.min(999, tag.getInt(TAG_GROWTH_REMAINDER_MILLI)));
         seed = tag.contains(TAG_SEED) ? ItemStack.of(tag.getCompound(TAG_SEED)) : ItemStack.EMPTY;
         nutritionInput = readStack(tag, TAG_NUTRITION_INPUT);
         purityInput = readStack(tag, TAG_PURITY_INPUT);
         signalInput = readStack(tag, TAG_SIGNAL_INPUT);
         resourceOutput = readStack(tag, TAG_RESOURCE_OUTPUT);
-        bottleOutput = readStack(tag, TAG_BOTTLE_OUTPUT);
+        legacyBottleOutput = readStack(tag, TAG_BOTTLE_OUTPUT);
         nextInputInjectionTick = Math.max(0L, tag.getLong(TAG_NEXT_INPUT_INJECTION_TICK));
+        redstone.load(tag);
+        lastComparatorSignal = -1;
         // 初始化基因缓存
         if (!seed.isEmpty()) {
             cachedSpeed = GeneticSeedItem.getGene(seed, GeneticSeedItem.GENE_SPEED);
@@ -392,6 +446,7 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
         tag.putInt(TAG_PURITY, purity);
         tag.putInt(TAG_DATA_SIGNAL, dataSignal);
         tag.putInt(TAG_GROWTH_PROGRESS, growthProgress);
+        tag.putInt(TAG_GROWTH_REMAINDER_MILLI, growthRemainderMilli);
         if (!seed.isEmpty()) {
             tag.put(TAG_SEED, seed.save(new CompoundTag()));
         } else {
@@ -401,8 +456,9 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
         saveStack(tag, TAG_PURITY_INPUT, purityInput);
         saveStack(tag, TAG_SIGNAL_INPUT, signalInput);
         saveStack(tag, TAG_RESOURCE_OUTPUT, resourceOutput);
-        saveStack(tag, TAG_BOTTLE_OUTPUT, bottleOutput);
+        saveStack(tag, TAG_BOTTLE_OUTPUT, legacyBottleOutput);
         tag.putLong(TAG_NEXT_INPUT_INJECTION_TICK, nextInputInjectionTick);
+        redstone.save(tag);
     }
 
     private static ItemStack readStack(CompoundTag tag, String key) {
@@ -421,18 +477,19 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
     @Nullable
     @Override
     public AbstractContainerMenu createMenu(int containerId, Inventory inventory, Player player) {
+        migrateLegacyBottleOutput(player);
         return new BioIncubatorMenu(containerId, inventory, this, menuData);
     }
 
     @Override
     public int getContainerSize() {
-        return 6;
+        return 5;
     }
 
     @Override
     public boolean isEmpty() {
         return seed.isEmpty() && nutritionInput.isEmpty() && purityInput.isEmpty()
-                && signalInput.isEmpty() && resourceOutput.isEmpty() && bottleOutput.isEmpty();
+                && signalInput.isEmpty() && resourceOutput.isEmpty() && legacyBottleOutput.isEmpty();
     }
 
     @Override
@@ -443,7 +500,6 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
             case PURITY_SLOT -> purityInput;
             case SIGNAL_SLOT -> signalInput;
             case RESOURCE_OUTPUT_SLOT -> resourceOutput;
-            case BOTTLE_OUTPUT_SLOT -> bottleOutput;
             default -> ItemStack.EMPTY;
         };
     }
@@ -468,17 +524,12 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
 
     @Override
     public void setItem(int slot, ItemStack stack) {
-        ItemStack normalized = stack.copy();
-        if (slot == SEED_SLOT && !normalized.isEmpty()) {
-            normalized.setCount(1);
-            if (normalized.getItem() instanceof GeneticSeedItem geneticSeed) {
-                geneticSeed.ensureGeneData(normalized);
-            }
-        }
+        ItemStack normalized = stack.isEmpty() ? ItemStack.EMPTY : normalizeInsertedStack(slot, stack);
         setItemInternal(slot, normalized);
         if (slot == SEED_SLOT) {
             cachedSpeed = normalized.isEmpty() ? 1 : GeneticSeedItem.getGene(normalized, GeneticSeedItem.GENE_SPEED);
             growthProgress = 0;
+            growthRemainderMilli = 0;
         }
         if (level != null && !level.isClientSide
                 && !normalized.isEmpty()
@@ -496,20 +547,13 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
             case PURITY_SLOT -> purityInput = stack;
             case SIGNAL_SLOT -> signalInput = stack;
             case RESOURCE_OUTPUT_SLOT -> resourceOutput = stack;
-            case BOTTLE_OUTPUT_SLOT -> bottleOutput = stack;
             default -> { }
         }
     }
 
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
-        return switch (slot) {
-            case SEED_SLOT -> stack.getItem() instanceof GeneticSeedItem;
-            case NUTRITION_SLOT -> stack.is(ModItems.BIOCHEMICAL_SOLUTION.get());
-            case PURITY_SLOT -> stack.is(ModItems.PURIFIED_WATER_BOTTLE.get());
-            case SIGNAL_SLOT -> stack.is(ModItems.SILICON_SHARD.get());
-            default -> false;
-        };
+        return canInsert(slot, stack, null);
     }
 
     @Override
@@ -526,29 +570,94 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
         purityInput = ItemStack.EMPTY;
         signalInput = ItemStack.EMPTY;
         resourceOutput = ItemStack.EMPTY;
-        bottleOutput = ItemStack.EMPTY;
+        legacyBottleOutput = ItemStack.EMPTY;
         cachedSpeed = 1;
         growthProgress = 0;
+        growthRemainderMilli = 0;
         nextInputInjectionTick = 0L;
         syncToClient();
     }
 
     @Override
     public int[] getSlotsForFace(Direction side) {
-        return side == Direction.DOWN
-                ? new int[]{RESOURCE_OUTPUT_SLOT, BOTTLE_OUTPUT_SLOT}
-                : new int[]{NUTRITION_SLOT, PURITY_SLOT, SIGNAL_SLOT};
+        return visibleSlots(side);
     }
 
     @Override
     public boolean canPlaceItemThroughFace(int slot, ItemStack stack, @Nullable Direction side) {
-        return slot != SEED_SLOT && slot != RESOURCE_OUTPUT_SLOT
-                && slot != BOTTLE_OUTPUT_SLOT && canPlaceItem(slot, stack);
+        return canInsert(slot, stack, side);
     }
 
     @Override
     public boolean canTakeItemThroughFace(int slot, ItemStack stack, Direction side) {
-        return (slot == RESOURCE_OUTPUT_SLOT || slot == BOTTLE_OUTPUT_SLOT) && side == Direction.DOWN;
+        return canExtract(slot, stack, side);
+    }
+
+    @Override
+    public int[] visibleSlots(@Nullable Direction side) {
+        if (side == null) {
+            return new int[]{SEED_SLOT, NUTRITION_SLOT, PURITY_SLOT, SIGNAL_SLOT, RESOURCE_OUTPUT_SLOT};
+        }
+        if (side == Direction.UP) return new int[]{SEED_SLOT};
+        if (side == Direction.DOWN) return new int[]{RESOURCE_OUTPUT_SLOT};
+        return new int[]{NUTRITION_SLOT, PURITY_SLOT, SIGNAL_SLOT};
+    }
+
+    @Override
+    public boolean canInsert(int slot, ItemStack stack, @Nullable Direction side) {
+        if (stack.isEmpty()) return false;
+        boolean sideAllows = side == null || switch (slot) {
+            case SEED_SLOT -> side == Direction.UP;
+            case NUTRITION_SLOT, PURITY_SLOT, SIGNAL_SLOT ->
+                    side != Direction.UP && side != Direction.DOWN;
+            default -> false;
+        };
+        if (!sideAllows) return false;
+        return switch (slot) {
+            case SEED_SLOT -> seed.isEmpty() && stack.is(ModTags.SemanticItems.GENETIC_SEEDS);
+            case NUTRITION_SLOT -> stack.is(ModTags.SemanticItems.INCUBATOR_NUTRITION);
+            case PURITY_SLOT -> stack.is(ModTags.SemanticItems.INCUBATOR_PURITY);
+            case SIGNAL_SLOT -> stack.is(ModTags.SemanticItems.INCUBATOR_DATA_SIGNAL);
+            default -> false;
+        };
+    }
+
+    @Override
+    public boolean canExtract(int slot, ItemStack stack, @Nullable Direction side) {
+        return slot == RESOURCE_OUTPUT_SLOT && (side == null || side == Direction.DOWN);
+    }
+
+    @Override
+    public ItemStack normalizeInsertedStack(int slot, ItemStack stack) {
+        ItemStack normalized = stack.copy();
+        if (slot == SEED_SLOT) {
+            normalized.setCount(1);
+            if (normalized.getItem() instanceof GeneticSeedItem geneticSeed) {
+                geneticSeed.ensureGeneData(normalized);
+            }
+        }
+        return normalized;
+    }
+
+    @Override
+    public int getSlotLimit(int slot) {
+        return slot == SEED_SLOT ? 1 : 64;
+    }
+
+    public ItemStack drainLegacyBottleOutput() {
+        if (legacyBottleOutput.isEmpty()) return ItemStack.EMPTY;
+        ItemStack migrated = legacyBottleOutput.copy();
+        legacyBottleOutput = ItemStack.EMPTY;
+        syncToClient();
+        return migrated;
+    }
+
+    private void migrateLegacyBottleOutput(Player player) {
+        ItemStack migrated = drainLegacyBottleOutput();
+        if (migrated.isEmpty()) return;
+        if (!player.addItem(migrated) && !migrated.isEmpty()) {
+            player.drop(migrated, false);
+        }
     }
 
     private static int clampStat(int value) {
@@ -564,5 +673,58 @@ public class BioIncubatorBlockEntity extends BlockEntity implements WorldlyConta
     @Override
     public CompoundTag getUpdateTag() {
         return saveWithoutMetadata();
+    }
+
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> capUp =
+            net.minecraftforge.common.util.LazyOptional.empty();
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> capHorizontal =
+            net.minecraftforge.common.util.LazyOptional.empty();
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> capDown =
+            net.minecraftforge.common.util.LazyOptional.empty();
+    private net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> capNull =
+            net.minecraftforge.common.util.LazyOptional.empty();
+
+    @Override
+    public <T> net.minecraftforge.common.util.LazyOptional<T> getCapability(
+            net.minecraftforge.common.capabilities.Capability<T> cap, @Nullable Direction side) {
+        if (cap == net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER) {
+            net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler> handler;
+            if (side == null) {
+                if (!capNull.isPresent()) {
+                    capNull = net.minecraftforge.common.util.LazyOptional.of(
+                            () -> new SidedMachineItemHandler(this, this, null));
+                }
+                handler = capNull;
+            } else if (side == Direction.UP) {
+                if (!capUp.isPresent()) {
+                    capUp = net.minecraftforge.common.util.LazyOptional.of(
+                            () -> new SidedMachineItemHandler(this, this, Direction.UP));
+                }
+                handler = capUp;
+            } else if (side == Direction.DOWN) {
+                if (!capDown.isPresent()) {
+                    capDown = net.minecraftforge.common.util.LazyOptional.of(
+                            () -> new SidedMachineItemHandler(this, this, Direction.DOWN));
+                }
+                handler = capDown;
+            } else {
+                if (!capHorizontal.isPresent()) {
+                    capHorizontal = net.minecraftforge.common.util.LazyOptional.of(
+                            () -> new SidedMachineItemHandler(this, this, side));
+                }
+                handler = capHorizontal;
+            }
+            return handler.cast();
+        }
+        return super.getCapability(cap, side);
+    }
+
+    @Override
+    public void invalidateCaps() {
+        super.invalidateCaps();
+        capUp.invalidate();
+        capHorizontal.invalidate();
+        capDown.invalidate();
+        capNull.invalidate();
     }
 }

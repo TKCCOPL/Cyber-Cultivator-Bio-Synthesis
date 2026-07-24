@@ -58,7 +58,7 @@ public final class ModRecipes {
 
         @Override
         public double getMutationChance(int generation, int geneDifference) {
-            return Config.mutationChanceBase + generation * Config.mutationChancePerGen + geneDifference * Config.mutationChancePerGeneDiff;
+            return GeneSpliceRules.mutationChance(generation, geneDifference);
         }
     };
 

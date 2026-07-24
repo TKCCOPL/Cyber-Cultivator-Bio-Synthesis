@@ -1,0 +1,18 @@
+{
+  "name": "基因拼接",
+  "icon": "cybercultivator:gene_splicer",
+  "category": "cybercultivator:genetics",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "阅读界面",
+      "text": "$(li)放入两颗基因种子。$(br)$(li)$(bold)代数$()：取亲本较高代数再加一。$(br)$(li)$(bold)突变$()：特殊结果的触发概率。$(br)$(li)$(bold)双生$()：产出两颗种子的最终概率。$(br)$(li)$(bold)S / Y / P$()：普通子代范围。$(br2)预览展示的是概率和范围，不保证最终种子结果。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "双生规则",
+      "text": "$(li)普通双生从10%起步。$(br)$(li)每代增加2%，上限60%。$(br)$(li)特殊突变必定产生两颗完全相同的子代。$(br)$(li)两颗亲本都会被消耗。$(br)$(li)一次拼接最多产出两颗种子。"
+    }
+  ]
+}

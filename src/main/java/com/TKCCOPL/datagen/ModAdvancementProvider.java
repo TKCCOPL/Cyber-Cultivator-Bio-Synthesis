@@ -1,5 +1,6 @@
 package com.TKCCOPL.datagen;
 
+import com.TKCCOPL.advancement.GeneSpliceCompleteTrigger;
 import com.TKCCOPL.cybercultivator;
 import com.TKCCOPL.init.ModItems;
 import net.minecraft.advancements.Advancement;
@@ -27,17 +28,17 @@ public class ModAdvancementProvider extends ForgeAdvancementProvider {
     static class AdvancementGenerator implements ForgeAdvancementProvider.AdvancementGenerator {
         @Override
         public void generate(HolderLookup.Provider registries, Consumer<Advancement> saver, ExistingFileHelper existingFileHelper) {
-            // Root: 赛博农夫
+            // Root: 赛博农夫 — 触发于采集到原始硅晶体（挖矿硅矿石）
             Advancement root = Advancement.Builder.advancement()
-                    .display(ModItems.SILICON_SHARD.get(),
+                    .display(ModItems.RAW_SILICON_CRYSTAL.get(),
                             Component.translatable("advancement.cybercultivator.root.title"),
                             Component.translatable("advancement.cybercultivator.root.description"),
                             new ResourceLocation(cybercultivator.MODID, "textures/block/silicon_ore.png"),
                             FrameType.TASK, false, false, false)
-                    .addCriterion("has_silicon_shard", InventoryChangeTrigger.TriggerInstance.hasItems(ModItems.SILICON_SHARD.get()))
+                    .addCriterion("has_raw_silicon_crystal", InventoryChangeTrigger.TriggerInstance.hasItems(ModItems.RAW_SILICON_CRYSTAL.get()))
                     .save(saver, cybercultivator.MODID + ":root");
 
-            // 硅基起步 — 获得硅碎片
+            // 硅基起步 — 熔炼得到硅碎片
             Advancement siliconStart = Advancement.Builder.advancement()
                     .parent(root)
                     .display(ModItems.SILICON_SHARD.get(),
@@ -67,7 +68,7 @@ public class ModAdvancementProvider extends ForgeAdvancementProvider {
                     .addCriterion("has_biochemical_solution", InventoryChangeTrigger.TriggerInstance.hasItems(ModItems.BIOCHEMICAL_SOLUTION.get()))
                     .save(saver, cybercultivator.MODID + ":bio_cultivate");
 
-            // 基因密码 — 使用基因拼接机（获得任意种子即视为使用过）
+            // 基因密码 — 获得任意种子（可来自草丛/战利品，不必拼接）
             Advancement geneCode = Advancement.Builder.advancement()
                     .parent(bioCultivate)
                     .display(ModItems.FIBER_REED_SEEDS.get(),
@@ -81,6 +82,16 @@ public class ModAdvancementProvider extends ForgeAdvancementProvider {
                                     ModItems.ALCOHOL_BLOOM_SEEDS.get()).build()))
                     .save(saver, cybercultivator.MODID + ":gene_code");
 
+            // 基因拼接完成 — 玩家从拼接机输出槽取出子代种子时触发自定义触发器
+            Advancement geneSpliceComplete = Advancement.Builder.advancement()
+                    .parent(geneCode)
+                    .display(ModItems.GENE_SPLICER_ITEM.get(),
+                            Component.translatable("advancement.cybercultivator.gene_splice_complete.title"),
+                            Component.translatable("advancement.cybercultivator.gene_splice_complete.description"),
+                            null, FrameType.TASK, true, true, false)
+                    .addCriterion("gene_splice_complete", GeneSpliceCompleteTrigger.Instance.forAny())
+                    .save(saver, cybercultivator.MODID + ":gene_splice_complete");
+
             // 血清之路 — 获得 S-01 血清
             Advancement serumPath = Advancement.Builder.advancement()
                     .parent(root)
@@ -92,7 +103,7 @@ public class ModAdvancementProvider extends ForgeAdvancementProvider {
                     .save(saver, cybercultivator.MODID + ":serum_path");
 
             // 视觉超越 — 获得 S-02 血清
-            Advancement visual超越 = Advancement.Builder.advancement()
+            Advancement visualEnhancement = Advancement.Builder.advancement()
                     .parent(serumPath)
                     .display(ModItems.SYNAPTIC_SERUM_S02.get(),
                             Component.translatable("advancement.cybercultivator.visual_enhancement.title"),

@@ -3,7 +3,7 @@
   "conditions": [],
   "item": "cybercultivator:fiber_reed_seeds",
   "count": 1,
-  "chance": 0.12,
+  "chance": 0.10,
   "loot_tables": [
     "minecraft:blocks/tall_grass",
     "minecraft:blocks/grass"

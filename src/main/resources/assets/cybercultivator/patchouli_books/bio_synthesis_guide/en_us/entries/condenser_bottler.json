@@ -1,0 +1,28 @@
+{
+  "name": "Condenser & Bottler",
+  "icon": "cybercultivator:atmospheric_condenser",
+  "category": "cybercultivator:machines",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "Atmospheric Condenser",
+      "text": "With empty glass bottles supplied, it automatically consumes one every 30 seconds to produce one Purified Water Bottle. Output stores up to 16 bottles.$(br2)No input or a full stock pauses and preserves progress. Manual, shift-click, and hopper extraction never reset the next cycle."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Condenser Link",
+      "text": "Placed directly above an incubator, it checks downstream every second. If incubator P is below 80 and water is stocked, it consumes one bottle and adds P +20.$(br2)Insert glass bottles from top/sides and extract water from bottom/sides. Sneak-use collects all stock. Stored water emits redstone strength 15."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Serum Bottler",
+      "text": "It has three input slots and one output. Ingredients may be inserted in any order; a matching recipe starts automatically. All four default recipes take 15 seconds.$(br2)Changing or removing an input during processing cancels progress without consuming materials. A blocked output makes the recipe wait for room."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Bottler Automation",
+      "text": "$(li)Top/sides: insert recipe ingredients.$(br)$(li)Bottom: extract berries or serums.$(br)$(li)Sneak-use: collect a finished product first.$(br2)Bottling recipes are JSON-driven and can be extended with KubeJS. With JEI installed, browse the complete set of recipes currently loaded."
+    }
+  ]
+}

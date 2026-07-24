@@ -1,0 +1,28 @@
+{
+  "name": "生物培养槽",
+  "icon": "cybercultivator:bio_incubator",
+  "category": "cybercultivator:machines",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "槽位说明",
+      "text": "$(li)$(bold)种子$()：手动放入待培养种子。$(br)$(li)$(bold)营养液$()：N 资源池输入。$(br)$(li)$(bold)纯净水$()：P 资源池输入。$(br)$(li)$(bold)数据信号$()：D 资源池输入。$(br)$(li)$(bold)产物$()：成熟资源输出。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "资源与生长",
+      "text": "$(li)生化原液：N +25，每秒衰减 1。$(br)$(li)纯净水瓶：P +20，每 2 秒衰减 1。$(br)$(li)硅碎片：D +15，每 3 秒衰减 1。$(br2)默认需 N＞10、P＞10、D＞0 才能生长。三项数值属于机器共享池，换种子不会清空。成熟时额外消耗 5 N 与 5 P。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "速度与产物",
+      "text": "$(li)纤维草种子 → 植物纤维。$(br)$(li)蛋白质豆种子 → 生化原液。$(br)$(li)酒精花种子 → 工业乙醇。$(br2)数量 = 2 + floor(Yield÷3)。Potency 写入对应品质，Generation、Synergy 与突变信息也会传给成熟原料。Speed 和当前 N/P/D 共同决定实际培养时间。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "自动化方向",
+      "text": "$(li)从侧面输入 N、P、D 资源。$(br)$(li)从底面提取成熟产物。$(br)$(li)种子槽保持手动操作。$(br)$(li)每条通道每秒最多注入一件，且资源池必须有空间。$(br2)纯净水会连瓶消耗，不会返还空瓶。输出槽已满时，满进度会保留并等待收取。"
+    }
+  ]
+}

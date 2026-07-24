@@ -1,0 +1,18 @@
+{
+  "name": "Activity & Effects",
+  "icon": "cybercultivator:synaptic_serum_s02",
+  "category": "cybercultivator:serums",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "Activity Scale",
+      "text": "$(li)Valid Activity: 1–15.$(br)$(li)Missing or invalid data becomes 5.$(br)$(li)Higher Activity extends serum duration.$(br)$(li)Higher Activity can raise the initial effect level.$(br)$(li)Repeated doses stack until their configured caps."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Three Enhancements",
+      "text": "$(li)$(bold)S-01$(): attack speed, Strength, and knockback resistance.$(br)$(li)$(bold)S-02$(): night vision and private target outlines.$(br)$(li)$(bold)S-03$(): food-powered healing, movement, and jumping.$(br2)All three serums can coexist and stack independently up to level VIII. S-03 needs food level 7 or higher to heal."
+    }
+  ]
+}

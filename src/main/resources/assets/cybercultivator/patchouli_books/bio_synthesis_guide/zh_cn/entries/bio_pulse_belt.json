@@ -1,0 +1,29 @@
+{
+  "name": "生化脉冲腰带",
+  "icon": "cybercultivator:bio_pulse_belt",
+  "category": "cybercultivator:accessories",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "cybercultivator:bio_pulse_belt",
+      "title": "移动补给节点",
+      "text": "装备在$(bold)腰部槽位$()后，每 5 秒扫描玩家周围的培养槽。默认范围为水平、垂直各 3 格的立方区域。$(br2)腰带直接消耗玩家背包材料，不从箱子或附近容器取物。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "默认补给规则",
+      "text": "$(li)N＜50：生化原液 → N +25。$(br)$(li)P＜50：纯净水瓶 → P +20。$(br)$(li)D＜25：硅碎片 → D +15。$(br2)每台培养槽、每条不足的通道各消耗 1 件。缺少某种材料时只跳过对应通道，不会阻断其他补给。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "空瓶与配置",
+      "text": "腰带使用纯净水后会返还玻璃瓶；背包已满时空瓶掉落在玩家附近。$(br2)扫描范围、三项阈值与注入量均可配置，扫描范围硬上限为 5 格。数值达到阈值后不会继续补充，避免无条件消耗材料。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "战利品来源",
+      "text": "以下每个匹配宝箱都有 20% 概率加入 1 条腰带：$(br2)$(li)废弃矿井$(br)$(li)要塞走廊、交叉口、图书馆$(br)$(li)大型海底废墟$(br2)腰带没有工作台配方，需要通过探索获取。"
+    }
+  ]
+}

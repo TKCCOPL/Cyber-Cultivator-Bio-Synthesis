@@ -1,0 +1,18 @@
+{
+  "name": "Automation & Compatibility",
+  "icon": "minecraft:hopper",
+  "category": "cybercultivator:automation",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "Hopper Rules",
+      "text": "$(li)Insert machine resources from the sides.$(br)$(li)Extract incubator output from below.$(br)$(li)Keep output space available before feeding inputs.$(br)$(li)Keep the incubator seed slot manual.$(br)$(li)Condenser extraction does not reset its active cycle."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Optional Mods",
+      "text": "$(li)$(bold)JEI$(): recipe lookup and machine categories.$(br)$(li)$(bold)Curios$(): wearable support equipment.$(br)$(li)$(bold)KubeJS$(): recipe and event extensions.$(br)$(li)$(bold)Patchouli$(): this research manual.$(br2)All four integrations are optional. Core gameplay remains available without them."
+    }
+  ]
+}

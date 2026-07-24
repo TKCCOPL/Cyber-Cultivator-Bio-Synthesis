@@ -1,0 +1,23 @@
+{
+  "name": "Production Line",
+  "icon": "minecraft:hopper",
+  "category": "cybercultivator:automation",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "Suggested Layout",
+      "text": "$(bold)Atmospheric Condenser$()$(br)↓ auto-supplies P downward$(br)$(bold)Bio Incubator$()$(br)↓ mature ingredients$(br)$(bold)Serum Bottler$()$(br)↓ berry or serum$(br2)Place the condenser directly above the incubator. A belt can supply N/P/D from the player inventory, but does not replace fixed hopper logistics."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Hopper Sides",
+      "text": "$(li)Condenser: bottles enter from top/sides; purified water exits from bottom/sides.$(br)$(li)Incubator: N/P/D enter from sides; mature output exits below; seeds stay manual.$(br)$(li)Splicer: manage inputs and offspring through its GUI or block interaction.$(br)$(li)Bottler: inputs enter from top/sides and products exit below."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Blockage Checklist",
+      "text": "When a line stops, check in order:$(br2)$(li)Are all inputs correct?$(br)$(li)Does the output slot have room?$(br)$(li)Does the incubator have N>10, P>10, and D>0?$(br)$(li)Are hoppers on allowed sides?$(br)$(li)Is the belt equipped, with matching supplies in the player's inventory?"
+    }
+  ]
+}

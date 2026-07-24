@@ -7,6 +7,8 @@ on:
       - "**/*.md"
       - "docs/**"
   pull_request:
+    branches:
+      - main
     paths-ignore:
       - "**/*.md"
       - "docs/**"
@@ -20,8 +22,85 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Lightweight verification for pull requests: compile, datagen, generated
+  # resource check, and a single no-optional-dependencies GameTest run.
+  pr-verify:
+    name: PR verify (compile + datagen + no-optional GameTest)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Compile Java
+        run: >-
+          ./gradlew
+          -I .github/gradle/exclude-jei-runtime.init.gradle
+          compileJava
+          --no-daemon
+          --stacktrace
+
+      - name: Regenerate data resources
+        run: >-
+          ./gradlew
+          -I .github/gradle/exclude-jei-runtime.init.gradle
+          runData
+          --no-daemon
+          --stacktrace
+
+      - name: Check generated resources are current
+        run: |
+          set -euo pipefail
+          if [[ -n "$(
+            git status \
+              --porcelain \
+              --untracked-files=all \
+              -- src/generated/resources
+          )" ]]; then
+            echo "::error::Generated resources under src/generated/resources are not up to date."
+            git status --porcelain --untracked-files=all -- src/generated/resources
+            exit 1
+          fi
+
+      - name: Start GameTest server without optional dependencies
+        run: >-
+          ./gradlew
+          -I .github/gradle/exclude-optional-runtime.init.gradle
+          -PenablePatchouliRuntime=false
+          runGameTestServer
+          --no-daemon
+          --stacktrace
+
+      - name: Require executed and passing GameTests
+        shell: bash
+        run: |
+          set -euo pipefail
+          log_path="run/logs/latest.log"
+          test -f "$log_path"
+          ! grep -F "Failed to start the minecraft server" "$log_path"
+          grep -E "All [1-9][0-9]* required tests passed" "$log_path"
+
+  # Full build for main pushes: regen data, check resources, build the JAR,
+  # then run all five runtime smoke profiles before releasing.
+  # Also runs for pull requests labeled `full-ci` so release-grade PRs can
+  # validate all optional-dependency runtime profiles before merge.
   build:
     name: Build and verify generated data
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' &&
+       contains(github.event.pull_request.labels.*.name, 'full-ci'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
@@ -42,17 +121,47 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Build JAR and regenerate data resources
+      - name: Resolve KubeJS latest version
+        id: kubejs
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubejs_latest="$(sed -n 's/^kubejs_latest_version=//p' gradle.properties)"
+          if [[ -z "$kubejs_latest" ]]; then
+            echo "::error::kubejs_latest_version not defined in gradle.properties"
+            exit 1
+          fi
+          echo "latest=${kubejs_latest}" >> "$GITHUB_OUTPUT"
+
+      - name: Regenerate data resources
         run: >-
           ./gradlew
           -I .github/gradle/exclude-jei-runtime.init.gradle
-          build
           runData
           --no-daemon
           --stacktrace
 
       - name: Check generated resources are current
-        run: git diff --exit-code -- src/generated/resources
+        run: |
+          set -euo pipefail
+          if [[ -n "$(
+            git status \
+              --porcelain \
+              --untracked-files=all \
+              -- src/generated/resources
+          )" ]]; then
+            echo "::error::Generated resources under src/generated/resources are not up to date."
+            git status --porcelain --untracked-files=all -- src/generated/resources
+            exit 1
+          fi
+
+      - name: Build JAR
+        run: >-
+          ./gradlew
+          -I .github/gradle/exclude-jei-runtime.init.gradle
+          build
+          --no-daemon
+          --stacktrace
 
       - name: Resolve build metadata
         id: metadata
@@ -92,6 +201,7 @@ jobs:
         profile:
           - curios
           - no-optional-dependencies
+          - patchouli
           - kubejs-min
           - kubejs-latest
 
@@ -108,11 +218,24 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
+      - name: Resolve KubeJS latest version
+        id: kubejs
+        shell: bash
+        run: |
+          set -euo pipefail
+          kubejs_latest="$(sed -n 's/^kubejs_latest_version=//p' gradle.properties)"
+          if [[ -z "$kubejs_latest" ]]; then
+            echo "::error::kubejs_latest_version not defined in gradle.properties"
+            exit 1
+          fi
+          echo "latest=${kubejs_latest}" >> "$GITHUB_OUTPUT"
+
       - name: Start GameTest server with Curios
         if: matrix.profile == 'curios'
         run: >-
           ./gradlew
           -I .github/gradle/exclude-jei-runtime.init.gradle
+          -PenablePatchouliRuntime=false
           runGameTestServer
           --no-daemon
           --stacktrace
@@ -122,6 +245,16 @@ jobs:
         run: >-
           ./gradlew
           -I .github/gradle/exclude-optional-runtime.init.gradle
+          -PenablePatchouliRuntime=false
+          runGameTestServer
+          --no-daemon
+          --stacktrace
+
+      - name: Start GameTest server with Patchouli
+        if: matrix.profile == 'patchouli'
+        run: >-
+          ./gradlew
+          -PenablePatchouliRuntime=true
           runGameTestServer
           --no-daemon
           --stacktrace
@@ -131,6 +264,7 @@ jobs:
         run: >-
           ./gradlew
           -I .github/gradle/exclude-non-kubejs-runtime.init.gradle
+          -PenablePatchouliRuntime=false
           -PenableKubeJSRuntime=true
           runGameTestServer
           --no-daemon
@@ -141,8 +275,9 @@ jobs:
         run: >-
           ./gradlew
           -I .github/gradle/exclude-non-kubejs-runtime.init.gradle
+          -PenablePatchouliRuntime=false
           -PenableKubeJSRuntime=true
-          -Pkubejs_version=2001.6.5-build.26
+          -Pkubejs_version=${{ steps.kubejs.outputs.latest }}
           runGameTestServer
           --no-daemon
           --stacktrace
@@ -154,6 +289,8 @@ jobs:
           log_path="run/logs/latest.log"
           if [[ "${{ matrix.profile }}" == kubejs-* ]]; then
             log_path="build/kubejs-smoke/logs/latest.log"
+          elif [[ "${{ matrix.profile }}" == "patchouli" ]]; then
+            log_path="build/patchouli-smoke/logs/latest.log"
           fi
           test -f "$log_path"
           ! grep -F "Failed to start the minecraft server" "$log_path"

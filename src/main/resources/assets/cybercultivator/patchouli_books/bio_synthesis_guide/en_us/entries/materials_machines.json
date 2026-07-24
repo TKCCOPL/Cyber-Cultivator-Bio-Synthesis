@@ -1,0 +1,37 @@
+{
+  "name": "Materials & Machines",
+  "icon": "cybercultivator:silicon_shard",
+  "category": "cybercultivator:getting_started",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "Core Minerals",
+      "text": "$(li)Silicon Ore → Raw Silicon Crystal → Silicon Shard.$(br)$(li)Rare Earth Ore → Raw Rare Earth → Rare Earth Dust.$(br2)Both ores have stone-layer variants and deepslate variants below Y=0, and require a stone pickaxe or better. Refine raw minerals in a furnace or blast furnace; blasting is faster."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "cybercultivator:atmospheric_condenser",
+      "title": "Atmospheric Condenser",
+      "text": "Consumes glass bottles to make purified water, a stable supply for the incubator's P channel."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "cybercultivator:bio_incubator",
+      "title": "Bio Incubator",
+      "text": "Uses shared N, P, and D resources to cultivate gene seeds into quality ingredients."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "cybercultivator:gene_splicer",
+      "title": "Gene Splicer",
+      "text": "Consumes two parent seeds to breed offspring with new genes, mutations, or twins."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "cybercultivator:serum_bottler",
+      "title": "Serum Bottler",
+      "text": "Processes three inputs into a Synaptic Neural Berry or an S-01, S-02, or S-03 serum."
+    }
+  ]
+}

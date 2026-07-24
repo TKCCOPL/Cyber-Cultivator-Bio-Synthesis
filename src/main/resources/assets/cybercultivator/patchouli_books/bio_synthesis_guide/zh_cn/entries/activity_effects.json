@@ -1,0 +1,18 @@
+{
+  "name": "活性与效果",
+  "icon": "cybercultivator:synaptic_serum_s02",
+  "category": "cybercultivator:serums",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "活性范围",
+      "text": "$(li)有效活性：1～15。$(br)$(li)缺失或无效数据按5处理。$(br)$(li)活性越高，血清持续时间越长。$(br)$(li)活性越高，初始效果等级可能越高。$(br)$(li)重复饮用会持续叠加，直到配置上限。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "三种强化",
+      "text": "$(li)$(bold)S-01$()：攻击速度、力量和击退抗性。$(br)$(li)$(bold)S-02$()：夜视与仅自己可见的目标轮廓。$(br)$(li)$(bold)S-03$()：消耗食物治疗，并强化移动与跳跃。$(br2)三种血清可共存，并分别叠加至 VIII 级。S-03 需要食物等级至少为7才能治疗。"
+    }
+  ]
+}

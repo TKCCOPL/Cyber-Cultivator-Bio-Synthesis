@@ -1,0 +1,23 @@
+{
+  "name": "自动化产线",
+  "icon": "minecraft:hopper",
+  "category": "cybercultivator:automation",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "推荐布局",
+      "text": "$(bold)大气冷凝器$()$(br)↓ 向下自动补充 P$(br)$(bold)生物培养槽$()$(br)↓ 成熟原料$(br)$(bold)血清灌装机$()$(br)↓ 莓或血清$(br2)将冷凝器直接放在培养槽上方。腰带可从玩家背包补 N/P/D，但不会代替固定漏斗物流。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "漏斗方向",
+      "text": "$(li)冷凝器：顶部/侧面输入玻璃瓶，底部/侧面抽取纯净水。$(br)$(li)培养槽：侧面输入 N/P/D，底部抽取成熟产物；种子手动放入。$(br)$(li)拼接机：输入与子代可在 GUI 或方块交互中管理。$(br)$(li)灌装机：顶部/侧面输入，底部抽取产物。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "阻塞检查",
+      "text": "自动线停止时依次检查：$(br2)$(li)输入材料是否正确。$(br)$(li)输出槽是否有空间。$(br)$(li)培养槽 N＞10、P＞10、D＞0。$(br)$(li)漏斗是否接在允许的方向。$(br)$(li)腰带是否已装备且背包内有对应补给材料。"
+    }
+  ]
+}

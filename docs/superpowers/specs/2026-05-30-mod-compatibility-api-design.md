@@ -20,8 +20,8 @@
 - KubeJS 插件（需额外 compileOnly 依赖）
 - Patchouli 引导手册
 - TOP/WTHIT/Jade 方块信息悬浮窗
-- Create 机械动力兼容
-- 超出现有 WorldlyContainer 的自动化管道兼容
+- ~~Create 机械动力兼容~~（v1.1.7 已通过 Forge `IItemHandler` 分面能力实现标准能力预期兼容）
+- ~~超出现有 WorldlyContainer 的自动化管道兼容~~（v1.1.7 已实现 Forge `IItemHandler` 能力，详见 `docs/superpowers/plans/2026-07-20-v1.1.7-redstone-industrial-compat.md`）
 
 ## 架构
 

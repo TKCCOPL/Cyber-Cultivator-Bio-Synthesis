@@ -1,0 +1,18 @@
+{
+  "name": "Accessory System",
+  "icon": "cybercultivator:spectrum_monocle",
+  "category": "cybercultivator:accessories",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "Requirements",
+      "text": "All three devices require the optional $(bold)Curios API$() mod and only work while equipped in their matching slots.$(br2)$(li)Head: Spectrum Monocle$(br)$(li)Belt: Bio-Pulse Belt$(br)$(li)Back: Life Support Pack$(br2)Each slot has one space by default. Without Curios, the items may still exist but provide no accessory abilities."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Sources",
+      "text": "$(li)$(item)Spectrum Monocle$(): crafted at a workbench.$(br)$(li)$(item)Bio-Pulse Belt$(): mineshaft, stronghold, and big underwater ruin chests.$(br)$(li)$(item)Life Support Pack$(): mineshaft, dungeon, and pillager outpost chests.$(br2)The belt and pack each have a 20% chance in every matching chest; neither is guaranteed."
+    }
+  ]
+}

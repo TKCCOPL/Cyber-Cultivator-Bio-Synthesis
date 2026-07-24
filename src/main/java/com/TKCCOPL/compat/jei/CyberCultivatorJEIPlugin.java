@@ -50,7 +50,7 @@ public class CyberCultivatorJEIPlugin implements IModPlugin {
         // 基因拼接配方
         registration.addRecipes(
                 GeneSplicingCategory.RECIPE_TYPE,
-                GeneSplicingCategory.buildRecipes()
+                GeneSplicingCategory.buildRecipes(level)
         );
 
         // 培养槽产出
@@ -188,6 +188,16 @@ public class CyberCultivatorJEIPlugin implements IModPlugin {
         );
         registration.addIngredientInfo(
                 new ItemStack(ModItems.RARE_EARTH_ORE_ITEM.get()),
+                VanillaTypes.ITEM_STACK,
+                Component.translatable("jei.cybercultivator.info.rare_earth_ore")
+        );
+        registration.addIngredientInfo(
+                new ItemStack(ModItems.DEEPSLATE_SILICON_ORE_ITEM.get()),
+                VanillaTypes.ITEM_STACK,
+                Component.translatable("jei.cybercultivator.info.silicon_ore")
+        );
+        registration.addIngredientInfo(
+                new ItemStack(ModItems.DEEPSLATE_RARE_EARTH_ORE_ITEM.get()),
                 VanillaTypes.ITEM_STACK,
                 Component.translatable("jei.cybercultivator.info.rare_earth_ore")
         );

@@ -1,0 +1,18 @@
+{
+  "name": "突变与速度",
+  "icon": "cybercultivator:alcohol_bloom_seeds",
+  "category": "cybercultivator:genetics",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "突变概率",
+      "text": "$(li)基础概率：5%。$(br)$(li)前20代每代增加0.5%。$(br)$(li)亲本最大基因差异每点增加1%。$(br)$(li)总上限：25%。$(br2)特殊结果可能超出普通基因范围。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "速度是连续值",
+      "text": "$(li)Speed 基因范围为1～10。$(br)$(li)每一点都会改变培养时间。$(br)$(li)营养、纯度和数据信号共同提高环境倍率。$(br)$(li)界面预计时间与机器使用同一套算法。$(br2)想缩短生产周期时，优先培育高 Speed 种子。"
+    }
+  ]
+}

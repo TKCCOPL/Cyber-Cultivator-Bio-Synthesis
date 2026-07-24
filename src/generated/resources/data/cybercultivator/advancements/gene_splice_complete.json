@@ -1,0 +1,30 @@
+{
+  "parent": "cybercultivator:gene_code",
+  "criteria": {
+    "gene_splice_complete": {
+      "conditions": {},
+      "trigger": "cybercultivator:gene_splice_complete"
+    }
+  },
+  "display": {
+    "announce_to_chat": true,
+    "description": {
+      "translate": "advancement.cybercultivator.gene_splice_complete.description"
+    },
+    "frame": "task",
+    "hidden": false,
+    "icon": {
+      "item": "cybercultivator:gene_splicer"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancement.cybercultivator.gene_splice_complete.title"
+    }
+  },
+  "requirements": [
+    [
+      "gene_splice_complete"
+    ]
+  ],
+  "sends_telemetry_event": true
+}

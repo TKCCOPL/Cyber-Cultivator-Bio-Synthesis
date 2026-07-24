@@ -1,0 +1,18 @@
+{
+  "name": "故障排查",
+  "icon": "minecraft:redstone_torch",
+  "category": "cybercultivator:automation",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "无法生长或输出",
+      "text": "$(li)$(bold)无法生长$()：N、P 必须高于配置阈值，D 必须大于0。$(br)$(li)$(bold)无法输出$()：清空或合并产物槽。$(br)$(li)$(bold)生长太慢$()：提升 Speed，并补充 N、P、D。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "无法拼接或手册丢失",
+      "text": "$(li)$(bold)无法拼接$()：放入两颗种子，并清空子代槽。$(br)$(li)$(bold)手册丢失$()：用一本原版书和一块$(item)硅碎片$()重新合成。$(br)$(li)$(bold)没有 Patchouli$()：手册不可用，但全部核心玩法仍能正常运行。"
+    }
+  ]
+}

@@ -11,11 +11,13 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
 
 import org.jetbrains.annotations.Nullable;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Supplier;
 
 public class SynapticSerumItem extends Item {
@@ -56,8 +58,29 @@ public class SynapticSerumItem extends Item {
 
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
+        MobEffectInstance existing = player.getEffect(effect.get());
+        if (existing != null) {
+            int amplifierCap;
+            int durationCap;
+            if (level.isClientSide) {
+                var cfg = com.TKCCOPL.client.ClientGameplayConfig.getSnapshot();
+                amplifierCap = cfg.stackAmplifierCap();
+                durationCap = getClientStackDurationCap(stack, cfg);
+            } else {
+                amplifierCap = Config.stackAmplifierCap;
+                durationCap = getStackDurationCap(stack);
+            }
+            if (existing.getAmplifier() >= amplifierCap && existing.getDuration() >= durationCap) {
+                if (!level.isClientSide) {
+                    player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                            "message.cybercultivator.serum.at_cap"), true);
+                }
+                return InteractionResultHolder.fail(stack);
+            }
+        }
         player.startUsingItem(hand);
-        return InteractionResultHolder.consume(player.getItemInHand(hand));
+        return InteractionResultHolder.consume(stack);
     }
 
     public static int getActivity(ItemStack stack) {
@@ -83,13 +106,50 @@ public class SynapticSerumItem extends Item {
         return 0;
     }
 
+    /**
+     * 返回指定血清的权威持续时间累加上限，同时保留旧的全局上限作为总保险边界。
+     */
+    public static int getStackDurationCap(ItemStack serum) {
+        int typeCap = Config.stackDurationCap;
+        if (serum != null && !serum.isEmpty()) {
+            if (serum.is(com.TKCCOPL.init.ModItems.SYNAPTIC_SERUM_S01.get())) typeCap = Config.s01StackDurationCap;
+            else if (serum.is(com.TKCCOPL.init.ModItems.SYNAPTIC_SERUM_S02.get())) typeCap = Config.s02StackDurationCap;
+            else if (serum.is(com.TKCCOPL.init.ModItems.SYNAPTIC_SERUM_S03.get())) typeCap = Config.s03StackDurationCap;
+        }
+        return Math.min(Config.stackDurationCap, typeCap);
+    }
+
+    private static int getClientBaseDuration(ItemStack serum,
+                                             com.TKCCOPL.network.GameplayConfigSnapshot cfg) {
+        if (serum.is(com.TKCCOPL.init.ModItems.SYNAPTIC_SERUM_S01.get())) return cfg.s01BaseDuration();
+        if (serum.is(com.TKCCOPL.init.ModItems.SYNAPTIC_SERUM_S02.get())) return cfg.s02BaseDuration();
+        if (serum.is(com.TKCCOPL.init.ModItems.SYNAPTIC_SERUM_S03.get())) return cfg.s03BaseDuration();
+        return 0;
+    }
+
+    private static int getClientStackDurationCap(ItemStack serum,
+                                                  com.TKCCOPL.network.GameplayConfigSnapshot cfg) {
+        int typeCap = cfg.stackDurationCap();
+        if (serum.is(com.TKCCOPL.init.ModItems.SYNAPTIC_SERUM_S01.get())) typeCap = cfg.s01StackDurationCap();
+        else if (serum.is(com.TKCCOPL.init.ModItems.SYNAPTIC_SERUM_S02.get())) typeCap = cfg.s02StackDurationCap();
+        else if (serum.is(com.TKCCOPL.init.ModItems.SYNAPTIC_SERUM_S03.get())) typeCap = cfg.s03StackDurationCap();
+        return Math.min(cfg.stackDurationCap(), typeCap);
+    }
+
     public static int getScaledDuration(int baseDuration, int activity) {
         double multiplier = Config.durationMultiplierBase + activity * Config.durationMultiplierPerActivity;
         return (int) Math.round(baseDuration * multiplier);
     }
 
     public static int getBaseAmplifier(int activity) {
-        return activity >= Config.activityThresholdForBonus ? 1 : 0;
+        return getBaseAmplifier(activity, Config.activityThresholdForBonus);
+    }
+
+    /**
+     * 客户端 Tooltip 需要从快照读取阈值，避免依赖服务端 Config。
+     */
+    public static int getBaseAmplifier(int activity, int threshold) {
+        return activity >= threshold ? 1 : 0;
     }
 
     /**
@@ -117,13 +177,18 @@ public class SynapticSerumItem extends Item {
         if (!level.isClientSide) {
             int activity = getActivity(stack);
             int scaledDuration = getScaledDuration(durationSupplier.get(), activity);
+            int durationCap = getStackDurationCap(stack);
 
             int amp;
             MobEffectInstance existing = entity.getEffect(effect.get());
+            if (existing != null && existing.getAmplifier() >= Config.stackAmplifierCap
+                    && existing.getDuration() >= durationCap) {
+                return stack;
+            }
             if (existing != null) {
                 amp = Math.min(existing.getAmplifier() + 1, Config.stackAmplifierCap);
-                // 累加剩余持续时间，上限 Config.stackDurationCap
-                scaledDuration = Math.min(scaledDuration + existing.getDuration(), Config.stackDurationCap);
+                // 完整累加每瓶持续时间，同时受全局保险上限和血清类型上限约束。
+                scaledDuration = Math.min(scaledDuration + existing.getDuration(), durationCap);
             } else {
                 amp = Math.min(getBaseAmplifier(activity) + getActivityBonusAmplifier(activity), Config.stackAmplifierCap);
             }
@@ -142,7 +207,7 @@ public class SynapticSerumItem extends Item {
                 if (!consumeEvent.isDurationModified()) {
                     scaledDuration = getScaledDuration(durationSupplier.get(), activity);
                     if (existing != null) {
-                        scaledDuration = Math.min(scaledDuration + existing.getDuration(), Config.stackDurationCap);
+                        scaledDuration = Math.min(scaledDuration + existing.getDuration(), durationCap);
                     }
                 }
                 if (!consumeEvent.isAmplifierModified() && existing == null) {
@@ -155,14 +220,21 @@ public class SynapticSerumItem extends Item {
             if (consumeEvent.isAmplifierModified()) {
                 amp = consumeEvent.getAmplifier();
             }
-            scaledDuration = Math.max(1, scaledDuration);
-            amp = Math.max(0, amp);
+            scaledDuration = Math.max(1, Math.min(scaledDuration, durationCap));
+            amp = Math.max(0, Math.min(amp, Config.stackAmplifierCap));
 
             entity.addEffect(new MobEffectInstance(effect.get(), scaledDuration, amp));
 
             // 仅服务端消耗物品（客户端通过服务端同步获取正确状态）
             if (entity instanceof Player player && !player.getAbilities().instabuild) {
                 stack.shrink(1);
+                ItemStack bottle = new ItemStack(Items.GLASS_BOTTLE);
+                if (stack.isEmpty()) {
+                    return bottle;
+                }
+                if (!player.addItem(bottle) && !bottle.isEmpty()) {
+                    player.drop(bottle, false);
+                }
             }
         }
         return stack;
@@ -175,14 +247,24 @@ public class SynapticSerumItem extends Item {
         tooltip.add(net.minecraft.network.chat.Component.translatable(
                 "tooltip.cybercultivator.serum_activity", activity).withStyle(net.minecraft.ChatFormatting.GOLD));
 
-        double multiplier = Config.durationMultiplierBase + activity * Config.durationMultiplierPerActivity;
-        int totalAmp = Math.min(getBaseAmplifier(activity) + getActivityBonusAmplifier(activity), Config.stackAmplifierCap);
+        // 客户端从服务端同步快照读取，避免依赖未加载的 SERVER 类型 Config
+        var cfg = com.TKCCOPL.client.ClientGameplayConfig.getSnapshot();
+        double multiplier = cfg.durationMultiplierBase() + activity * cfg.durationMultiplierPerActivity();
+        int totalAmp = Math.min(getBaseAmplifier(activity, cfg.activityThresholdForBonus())
+                + getActivityBonusAmplifier(activity), cfg.stackAmplifierCap());
         String baseLevel = toRoman(totalAmp + 1);
         tooltip.add(net.minecraft.network.chat.Component.translatable(
                 "tooltip.cybercultivator.serum_base_level", baseLevel).withStyle(net.minecraft.ChatFormatting.GRAY));
 
         tooltip.add(net.minecraft.network.chat.Component.translatable(
                 "tooltip.cybercultivator.serum_duration_mult", String.format("%.1f", multiplier)).withStyle(net.minecraft.ChatFormatting.GRAY));
+        int duration = (int) Math.round(getClientBaseDuration(stack, cfg) * multiplier);
+        int durationCap = getClientStackDurationCap(stack, cfg);
+        tooltip.add(net.minecraft.network.chat.Component.translatable(
+                "tooltip.cybercultivator.serum_duration",
+                String.format(Locale.ROOT, "%.1f", duration / 20.0D),
+                String.format(Locale.ROOT, "%.0f", durationCap / 20.0D))
+                .withStyle(net.minecraft.ChatFormatting.GRAY));
 
         if (activity > 10) {
             tooltip.add(net.minecraft.network.chat.Component.translatable(

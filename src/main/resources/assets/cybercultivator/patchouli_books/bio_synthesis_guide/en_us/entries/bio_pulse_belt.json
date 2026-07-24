@@ -1,0 +1,29 @@
+{
+  "name": "Bio-Pulse Belt",
+  "icon": "cybercultivator:bio_pulse_belt",
+  "category": "cybercultivator:accessories",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "cybercultivator:bio_pulse_belt",
+      "title": "Mobile Supply Node",
+      "text": "Equip it in the $(bold)belt slot$() to scan nearby incubators every 5 seconds. The default area is a cube extending 3 blocks horizontally and vertically from the player.$(br2)The belt consumes materials from the player's inventory, never from chests or nearby containers."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Default Supply Rules",
+      "text": "$(li)N below 50: Biochemical Solution → N +25.$(br)$(li)P below 50: Purified Water Bottle → P +20.$(br)$(li)D below 25: Silicon Shard → D +15.$(br2)Each low channel on each incubator consumes one item. A missing material skips only its own channel and never blocks the others."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Bottles & Config",
+      "text": "Using purified water returns a glass bottle. If the inventory is full, the bottle drops beside the player.$(br2)The scan range, three thresholds, and injection amounts are configurable. Scan range has a hard cap of 5 blocks. Channels at or above their thresholds consume nothing."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Chest Sources",
+      "text": "Each matching chest has a 20% chance to gain one belt:$(br2)$(li)Abandoned mineshaft$(br)$(li)Stronghold corridor, crossing, or library$(br)$(li)Big underwater ruin$(br2)The belt has no crafting recipe and must be found while exploring."
+    }
+  ]
+}

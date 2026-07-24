@@ -1,7 +1,11 @@
 package com.TKCCOPL.client.screen;
 
+import com.TKCCOPL.api.RedstoneControlMode;
+import com.TKCCOPL.menu.RedstoneMenuAccess;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -10,6 +14,12 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 
 public abstract class MachineScreen<M extends AbstractContainerMenu> extends AbstractContainerScreen<M> {
     private final ResourceLocation texture;
+    /** v1.1.7 RS 按钮位置与尺寸（4 机器共享） */
+    private static final int RS_BUTTON_X = 128;
+    private static final int RS_BUTTON_Y = 4;
+    private static final int RS_BUTTON_W = 60;
+    private static final int RS_BUTTON_H = 14;
+    private Button redstoneButton;
 
     protected MachineScreen(M menu, Inventory inventory, Component title, ResourceLocation texture) {
         super(menu, inventory, title);
@@ -36,6 +46,79 @@ public abstract class MachineScreen<M extends AbstractContainerMenu> extends Abs
 
     protected abstract void renderMachineState(GuiGraphics graphics, float partialTick);
 
+    @Override
+    protected void init() {
+        super.init();
+        // v1.1.7 自动添加 RS 按钮（仅当 menu 实现 RedstoneMenuAccess）
+        if (menu instanceof RedstoneMenuAccess redstoneMenu) {
+            redstoneButton = addRenderableWidget(Button.builder(
+                            redstoneLabel(redstoneMenu),
+                            button -> sendButton(redstoneMenu.getRedstoneButtonId()))
+                    .bounds(leftPos + RS_BUTTON_X, topPos + RS_BUTTON_Y, RS_BUTTON_W, RS_BUTTON_H)
+                    .tooltip(redstoneTooltip(redstoneMenu))
+                    .build());
+        }
+    }
+
+    @Override
+    protected void containerTick() {
+        super.containerTick();
+        updateRedstoneButton();
+    }
+
+    private void updateRedstoneButton() {
+        if (redstoneButton != null && menu instanceof RedstoneMenuAccess redstoneMenu) {
+            redstoneButton.setMessage(redstoneLabel(redstoneMenu));
+            redstoneButton.setTooltip(redstoneTooltip(redstoneMenu));
+        }
+    }
+
+    /** 根据当前模式返回按钮文字（RS:忽略 / RS:高电平 / RS:低电平）。 */
+    private Component redstoneLabel(RedstoneMenuAccess redstoneMenu) {
+        RedstoneControlMode mode = safeMode(redstoneMenu.getRedstoneModeOrdinal());
+        return Component.translatable("gui.cybercultivator.redstone.label." + mode.getSerializedName());
+    }
+
+    /** 根据当前模式 + 供电状态返回 tooltip。 */
+    private Tooltip redstoneTooltip(RedstoneMenuAccess redstoneMenu) {
+        RedstoneControlMode mode = safeMode(redstoneMenu.getRedstoneModeOrdinal());
+        boolean powered = redstoneMenu.isRedstonePowered();
+        String poweredKey = powered
+                ? "gui.cybercultivator.redstone.powered.yes"
+                : "gui.cybercultivator.redstone.powered.no";
+        return Tooltip.create(Component.translatable(
+                "gui.cybercultivator.redstone.tooltip." + mode.getSerializedName(),
+                Component.translatable(poweredKey)));
+    }
+
+    private static RedstoneControlMode safeMode(int ordinal) {
+        RedstoneControlMode[] values = RedstoneControlMode.values();
+        if (ordinal < 0 || ordinal >= values.length) return RedstoneControlMode.IGNORE;
+        return values[ordinal];
+    }
+
+    /**
+     * v1.1.7 hotfix：返回红石阻塞状态行。
+     * 仅在 {@link RedstoneMenuAccess#isRedstoneProcessingAllowed()} 为 {@code false} 时调用。
+     * 子类状态行方法应在最高优先级判定中调用本方法。
+     */
+    protected Component redstoneBlockedStatus() {
+        if (!(menu instanceof RedstoneMenuAccess redstoneMenu)) {
+            return Component.empty();
+        }
+        RedstoneControlMode mode = safeMode(redstoneMenu.getRedstoneModeOrdinal());
+        return Component.translatable("gui.cybercultivator.status.redstone_blocked." + mode.getSerializedName());
+    }
+
+    /** v1.1.7 hotfix：红石阻塞状态颜色（与"阻塞/等待"一致，使用警示橙）。 */
+    protected static final int REDSTONE_BLOCKED_COLOR = 0x6B4C12;
+
+    /** v1.1.7 hotfix：判断当前 menu 是否处于红石阻塞状态。 */
+    protected boolean isRedstoneBlocked() {
+        return menu instanceof RedstoneMenuAccess redstoneMenu
+                && !redstoneMenu.isRedstoneProcessingAllowed();
+    }
+
     protected void sendButton(int id) {
         if (minecraft != null && minecraft.gameMode != null) {
             minecraft.gameMode.handleInventoryButtonClick(menu.containerId, id);
@@ -49,6 +132,10 @@ public abstract class MachineScreen<M extends AbstractContainerMenu> extends Abs
             value = font.plainSubstrByWidth(value, Math.max(0, maxWidth - font.width(ellipsis))) + ellipsis;
         }
         graphics.drawString(font, value, x, y, color, false);
+    }
+
+    protected void drawCentered(GuiGraphics graphics, Component text, int centerX, int y, int color) {
+        graphics.drawString(font, text, centerX - font.width(text) / 2, y, color, false);
     }
 
     protected void horizontalBar(GuiGraphics graphics, int x, int y, int width, int value, int maximum, int color) {

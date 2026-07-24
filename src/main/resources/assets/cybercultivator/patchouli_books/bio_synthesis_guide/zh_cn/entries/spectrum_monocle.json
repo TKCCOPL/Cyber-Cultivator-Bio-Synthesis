@@ -1,0 +1,25 @@
+{
+  "name": "光谱单片镜",
+  "icon": "cybercultivator:spectrum_monocle",
+  "category": "cybercultivator:accessories",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "cybercultivator:spectrum_monocle",
+      "title": "种子解析器",
+      "text": "装备在$(bold)头部槽位$()后，将鼠标悬停在基因种子上即可读取隐藏数据。$(br2)它只改变种子物品提示，不显示机器 HUD；机器状态仍需打开对应 GUI 查看。"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "cybercultivator:spectrum_monocle",
+      "title": "合成配方",
+      "text": "需要铁粒、玻璃板、硅碎片与稀土粉末。单片镜仅通过合成获得，不会加入战利品箱。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "可读取的信息",
+      "text": "$(li)$(bold)Speed$()：培养速度。$(br)$(li)$(bold)Yield$()：成熟产量。$(br)$(li)$(bold)Potency$()：产物品质。$(br)$(li)$(bold)Generation$()：育种代数。$(br)$(li)$(bold)Synergy$()：加工时的协同加成。$(br)$(li)$(bold)Mutation$()：数值突破或协同突变及其详情。"
+    }
+  ]
+}

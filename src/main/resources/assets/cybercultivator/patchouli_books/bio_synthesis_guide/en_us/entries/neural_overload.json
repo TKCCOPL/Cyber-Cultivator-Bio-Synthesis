@@ -1,0 +1,18 @@
+{
+  "name": "Neural Overload",
+  "icon": "cybercultivator:synaptic_serum_s03",
+  "category": "cybercultivator:serums",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "When It Starts",
+      "text": "$(li)The main enhancement expires or is cleared early.$(br)$(li)Its matching Neural Overload begins one tick later.$(br)$(li)Duration ranges from 8 to 22 seconds by effect level.$(br)$(li)Each serum source has different penalties and its own warning icon."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "How to Recover",
+      "text": "$(li)Milk clears the beneficial serum effect.$(br)$(li)Milk still triggers the matching overload.$(br)$(li)Overload itself cannot be cured by milk.$(br)$(li)An equipped $(item)Life Support Pack$() makes overload expire at roughly 3x speed by default.$(br2)The pack does not prevent overload; it only shortens an active overload."
+    }
+  ]
+}

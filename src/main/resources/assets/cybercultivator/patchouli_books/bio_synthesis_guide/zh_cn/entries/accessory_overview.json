@@ -1,0 +1,18 @@
+{
+  "name": "饰品系统",
+  "icon": "cybercultivator:spectrum_monocle",
+  "category": "cybercultivator:accessories",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "启用条件",
+      "text": "三件设备都需要安装可选模组 $(bold)Curios API$()，并装备在对应槽位后才会生效。$(br2)$(li)头部：光谱单片镜$(br)$(li)腰部：生化脉冲腰带$(br)$(li)背部：生命支持箱$(br2)每种槽位默认只有 1 格。未安装 Curios 时，物品仍可存在，但不会提供饰品能力。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "来源总览",
+      "text": "$(li)$(item)光谱单片镜$()：工作台合成。$(br)$(li)$(item)生化脉冲腰带$()：矿井、要塞与大型海底废墟宝箱。$(br)$(li)$(item)生命支持箱$()：矿井、地牢与掠夺者前哨站宝箱。$(br2)腰带和支持箱在每个匹配宝箱中分别有 20% 概率，不保证必定出现。"
+    }
+  ]
+}

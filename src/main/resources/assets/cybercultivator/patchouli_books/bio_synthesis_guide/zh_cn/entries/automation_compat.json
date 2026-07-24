@@ -1,0 +1,18 @@
+{
+  "name": "自动化与兼容",
+  "icon": "minecraft:hopper",
+  "category": "cybercultivator:automation",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "漏斗规则",
+      "text": "$(li)从机器侧面输入资源。$(br)$(li)从培养槽底面提取成熟产物。$(br)$(li)输入前先保证产物槽有空间。$(br)$(li)培养槽种子槽保持手动操作。$(br)$(li)提取冷凝器产物不会重置正在进行的生产周期。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "可选模组",
+      "text": "$(li)$(bold)JEI$()：查看配方和机器分类。$(br)$(li)$(bold)Curios$()：启用可穿戴支持设备。$(br)$(li)$(bold)KubeJS$()：扩展配方与事件。$(br)$(li)$(bold)Patchouli$()：提供本研究手册。$(br2)四种兼容均为可选；没有它们时，核心玩法仍可运行。"
+    }
+  ]
+}

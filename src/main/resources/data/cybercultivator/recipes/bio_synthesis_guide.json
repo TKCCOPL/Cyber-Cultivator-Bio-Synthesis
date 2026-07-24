@@ -1,0 +1,14 @@
+{
+  "type": "patchouli:shapeless_book_recipe",
+  "conditions": [
+    {
+      "type": "forge:mod_loaded",
+      "modid": "patchouli"
+    }
+  ],
+  "ingredients": [
+    { "item": "minecraft:book" },
+    { "item": "cybercultivator:silicon_shard" }
+  ],
+  "book": "cybercultivator:bio_synthesis_guide"
+}

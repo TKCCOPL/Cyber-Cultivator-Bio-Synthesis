@@ -18,11 +18,21 @@ public class GeneSpliceEvent extends Event {
     private boolean isMutation;
     private int mutationType;
     private String mutationDetail;
+    private int offspringCount;
 
     public GeneSpliceEvent(ItemStack seedA, ItemStack seedB,
                            int speed, int yield, int potency,
                            int synergy, int generation,
                            boolean isMutation, int mutationType, String mutationDetail) {
+        this(seedA, seedB, speed, yield, potency, synergy, generation,
+                isMutation, mutationType, mutationDetail, 1);
+    }
+
+    public GeneSpliceEvent(ItemStack seedA, ItemStack seedB,
+                           int speed, int yield, int potency,
+                           int synergy, int generation,
+                           boolean isMutation, int mutationType, String mutationDetail,
+                           int offspringCount) {
         this.seedA = seedA == null ? ItemStack.EMPTY : seedA.copy();
         this.seedB = seedB == null ? ItemStack.EMPTY : seedB.copy();
         this.speed = speed;
@@ -33,6 +43,7 @@ public class GeneSpliceEvent extends Event {
         this.isMutation = isMutation;
         this.mutationType = mutationType;
         this.mutationDetail = mutationDetail;
+        this.offspringCount = offspringCount;
     }
 
     public ItemStack getSeedA() { return seedA.copy(); }
@@ -61,6 +72,9 @@ public class GeneSpliceEvent extends Event {
 
     public String getMutationDetail() { return mutationDetail; }
     public void setMutationDetail(String mutationDetail) { this.mutationDetail = mutationDetail; }
+
+    public int getOffspringCount() { return offspringCount; }
+    public void setOffspringCount(int offspringCount) { this.offspringCount = offspringCount; }
 
     @Override
     public boolean isCancelable() { return true; }

@@ -1,0 +1,18 @@
+{
+  "name": "寻找种子",
+  "icon": "cybercultivator:protein_soy_seeds",
+  "category": "cybercultivator:getting_started",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "三条种子来源",
+      "text": "$(bold)纤维草$()$(br)$(li)破坏草或高草丛有10%概率掉落。$(br2)$(bold)蛋白质豆与酒精花$()$(br)$(li)可在探索宝箱中找到。$(br)$(li)也可从学徒村民处购买。"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "村民交易",
+      "text": "$(li)$(thing)农民$()：3颗绿宝石换2颗蛋白质豆种子。$(br)$(li)$(thing)牧师$()：3颗绿宝石换2颗酒精花种子。$(br2)交易从职业池中抽取。没有目标交易时，可以多寻找几名村民。"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 package com.TKCCOPL.client.screen;
 
-import com.TKCCOPL.Config;
+import com.TKCCOPL.client.ClientGameplayConfig;
 import com.TKCCOPL.cybercultivator;
 import com.TKCCOPL.menu.BioIncubatorMenu;
 import net.minecraft.client.gui.GuiGraphics;
@@ -35,6 +35,10 @@ public class BioIncubatorScreen extends MachineScreen<BioIncubatorMenu> {
     }
 
     private Component getStatusLine() {
+        // v1.1.7 hotfix：红石阻塞优先级最高（高于产物阻塞、加工中等所有状态）
+        if (isRedstoneBlocked()) {
+            return redstoneBlockedStatus();
+        }
         if (!menu.hasSeed()) {
             if (menu.hasResourceOutput()) {
                 return Component.translatable("gui.cybercultivator.incubator.status_complete");
@@ -56,8 +60,9 @@ public class BioIncubatorScreen extends MachineScreen<BioIncubatorMenu> {
 
     private String getMissingResources() {
         StringBuilder missing = new StringBuilder();
-        appendMissing(missing, menu.getNutrition() <= Config.resourceThreshold, "N");
-        appendMissing(missing, menu.getPurity() <= Config.resourceThreshold, "P");
+        int resourceThreshold = ClientGameplayConfig.getSnapshot().resourceThreshold();
+        appendMissing(missing, menu.getNutrition() <= resourceThreshold, "N");
+        appendMissing(missing, menu.getPurity() <= resourceThreshold, "P");
         appendMissing(missing, menu.getDataSignal() <= 0, "D");
         return missing.length() == 0 ? "N/P/D" : missing.toString();
     }
@@ -69,6 +74,8 @@ public class BioIncubatorScreen extends MachineScreen<BioIncubatorMenu> {
     }
 
     private int getStatusColor() {
+        // v1.1.7 hotfix：红石阻塞使用警示橙
+        if (isRedstoneBlocked()) return REDSTONE_BLOCKED_COLOR;
         if (!menu.hasSeed() || menu.hasResourceOutput() && menu.getGrowthPercent() == 0) return 0x555555;
         if (menu.getGrowthPercent() >= 100 || menu.getEtaSeconds() < 0) return 0x6B4C12;
         return 0x3F6F32;

@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8.5",
+  "package": "com.TKCCOPL.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "cybercultivator.refmap.json",
+  "client": [
+    "client.MinecraftMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

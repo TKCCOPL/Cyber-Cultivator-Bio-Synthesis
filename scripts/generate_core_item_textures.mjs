@@ -585,6 +585,31 @@ function serumBottle(colors) {
 }
 
 Object.assign(patterns, {
+    bio_synthesis_guide: {
+        palette: {
+            ".": TRANSPARENT,
+            k: rgba("#17232a"), d: rgba("#324852"), m: rgba("#496773"),
+            c: rgba("#1cb8c5"), C: rgba("#68ebe8"), w: rgba("#d9efee")
+        },
+        lines: [
+            "................",
+            "...kkkkkkkkk....",
+            "..kdddddddddk...",
+            "..kdmCCCCCmdk...",
+            "..kdmC....Cmdk..",
+            "..kdmC.ww.Cmdk..",
+            "..kdmC.ww.Cmdk..",
+            "..kdmC....Cmdk..",
+            "..kdmCCCCCmdk...",
+            "..kdm...c.mdk...",
+            "..kdm.ccc.mdk...",
+            "..kdm...c.mdk...",
+            "..kdddddddddk...",
+            "...kkkkkkkkk....",
+            "................",
+            "................"
+        ]
+    },
     biochemical_solution: materialBottle({
         i: rgba("#0c6b34"), I: rgba("#2bbf56"), J: rgba("#7be86a")
     }),
@@ -610,6 +635,220 @@ Object.assign(patterns, {
         f: rgba("#e81a76"), h: rgba("#b60061"), i: rgba("#750031")
     })
 });
+
+function neuralOverloadEffect(palette, drawSymbol) {
+    const lines = buildPattern(18, context => {
+        const { set, span } = context;
+        const outer = [
+            [1, 7, 10], [2, 5, 12], [3, 4, 13], [4, 3, 14], [5, 2, 15],
+            [6, 1, 16], [7, 1, 16], [8, 1, 16], [9, 1, 16], [10, 1, 16],
+            [11, 1, 16], [12, 2, 15], [13, 3, 14], [14, 4, 13], [15, 6, 11],
+            [16, 8, 9]
+        ];
+        const inner = [
+            [3, 6, 11], [4, 5, 12], [5, 4, 13], [6, 3, 14], [7, 3, 14],
+            [8, 3, 14], [9, 3, 14], [10, 3, 14], [11, 3, 14], [12, 4, 13],
+            [13, 5, 12], [14, 6, 11], [15, 8, 9]
+        ];
+        for (const [y, left, right] of outer) span(y, left, right, "k");
+        for (const [y, left, right] of inner) span(y, left, right, "n");
+
+        // Shared asymmetrical metal rim: top-left catches light, bottom-right stays heavy.
+        span(2, 6, 8, "S");
+        span(3, 5, 6, "s");
+        set(4, 4, "s");
+        set(3, 5, "s");
+        set(2, 6, "s");
+        set(15, 11, "s");
+        set(14, 12, "s");
+        span(13, 12, 13, "s");
+        span(14, 9, 11, "s");
+
+        drawSymbol(context);
+    });
+    return {
+        size: 18,
+        palette: {
+            ".": TRANSPARENT,
+            k: rgba("#091521"),
+            n: rgba("#13283a"),
+            s: rgba("#344e61"),
+            S: rgba("#587184"),
+            ...palette
+        },
+        lines
+    };
+}
+
+const effectPatterns = {
+    neural_overload: neuralOverloadEffect({
+        d: rgba("#651d2b"), r: rgba("#a52d34"), R: rgba("#e84932"),
+        O: rgba("#ff8d2c"), Y: rgba("#ffe36b")
+    }, ({ set, span }) => {
+        // Two oversized brain lobes and one continuous overload fissure remain readable at 18x18.
+        span(4, 5, 7, "r"); span(4, 10, 12, "r");
+        span(5, 4, 7, "R"); span(5, 10, 13, "R");
+        span(6, 3, 7, "R"); span(6, 10, 14, "R");
+        span(7, 3, 7, "O"); span(7, 10, 14, "O");
+        span(8, 3, 7, "R"); span(8, 10, 14, "R");
+        span(9, 3, 7, "R"); span(9, 10, 14, "R");
+        span(10, 3, 7, "O"); span(10, 10, 14, "O");
+        span(11, 4, 7, "R"); span(11, 10, 13, "R");
+        span(12, 5, 7, "r"); span(12, 10, 12, "r");
+        span(13, 6, 7, "d"); span(13, 10, 11, "d");
+
+        span(7, 4, 5, "d"); span(8, 5, 6, "d");
+        span(10, 4, 5, "d"); span(11, 5, 6, "d");
+        span(7, 12, 13, "d"); span(8, 11, 12, "d");
+        span(10, 12, 13, "d"); span(11, 11, 12, "d");
+
+        set(4, 8, "Y"); span(5, 8, 9, "Y"); set(6, 9, "Y");
+        span(7, 8, 9, "Y"); set(8, 8, "Y"); span(9, 8, 9, "Y");
+        set(10, 9, "Y"); span(11, 8, 9, "Y"); set(12, 9, "Y");
+        span(13, 8, 9, "Y");
+    }),
+    neural_overload_s01: neuralOverloadEffect({
+        d: rgba("#5b2026"), r: rgba("#a72d2d"), R: rgba("#f0472b"),
+        O: rgba("#ff8529"), Y: rgba("#ffe45f")
+    }, ({ set, span }) => {
+        // Three large neural nodes form a triangle; the lower connection visibly sparks across a gap.
+        span(4, 8, 9, "r"); span(5, 7, 10, "R"); span(6, 7, 10, "O");
+        span(6, 8, 9, "Y"); span(7, 8, 9, "r");
+        set(7, 7, "R"); set(7, 10, "R"); span(8, 6, 7, "R"); span(8, 10, 11, "R");
+        span(9, 5, 6, "O"); span(9, 11, 12, "O");
+
+        span(10, 4, 6, "r"); set(10, 7, "R");
+        span(11, 3, 7, "R"); span(12, 3, 7, "O"); span(12, 4, 5, "Y");
+        span(13, 4, 6, "r");
+        set(10, 10, "R"); span(10, 11, 13, "r");
+        span(11, 10, 14, "R"); span(12, 10, 14, "O"); span(12, 12, 13, "Y");
+        span(13, 11, 13, "r");
+
+        set(10, 8, "Y"); set(11, 9, "Y"); set(12, 8, "Y");
+    }),
+    neural_overload_s02: neuralOverloadEffect({
+        b: rgba("#155b86"), c: rgba("#21bdd5"), C: rgba("#6df3f2"),
+        W: rgba("#ecffff"), V: rgba("#8f31ef")
+    }, ({ set, span }) => {
+        // One oversized cyber eye replaces the former collection of scan-line fragments.
+        span(5, 7, 10, "b"); span(6, 5, 12, "c"); span(7, 4, 13, "C");
+        span(8, 3, 14, "c"); span(9, 3, 14, "C"); span(10, 4, 13, "c");
+        span(11, 5, 12, "C"); span(12, 7, 10, "b");
+        span(7, 8, 9, "b"); span(8, 7, 10, "b"); span(9, 7, 10, "b");
+        span(10, 8, 9, "b"); set(8, 8, "W");
+
+        span(11, 5, 6, "V"); span(10, 6, 7, "V"); span(9, 7, 8, "V");
+        span(8, 9, 10, "V"); span(7, 10, 11, "V"); span(6, 11, 12, "V");
+    }),
+    neural_overload_s03: neuralOverloadEffect({
+        o: rgba("#3e541b"), g: rgba("#71931b"), G: rgba("#a9d91d"),
+        L: rgba("#d8ff31"), A: rgba("#f2b928"), W: rgba("#fff3a1")
+    }, ({ set, span }) => {
+        // A large cracked bio-cell and two heavy toxic drops replace the abstract pulse trace.
+        span(4, 7, 10, "L"); span(5, 5, 12, "L"); span(5, 7, 10, "G");
+        span(6, 4, 13, "L"); span(6, 5, 12, "G");
+        span(7, 3, 14, "L"); span(7, 4, 13, "G");
+        span(8, 3, 14, "L"); span(8, 4, 13, "G");
+        span(9, 3, 14, "L"); span(9, 4, 13, "G");
+        span(10, 4, 13, "L"); span(10, 6, 11, "G");
+
+        span(6, 7, 10, "A"); span(7, 6, 11, "A");
+        span(8, 6, 11, "A"); span(9, 7, 10, "A");
+        set(6, 8, "W"); set(6, 9, "o"); span(7, 8, 9, "o");
+        set(8, 9, "o"); span(9, 8, 9, "o");
+
+        span(12, 5, 6, "L"); span(13, 4, 7, "G"); span(14, 5, 6, "L");
+        span(12, 11, 12, "L"); span(13, 10, 13, "G"); span(14, 11, 12, "L");
+    })
+};
+
+const beneficialEffectPatterns = {
+    synaptic_overclock: {
+        size: 18,
+        palette: {
+            " ": rgba("#2e0201"), ".": rgba("#400201"), X: rgba("#7a0001"),
+            o: rgba("#800102"), O: rgba("#fb2a2c"), "+": rgba("#fccd07"),
+            "@": rgba("#fefaf6"), "#": TRANSPARENT
+        },
+        // Circular imagegen concept, reduced and palette-quantized to the native effect-slot grid.
+        lines: [
+            "##################",
+            "##################",
+            "#######    #######",
+            "#####  XXXX  #####",
+            "#### XOoO+XOX ####",
+            "### XOXOX+XXOX ###",
+            "##  OOOOX@XOOO ###",
+            "## XXOXO++XXOXX ##",
+            "##.XOOXX@@+XOOX ##",
+            "##.XXOX++@XOOXX ##",
+            "## XOXXO+@OOOOX ##",
+            "##  OXOX@XOOXO ###",
+            "### XOOX@OXOOX ###",
+            "#### XO+XXOOX ####",
+            "#####  XXXX  #####",
+            "#######    #######",
+            "##################",
+            "##################"
+        ]
+    },
+    visual_enhancement: {
+        size: 18,
+        palette: {
+            " ": rgba("#010322"), ".": rgba("#01235a"), X: rgba("#012a67"),
+            o: rgba("#0749ad"), O: rgba("#1262d1"), "+": rgba("#12bbef"),
+            "@": rgba("#cdfcfe"), "#": TRANSPARENT
+        },
+        lines: [
+            "##################",
+            "##################",
+            "#######    #######",
+            "##### .O++O. #####",
+            "#### X++OOOOX ####",
+            "### X+XXXXXXOX ###",
+            "###XOOXX++XXOO.###",
+            "## Oo.+@  ++XoO ##",
+            "## OoX+   O+.oO ##",
+            "## OoX+   o+.oO ##",
+            "## Oo.++  ++.oo ##",
+            "###.OoX.++.XOo.###",
+            "### XOX...X.OX ###",
+            "#### XOOoooOX ####",
+            "##### ..oo.. #####",
+            "#######    #######",
+            "##################",
+            "##################"
+        ]
+    },
+    metabolic_boost: {
+        size: 18,
+        palette: {
+            " ": rgba("#083c00"), ".": rgba("#4f3301"), X: rgba("#d23c01"),
+            o: rgba("#3b8913"), O: rgba("#5aa81a"), "+": rgba("#6cb91d"),
+            "@": rgba("#c5e120"), "#": TRANSPARENT
+        },
+        lines: [
+            "##################",
+            "##################",
+            "#######    #######",
+            "#####@@++++@@#####",
+            "### @o o++.++@ ###",
+            "###@+ o...X+o+@###",
+            "## +O++XXX...++ ##",
+            "## ++oXXXXXX.O+ ##",
+            "## +o.XX@XXX. + ##",
+            "## ++.XXXX@X.O+ ##",
+            "## +++@@XX@@.++ ##",
+            "## +oO+XX@X.+o+ ##",
+            "###@  O+XX.+ +@###",
+            "### @O++..+ O@ ###",
+            "#####@@++++@@#####",
+            "#######    #######",
+            "##################",
+            "##################"
+        ]
+    }
+};
 
 const crcTable = new Uint32Array(256);
 for (let n = 0; n < 256; n++) {
@@ -693,4 +932,10 @@ for (const [name, definition] of Object.entries(patterns)) {
     }
     drawPattern(data, shifted.map(row => row.join("")), definition.palette);
     save(`item/${name}.png`, data, size);
+}
+
+for (const [name, definition] of Object.entries({ ...beneficialEffectPatterns, ...effectPatterns })) {
+    const data = image(definition.size);
+    drawPattern(data, definition.lines, definition.palette);
+    save(`mob_effect/${name}.png`, data, definition.size);
 }

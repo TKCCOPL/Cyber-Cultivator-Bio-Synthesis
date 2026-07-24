@@ -64,6 +64,10 @@ public class BioIncubatorBlock extends MachineBlock {
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof BioIncubatorBlockEntity blockEntity) {
+            ItemStack legacyBottles = blockEntity.drainLegacyBottleOutput();
+            if (!legacyBottles.isEmpty()) {
+                Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), legacyBottles);
+            }
             Containers.dropContents(level, pos, blockEntity);
         }
         super.onRemove(state, level, pos, newState, isMoving);
@@ -79,19 +83,6 @@ public class BioIncubatorBlock extends MachineBlock {
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> blockEntityType) {
         return createTickerHelper(blockEntityType, ModBlockEntities.BIO_INCUBATOR.get(), BioIncubatorBlockEntity::tick);
-    }
-
-    @Override
-    public boolean hasAnalogOutputSignal(BlockState state) {
-        return true;
-    }
-
-    @Override
-    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
-        if (level.getBlockEntity(pos) instanceof BioIncubatorBlockEntity blockEntity) {
-            return Math.min(15, blockEntity.getNutrition() / 7);
-        }
-        return 0;
     }
 
     @Override

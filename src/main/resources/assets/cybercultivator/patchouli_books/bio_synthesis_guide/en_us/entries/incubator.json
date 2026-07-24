@@ -1,0 +1,28 @@
+{
+  "name": "Bio Incubator",
+  "icon": "cybercultivator:bio_incubator",
+  "category": "cybercultivator:machines",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "Slot Map",
+      "text": "$(li)$(bold)Seed$(): manual input for the crop.$(br)$(li)$(bold)Nutrition$(): N reservoir input.$(br)$(li)$(bold)Purified Water$(): P reservoir input.$(br)$(li)$(bold)Data Signal$(): D reservoir input.$(br)$(li)$(bold)Output$(): mature resource output."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Resources & Growth",
+      "text": "$(li)Biochemical Solution: N +25, decays 1/second.$(br)$(li)Purified Water Bottle: P +20, decays 1/2 seconds.$(br)$(li)Silicon Shard: D +15, decays 1/3 seconds.$(br2)Growth normally requires N>10, P>10, and D>0. These are shared machine reservoirs and survive seed changes. Maturation costs another 5 N and 5 P."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Speed & Outputs",
+      "text": "$(li)Fiber Reed Seed → Plant Fiber.$(br)$(li)Protein Soy Seed → Biochemical Solution.$(br)$(li)Alcohol Bloom Seed → Industrial Ethanol.$(br2)Count = 2 + floor(Yield÷3). Potency becomes the matching quality, while Generation, Synergy, and mutation data pass to the mature ingredient. Speed and current N/P/D determine actual cultivation time."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Automation Faces",
+      "text": "$(li)Insert N, P, and D from the sides.$(br)$(li)Extract mature resources from below.$(br)$(li)Keep the seed slot manual.$(br)$(li)Each channel injects at most one item per second when its reservoir has room.$(br2)Purified water is consumed with its bottle; no empty bottle is returned. Full progress waits if the output slot is blocked."
+    }
+  ]
+}

@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <b>v1.1.6 · Minecraft Forge 1.20.1</b><br>
+  <b>v1.2.0 · Minecraft Forge 1.20.1</b><br>
   遗传育种、自动化培养与生物强化血清
 </p>
 
@@ -30,9 +30,11 @@ Cyber-Cultivator: Bio-Synthesis 是一个围绕生物科技生产链构建的 Fo
 - 三类强化血清、Activity 品质缩放与叠加机制
 - 可选 Curios 种子基因解析、自动注入和生命支持能力
 - 可选 KubeJS 配方 DSL 与可热重载玩法事件
-- 漏斗自动化及公开查询/事件 API
+- 可选 Patchouli 中英文《生物合成研究手册》与首次进世界发放
+- 四台机器的 IGNORE/HIGH/LOW 红石控制与统一比较器状态输出
+- 原版漏斗和 Forge `IItemHandler` 分面自动化、材料语义标签及公开查询/事件 API
 
-兼容 JEI，并以机器实际 GUI 展示培养、拼接、灌装与冷凝流程；KubeJS、JEI 与 Curios 均为可选依赖。
+兼容 JEI，并以机器实际 GUI 展示培养、拼接、灌装与冷凝流程；KubeJS、Patchouli、JEI 与 Curios 均为可选依赖。
 
 具体配方、机器操作、基因算法和血清数值请查看[完整使用指南](docs/USER_GUIDE.md)。
 
@@ -44,10 +46,11 @@ Cyber-Cultivator: Bio-Synthesis 是一个围绕生物科技生产链构建的 Fo
 | Forge | 47.4.18+ | 必需 |
 | Curios API | 5.3.5+ | 可选；启用饰品功能 |
 | KubeJS | 2001.6.5-build.16 至 build.26 | 可选；启用脚本配方与事件 |
+| Patchouli | 1.20.1-85-FORGE | 可选；启用游戏内研究手册 |
 
 1. 安装 Minecraft Forge 1.20.1。
 2. 从 [Releases](https://github.com/TKCCOPL/Cyber-Cultivator-Bio-Synthesis/releases/latest) 下载模组 JAR，并放入 `mods` 目录。
-3. 按需安装 Curios API 或 KubeJS 及其前置依赖。
+3. 按需安装 Curios API、KubeJS 及其前置，或 Patchouli。
 
 ## 文档
 

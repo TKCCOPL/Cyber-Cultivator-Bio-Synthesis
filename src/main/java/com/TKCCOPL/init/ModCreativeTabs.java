@@ -50,6 +50,8 @@ public final class ModCreativeTabs {
         output.accept(ModItems.SILICON_SHARD.get());
         output.accept(ModItems.SILICON_BLOCK_ITEM.get());
         output.accept(ModItems.RARE_EARTH_ORE_ITEM.get());
+        output.accept(ModItems.DEEPSLATE_SILICON_ORE_ITEM.get());
+        output.accept(ModItems.DEEPSLATE_RARE_EARTH_ORE_ITEM.get());
         output.accept(ModItems.RAW_RARE_EARTH.get());
         output.accept(ModItems.RAW_RARE_EARTH_BLOCK_ITEM.get());
         output.accept(ModItems.RARE_EARTH_DUST.get());
