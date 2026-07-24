@@ -93,9 +93,14 @@ jobs:
 
   # Full build for main pushes: regen data, check resources, build the JAR,
   # then run all five runtime smoke profiles before releasing.
+  # Also runs for pull requests labeled `full-ci` so release-grade PRs can
+  # validate all optional-dependency runtime profiles before merge.
   build:
     name: Build and verify generated data
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' &&
+       contains(github.event.pull_request.labels.*.name, 'full-ci'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
