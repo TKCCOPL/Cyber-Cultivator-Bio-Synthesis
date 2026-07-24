@@ -60,19 +60,21 @@ public class GeneSplicingCategory extends MachineRecipeCategory<GeneSplicingCate
         drawFitted(graphics, Component.translatable("gui.cybercultivator.splicer.offspring"),
                 136, 19, 34, 0x4B3D4A);
 
+        renderProgressArrow(graphics);
+
         int avgSpeed = average(recipe.speedA(), recipe.speedB());
         int avgYield = average(recipe.yieldA(), recipe.yieldB());
         int avgPotency = average(recipe.potencyA(), recipe.potencyB());
-        drawFitted(graphics, Component.translatable("jei.cybercultivator.splicer.meta",
-                1, formatPercent(recipe.mutationChance()), formatPercent(recipe.twinChance())),
-                4, 54, 170, 0x5C3D58);
+        drawCentered(graphics, Component.translatable("jei.cybercultivator.splicer.meta",
+                formatPercent(recipe.mutationChance()), formatPercent(recipe.twinChance())),
+                89, 54, 0x5C3D58);
         int range = mutationRange();
         var cfg = ClientGameplayConfig.getSnapshot();
-        drawFitted(graphics, Component.translatable("jei.cybercultivator.splicer.range",
+        drawCentered(graphics, Component.translatable("jei.cybercultivator.splicer.range",
                 Math.max(cfg.geneMin(), avgSpeed - range), Math.min(cfg.geneMax(), avgSpeed + range),
                 Math.max(cfg.geneMin(), avgYield - range), Math.min(cfg.geneMax(), avgYield + range),
                 Math.max(cfg.geneMin(), avgPotency - range), Math.min(cfg.geneMax(), avgPotency + range)),
-                4, 69, 170, 0x78406F);
+                89, 69, 0x78406F);
     }
 
     @Override
@@ -97,6 +99,31 @@ public class GeneSplicingCategory extends MachineRecipeCategory<GeneSplicingCate
                             .withStyle(ChatFormatting.GRAY));
         }
         return List.of();
+    }
+
+    private static final int ARROW_START_X = 91;
+    private static final int ARROW_WIDTH = 42;
+    private static final int ARROW_HEAD_X = 125;
+    private static final int ARROW_COLOR = 0xFFB868B2;
+
+    private void renderProgressArrow(GuiGraphics graphics) {
+        int progress = animationValue();
+        int maximum = animationMaximum();
+        if (progress <= 0 || maximum <= 0) return;
+
+        int filled = Math.min(ARROW_WIDTH,
+                (int) Math.ceil((double) progress * ARROW_WIDTH / maximum));
+        for (int offset = 0; offset < filled; offset++) {
+            int x = ARROW_START_X + offset;
+            int top = 34;
+            int bottom = 39;
+            if (x >= ARROW_HEAD_X) {
+                int inset = Math.max(0, x - ARROW_HEAD_X - 1);
+                top = 30 + inset;
+                bottom = 43 - inset;
+            }
+            graphics.fill(x, top, x + 1, bottom, ARROW_COLOR);
+        }
     }
 
     private static ItemStack createOutput(DisplayRecipe recipe) {

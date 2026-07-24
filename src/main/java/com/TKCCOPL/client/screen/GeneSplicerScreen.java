@@ -63,57 +63,22 @@ public class GeneSplicerScreen extends MachineScreen<GeneSplicerMenu> {
         graphics.drawString(font, Component.translatable("gui.cybercultivator.splicer.offspring"),
                 144, 38, 0x4B3D4A, false);
 
-        if (output.getItem() instanceof GeneticSeedItem) {
-            drawFitted(graphics, Component.translatable("gui.cybercultivator.splicer.offspring_generation",
-                    GeneticSeedItem.getGeneration(output)), 12, 81, 164, 0x5C3D58);
-        } else if (first.getItem() instanceof GeneticSeedItem && second.getItem() instanceof GeneticSeedItem) {
-            drawFitted(graphics, Component.translatable("gui.cybercultivator.splicer.prediction_meta",
-                    menu.getPredictedGeneration(), formatPermille(menu.getPredictedMutationPermille()),
-                    formatPermille(menu.getPredictedTwinPermille())), 12, 81, 164, 0x5C3D58);
+        if (first.getItem() instanceof GeneticSeedItem && second.getItem() instanceof GeneticSeedItem
+                && !(output.getItem() instanceof GeneticSeedItem)) {
+            drawCentered(graphics, Component.translatable("gui.cybercultivator.splicer.prediction_meta",
+                    formatPermille(menu.getPredictedMutationPermille()),
+                    formatPermille(menu.getPredictedTwinPermille())), 88, 81, 0x5C3D58);
+            drawCentered(graphics, getPreviewRange(first, second), 88, 96, 0x555555);
         }
-        drawFitted(graphics, getOffspringInfo(first, second, output), 12, 96, 164,
-                output.isEmpty() ? 0x555555 : 0x78406F);
         graphics.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, 0x404040, false);
     }
 
-    private Component getOffspringInfo(ItemStack first, ItemStack second, ItemStack output) {
-        if (output.getItem() instanceof GeneticSeedItem) {
-            int mutationType = output.hasTag() ? output.getTag().getInt("Mutation") : 0;
-            if (mutationType > 0) {
-                Component type = Component.translatable(mutationType == 2
-                        ? "gui.cybercultivator.splicer.mutation_type_synergy"
-                        : "gui.cybercultivator.splicer.mutation_type_breakthrough");
-                String detail = output.getTag().getString("MutationDetail");
-                return Component.translatable("gui.cybercultivator.splicer.offspring_result_mutation",
-                        GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_SPEED),
-                        GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_YIELD),
-                        GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_POTENCY),
-                        type, detail, output.getCount());
-            }
-            int synergy = GeneticSeedItem.getSynergy(output);
-            String key = synergy > 0
-                    ? "gui.cybercultivator.splicer.offspring_result_synergy"
-                    : "gui.cybercultivator.splicer.offspring_result";
-            if (synergy > 0) {
-                return Component.translatable(key,
-                        GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_SPEED),
-                        GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_YIELD),
-                        GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_POTENCY), synergy,
-                        output.getCount());
-            }
-            return Component.translatable(key,
-                    GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_SPEED),
-                    GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_YIELD),
-                    GeneticSeedItem.getGene(output, GeneticSeedItem.GENE_POTENCY), output.getCount());
-        }
-        if (first.getItem() instanceof GeneticSeedItem && second.getItem() instanceof GeneticSeedItem) {
-            int[] speed = ordinaryRange(first, second, GeneticSeedItem.GENE_SPEED);
-            int[] yield = ordinaryRange(first, second, GeneticSeedItem.GENE_YIELD);
-            int[] potency = ordinaryRange(first, second, GeneticSeedItem.GENE_POTENCY);
-            return Component.translatable("gui.cybercultivator.splicer.preview_range",
-                    speed[0], speed[1], yield[0], yield[1], potency[0], potency[1]);
-        }
-        return Component.empty();
+    private Component getPreviewRange(ItemStack first, ItemStack second) {
+        int[] speed = ordinaryRange(first, second, GeneticSeedItem.GENE_SPEED);
+        int[] yield = ordinaryRange(first, second, GeneticSeedItem.GENE_YIELD);
+        int[] potency = ordinaryRange(first, second, GeneticSeedItem.GENE_POTENCY);
+        return Component.translatable("gui.cybercultivator.splicer.preview_range",
+                speed[0], speed[1], yield[0], yield[1], potency[0], potency[1]);
     }
 
     private int[] ordinaryRange(ItemStack first, ItemStack second, String key) {

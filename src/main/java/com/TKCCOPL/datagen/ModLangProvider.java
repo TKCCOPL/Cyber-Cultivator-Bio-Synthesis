@@ -171,13 +171,11 @@ public class ModLangProvider extends LanguageProvider {
         add("jei.cybercultivator.incubator.resource_nutrition", "资源注入：营养 +%s");
         add("jei.cybercultivator.incubator.resource_purity", "资源注入：纯度 +%s");
         add("jei.cybercultivator.incubator.resource_signal", "资源注入：信号 +%s");
-        add("jei.cybercultivator.splicer.meta", "子代 G%s · 特殊突变 %s%% · 双生 %s%%");
-        add("jei.cybercultivator.splicer.range", "普通范围 S %s～%s · Y %s～%s · P %s～%s");
+        add("jei.cybercultivator.splicer.meta", "特殊突变 %s%% · 双生 %s%%");
+        add("jei.cybercultivator.splicer.range", "范围 S %s～%s · Y %s～%s · P %s～%s");
         add("jei.cybercultivator.bottler.output", "产出：%s");
         add("gui.cybercultivator.bottler.output_recipe", "产出配方：%s");
-        add("jei.cybercultivator.condenser.cycle", "消耗 1 个玻璃瓶 · 每 %s 秒产出 1 瓶");
-        add("jei.cybercultivator.condenser.stock", "内部库存上限：%s");
-        add("jei.cybercultivator.condenser.downstream", "下游培养槽自动注入纯度 +%s");
+        add("jei.cybercultivator.condenser.cycle", "每 %s 秒产出 1 瓶");
         add("jei.cybercultivator.condenser.tooltip", "顶部/侧面输入玻璃瓶，底部/侧面抽取产物；下方培养槽会自动接收纯净度");
 
         // JEI 物品信息页面
@@ -268,13 +266,13 @@ public class ModLangProvider extends LanguageProvider {
         add("gui.cybercultivator.splicer.status_complete", "完成 · 收取子代");
         add("gui.cybercultivator.splicer.status_mutated", "突变完成 · 收取子代");
         add("gui.cybercultivator.splicer.offspring_generation", "子代 G%s");
-        add("gui.cybercultivator.splicer.preview_range", "普通范围 S %s～%s · Y %s～%s · P %s～%s");
+        add("gui.cybercultivator.splicer.preview_range", "范围 S %s～%s · Y %s～%s · P %s～%s");
         add("gui.cybercultivator.splicer.offspring_result", "实际 S/Y/P %s/%s/%s · 数量×%s");
         add("gui.cybercultivator.splicer.offspring_result_synergy", "实际 S/Y/P %s/%s/%s · 协同%s · 数量×%s");
         add("gui.cybercultivator.splicer.offspring_result_mutation", "实际 S/Y/P %s/%s/%s · %s（%s） · 数量×%s");
         add("gui.cybercultivator.splicer.mutation_type_breakthrough", "数值突破");
         add("gui.cybercultivator.splicer.mutation_type_synergy", "协同突变");
-        add("gui.cybercultivator.splicer.prediction_meta", "子代 G%s · 特殊突变 %s%% · 双生 %s%%");
+        add("gui.cybercultivator.splicer.prediction_meta", "特殊突变 %s%% · 双生 %s%%");
         add("gui.cybercultivator.incubator.status_waiting_seed", "等待种子 · 放入后自动培养");
         add("gui.cybercultivator.incubator.status_resources", "资源不足 · 补充 %s");
         add("gui.cybercultivator.incubator.status_growing", "培养中 · %s%% · 剩余 %s 秒");

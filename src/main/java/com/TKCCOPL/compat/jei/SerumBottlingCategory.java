@@ -42,6 +42,8 @@ public class SerumBottlingCategory extends MachineRecipeCategory<SerumRecipe> {
     @Override
     public void draw(SerumRecipe recipe, IRecipeSlotsView recipeSlotsView, GuiGraphics graphics,
                      double mouseX, double mouseY) {
+        horizontalBar(graphics, 98, 37, 32, 0xFF5DB9C7);
+
         ItemStack output = recipe.getBaseOutput();
         drawFitted(graphics, Component.translatable("jei.cybercultivator.bottler.output",
                 output.getHoverName()), 8, 62, 162, 0x373737);

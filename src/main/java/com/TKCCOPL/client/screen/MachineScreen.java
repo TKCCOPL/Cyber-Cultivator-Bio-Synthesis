@@ -134,6 +134,10 @@ public abstract class MachineScreen<M extends AbstractContainerMenu> extends Abs
         graphics.drawString(font, value, x, y, color, false);
     }
 
+    protected void drawCentered(GuiGraphics graphics, Component text, int centerX, int y, int color) {
+        graphics.drawString(font, text, centerX - font.width(text) / 2, y, color, false);
+    }
+
     protected void horizontalBar(GuiGraphics graphics, int x, int y, int width, int value, int maximum, int color) {
         int innerWidth = Math.max(0, width - 2);
         int filled = scaledFill(innerWidth, value, maximum);
