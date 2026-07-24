@@ -1,6 +1,7 @@
 package com.TKCCOPL.gametest;
 
 import com.TKCCOPL.Config;
+import com.TKCCOPL.advancement.ModTriggers;
 import com.TKCCOPL.api.BottlerInfo;
 import com.TKCCOPL.api.CyberCultivatorAPI;
 import com.TKCCOPL.api.MachineControlInfo;
@@ -18,6 +19,7 @@ import com.TKCCOPL.event.SerumCraftEvent;
 import com.TKCCOPL.event.VillagerTradeEvents;
 import com.TKCCOPL.init.ModBlocks;
 import com.TKCCOPL.init.CreativeTabVariants;
+import com.TKCCOPL.init.ModTags;
 import com.TKCCOPL.init.ModEffects;
 import com.TKCCOPL.init.ModItems;
 import com.TKCCOPL.item.GeneticSeedItem;
@@ -68,6 +70,7 @@ import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.living.MobEffectEvent;
 import net.minecraftforge.event.village.VillagerTradesEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
@@ -586,6 +589,87 @@ public final class ModGameTests {
                     "Natural S-03 expiration must schedule source-specific overload");
             helper.succeed();
         });
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void cancelledSerumRemovalDoesNotScheduleOverload(GameTestHelper helper) {
+        // 修复 1：其他模组取消 MobEffectEvent.Remove 后，神经过载必须不被调度。
+        // SerumEffectEvents.onRemoved 使用 LOWEST 优先级，HIGH 优先级取消器先执行。
+        Player player = helper.makeMockSurvivalPlayer();
+        player.addEffect(new MobEffectInstance(ModEffects.SYNAPTIC_OVERCLOCK.get(), 200, 2));
+
+        Object cancelListener = new Object() {
+            @SubscribeEvent(priority = EventPriority.HIGH)
+            public void onRemove(MobEffectEvent.Remove event) {
+                if (event.getEntity() == player
+                        && event.getEffectInstance() != null
+                        && event.getEffectInstance().getEffect() == ModEffects.SYNAPTIC_OVERCLOCK.get()) {
+                    event.setCanceled(true);
+                }
+            }
+        };
+        MinecraftForge.EVENT_BUS.register(cancelListener);
+        try {
+            MobEffectInstance instance = player.getEffect(ModEffects.SYNAPTIC_OVERCLOCK.get());
+            MinecraftForge.EVENT_BUS.post(new MobEffectEvent.Remove(player, instance));
+        } finally {
+            MinecraftForge.EVENT_BUS.unregister(cancelListener);
+        }
+
+        helper.runAfterDelay(4, () -> {
+            helper.assertTrue(player.getEffect(ModEffects.SYNAPTIC_OVERCLOCK.get()) != null,
+                    "Canceled removal must preserve the original serum effect");
+            helper.assertTrue(player.getEffect(ModEffects.NEURAL_OVERLOAD_S01.get()) == null,
+                    "Canceled serum removal must not schedule neural overload");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void readdedSerumEffectSkipsDelayedOverload(GameTestHelper helper) {
+        // 修复 1：Remove 事件触发后 1 tick 内若原血清效果被重新施加（升级/替换场景），
+        // 延迟 TickTask 必须跳过神经过载。
+        Player player = helper.makeMockSurvivalPlayer();
+        player.addEffect(new MobEffectInstance(ModEffects.SYNAPTIC_OVERCLOCK.get(), 200, 2));
+
+        MobEffectInstance instance = player.getEffect(ModEffects.SYNAPTIC_OVERCLOCK.get());
+        MinecraftForge.EVENT_BUS.post(new MobEffectEvent.Remove(player, instance));
+        // 模拟 vanilla 在事件后真正移除效果
+        player.removeEffectNoUpdate(ModEffects.SYNAPTIC_OVERCLOCK.get());
+        // 在 TickTask 触发前重新施加血清效果（模拟升级/再次饮用）
+        player.addEffect(new MobEffectInstance(ModEffects.SYNAPTIC_OVERCLOCK.get(), 200, 3));
+
+        helper.runAfterDelay(4, () -> {
+            helper.assertTrue(player.getEffect(ModEffects.SYNAPTIC_OVERCLOCK.get()) != null,
+                    "Re-added serum effect must still be present");
+            helper.assertTrue(player.getEffect(ModEffects.NEURAL_OVERLOAD_S01.get()) == null,
+                    "Re-added serum effect must suppress delayed neural overload");
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void modTriggersTriggerForOutputHandlesEdgeCases(GameTestHelper helper) {
+        // 修复 5：ModTriggers.triggerForOutput 必须对边界输入安全，
+        // 且 Generation > 0 才进入触发路径（野生种子 Generation=0 不触发）。
+        Player player = helper.makeMockSurvivalPlayer();
+
+        // null player 不崩溃
+        ModTriggers.triggerForOutput(null, new ItemStack(ModItems.FIBER_REED_SEEDS.get()));
+        // 空堆不崩溃
+        ModTriggers.triggerForOutput(player, ItemStack.EMPTY);
+        // 无 NBT 标签不崩溃
+        ModTriggers.triggerForOutput(player, new ItemStack(ModItems.FIBER_REED_SEEDS.get()));
+        // Generation = 0（野生种子）不触发
+        ItemStack wild = new ItemStack(ModItems.FIBER_REED_SEEDS.get());
+        wild.getOrCreateTag().putInt(GeneticSeedItem.GENE_GENERATION, 0);
+        ModTriggers.triggerForOutput(player, wild);
+        // Generation > 0（拼接子代）进入触发路径，mock 玩家无已注册 criterion 时为 no-op
+        ItemStack spliced = new ItemStack(ModItems.FIBER_REED_SEEDS.get());
+        spliced.getOrCreateTag().putInt(GeneticSeedItem.GENE_GENERATION, 2);
+        ModTriggers.triggerForOutput(player, spliced);
+
+        helper.succeed();
     }
 
     @GameTest(template = EMPTY_TEMPLATE)
@@ -1210,6 +1294,35 @@ public final class ModGameTests {
     }
 
     @GameTest(template = EMPTY_TEMPLATE)
+    public static void deepslateOreForgeTagsIncludeBothVariants(GameTestHelper helper) {
+        // 修复：深板岩矿石必须归入 forge:ores/<type> 子标签和 forge:ores 父标签，
+        // 否则跨模组矿石统一/处理模组漏掉深板岩变体。
+        helper.assertTrue(ModBlocks.SILICON_ORE.get().defaultBlockState().is(ModTags.ForgeBlocks.ORES_SILICON),
+                "Silicon ore must be in forge:ores/silicon");
+        helper.assertTrue(ModBlocks.DEEPSLATE_SILICON_ORE.get().defaultBlockState().is(ModTags.ForgeBlocks.ORES_SILICON),
+                "Deepslate silicon ore must be in forge:ores/silicon");
+        helper.assertTrue(ModBlocks.RARE_EARTH_ORE.get().defaultBlockState().is(ModTags.ForgeBlocks.ORES_RARE_EARTH),
+                "Rare earth ore must be in forge:ores/rare_earth");
+        helper.assertTrue(ModBlocks.DEEPSLATE_RARE_EARTH_ORE.get().defaultBlockState().is(ModTags.ForgeBlocks.ORES_RARE_EARTH),
+                "Deepslate rare earth ore must be in forge:ores/rare_earth");
+        // 父标签 forge:ores 必须包含全部 4 种矿石
+        helper.assertTrue(ModBlocks.DEEPSLATE_SILICON_ORE.get().defaultBlockState().is(ModTags.ForgeBlocks.ORES),
+                "Deepslate silicon ore must be in forge:ores parent tag");
+        helper.assertTrue(ModBlocks.DEEPSLATE_RARE_EARTH_ORE.get().defaultBlockState().is(ModTags.ForgeBlocks.ORES),
+                "Deepslate rare earth ore must be in forge:ores parent tag");
+        // 物品标签同步检查
+        helper.assertTrue(new ItemStack(ModItems.DEEPSLATE_SILICON_ORE_ITEM.get()).is(ModTags.ForgeItems.ORES_SILICON),
+                "Deepslate silicon ore item must be in forge:ores/silicon");
+        helper.assertTrue(new ItemStack(ModItems.DEEPSLATE_RARE_EARTH_ORE_ITEM.get()).is(ModTags.ForgeItems.ORES_RARE_EARTH),
+                "Deepslate rare earth ore item must be in forge:ores/rare_earth");
+        helper.assertTrue(new ItemStack(ModItems.DEEPSLATE_SILICON_ORE_ITEM.get()).is(ModTags.ForgeItems.ORES),
+                "Deepslate silicon ore item must be in forge:ores parent tag");
+        helper.assertTrue(new ItemStack(ModItems.DEEPSLATE_RARE_EARTH_ORE_ITEM.get()).is(ModTags.ForgeItems.ORES),
+                "Deepslate rare earth ore item must be in forge:ores parent tag");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
     public static void neuralOverloadVariantsAreRegistered(GameTestHelper helper) {
         // 修复 4：神经过载来源丢失和串线 —— 三个独立效果必须全部注册
         String[] ids = {"neural_overload", "neural_overload_s01", "neural_overload_s02", "neural_overload_s03"};
@@ -1681,6 +1794,54 @@ public final class ModGameTests {
                 "Out-of-range slot index must be rejected");
         helper.assertFalse(bottler.canPlaceItem(0, ItemStack.EMPTY),
                 "Empty stack must be rejected");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_TEMPLATE)
+    public static void bottlerCanPlaceItemRejectsDuplicateAcrossSlots(GameTestHelper helper) {
+        // 修复：canPlaceItem 必须拒绝同种物品跨槽位重复。
+        // 4 种血清配方均需 3 种不同原料，同类占多槽会导致机器死锁且无 GUI 反馈。
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.SERUM_BOTTLER.get());
+        SerumBottlerBlockEntity bottler = (SerumBottlerBlockEntity) helper.getBlockEntity(pos);
+
+        ItemStack berry = new ItemStack(ModItems.SYNAPTIC_NEURAL_BERRY.get());
+        ItemStack fiber = new ItemStack(ModItems.PLANT_FIBER.get());
+
+        // 空槽位时 berry 可放入 slot 0
+        helper.assertTrue(bottler.canPlaceItem(0, berry),
+                "Berry must be acceptable in empty slot 0");
+        // 放入 berry 到 slot 0
+        bottler.setItem(0, berry);
+        // slot 1 不再接受 berry（跨槽位去重）
+        helper.assertFalse(bottler.canPlaceItem(1, berry),
+                "Berry must be rejected in slot 1 when slot 0 already has berries");
+        // slot 2 同理
+        helper.assertFalse(bottler.canPlaceItem(2, berry),
+                "Berry must be rejected in slot 2 when slot 0 already has berries");
+        // slot 0 仍可接受 berry（同槽位堆叠不受影响）
+        helper.assertTrue(bottler.canPlaceItem(0, berry),
+                "Berry must still be acceptable in slot 0 for stacking within the same slot");
+        // 不同物品 fiber 仍可放入 slot 1
+        helper.assertTrue(bottler.canPlaceItem(1, fiber),
+                "Different item (fiber) must be accepted in slot 1");
+        bottler.setItem(1, fiber);
+        // slot 2 不接受 fiber（slot 1 已有）
+        helper.assertFalse(bottler.canPlaceItem(2, fiber),
+                "Fiber must be rejected in slot 2 when slot 1 already has fiber");
+        // slot 2 仍接受第三种不同物品（如乙醇）
+        helper.assertTrue(bottler.canPlaceItem(2, new ItemStack(ModItems.INDUSTRIAL_ETHANOL.get())),
+                "Third distinct item (ethanol) must be accepted in slot 2");
+
+        // IItemHandler 路径（漏斗）也必须拒绝重复
+        var upHandler = bottler.getCapability(
+                net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER, Direction.UP).orElse(null);
+        helper.assertTrue(upHandler != null, "Bottler UP capability must be present");
+        ItemStack remaining = upHandler.insertItem(2, berry, false);
+        helper.assertTrue(remaining.getCount() == 1,
+                "Hopper path must reject duplicate berry in slot 2 (slot 0 already has berries)");
+
+        helper.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
         helper.succeed();
     }
 
