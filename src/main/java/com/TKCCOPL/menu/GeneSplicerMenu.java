@@ -4,9 +4,7 @@ import com.TKCCOPL.advancement.ModTriggers;
 import com.TKCCOPL.block.entity.GeneSplicerBlockEntity;
 import com.TKCCOPL.init.ModBlocks;
 import com.TKCCOPL.init.ModMenuTypes;
-import com.TKCCOPL.item.GeneticSeedItem;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
@@ -45,13 +43,8 @@ public class GeneSplicerMenu extends MachineMenu implements RedstoneMenuAccess {
 
             @Override
             public void onTake(Player player, ItemStack stack) {
-                // 玩家取走子代种子时触发 gene_splice_complete 进度（仅服务端，仅 Generation > 0）
-                if (player instanceof ServerPlayer serverPlayer) {
-                    var tag = stack.getTag();
-                    if (tag != null && tag.getInt(GeneticSeedItem.GENE_GENERATION) > 0) {
-                        ModTriggers.GENE_SPLICE_COMPLETE.trigger(serverPlayer);
-                    }
-                }
+                // 与潜行右键拾取共用 ModTriggers.triggerForOutput，保证两条路径行为一致
+                ModTriggers.triggerForOutput(player, stack);
                 super.onTake(player, stack);
             }
         });
